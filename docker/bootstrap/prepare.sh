@@ -111,13 +111,16 @@ for f in {Dockerfile,install.sh,forward-command.sh}; do
 done
 chmod +x install.sh forward-command.sh
 
+# if an old metabarj0/builder repository exists, delete it
+REPOSITORY=$(docker images metabarj0/builder -q)
+
+if [ $REPOSITORY ]; then
+  docker rmi $REPOSITORY
+fi
+
 # create the container builder, containing the gcc toolchain based on busybox and static musl
 echo Building metabarj0/builder image...
 docker build -t metabarj0/builder .
-
-# Create a test, just to see if everything is good
-# a volume that will receive a test source file
-docker volume create test
 
 # the test source file
 cat << EOI > test.cpp
@@ -131,68 +134,34 @@ int main( int, char *[] )
 }
 EOI
 
-# a dockerfile to build a container for build testing
-cat << EOI > Dockerfile.test.build
-FROM busybox
-VOLUME [ "/test" ]
-COPY [ "test.cpp", "/test/" ]
+# a dockerfile to build a container for build testing and run testing
+cat << EOI > Dockerfile.test
+FROM metabarj0/builder as build
+COPY test.cpp" /tmp/
+RUN forward-command.sh g++ -std=c++1z /tmp/test.cpp -o /tmp/test.out
+FROM busybox as run
+COPY --from build /tmp/test.out /tmp/test.out
+RUN /tmp/test.out
 EOI
 
-# Build the testing container aiming to populate the volume
-docker build -t busybox/test.build -f Dockerfile.test.build .
-docker run --rm --mount type=volume,source=test,destination=/test busybox/test.build
+# create a multi stage build container to build an executable and run it
+docker build -t busybox/test -f Dockerfile.test .
 
-# run a metabarj0/builder container to compile the test file and create an executable in the volume
-docker run --rm --mount type=volume,source=test,destination=/test metabarj0/builder g++ -std=c++1z /test/test.cpp -o /test/test.out
+echo Testing the toolchain...
+docker run --rm busybox/test
+result=$?
 
-if [ $? != 0 ]; then
+# remove persistent stuff
+docker rmi busybox/test
+
+if [ $result != 0 ]; then
 cat << EOI
 --------------------------------------------------------------------------------
-Oops! Something went wrong during the build process. Please, contact the
-maintainer of this crappy project to get things fixed : troctsch.cpp@gmail.com.
+Oops! Something went wrong either during the build process or the produced
+binary file testing. Please, contact the maintainer of this crappy project to
+get things fixed : troctsch.cpp@gmail.com.
 Very sorry! :'(
 --------------------------------------------------------------------------------
 EOI
-  # remove persistent stuff
-  docker rmi busybox/test.build
-  docker volume rm test
-
   exit 1
 fi
-
-# remove test remainings that are persistent
-docker rmi busybox/test.build
-
-# a dockerfile to build a container for run testing of the produced binary
-cat << EOI > Dockerfile.test.run
-FROM busybox
-VOLUME [ "/test" ]
-CMD mv /test/test.out /tmp && \
-    /tmp/test.out
-EOI
-
-# Build the testing container aiming to execute the produced binary
-docker build -t busybox/test.run -f Dockerfile.test.run .
-
-echo Testing the produced testing binary file...
-docker run --rm --mount type=volume,source=test,destination=/test busybox/test.run
-
-if [ $? != 0 ]; then
-cat << EOI
---------------------------------------------------------------------------------
-Oops! Something went wrong during the testing of the produced binary. Please,
-contact the maintainer of this crappy project to get things fixed :
-troctsch.cpp@gmail.com.
-Very sorry! :'(
---------------------------------------------------------------------------------
-EOI
-  # remove persistent stuff
-  docker rmi busybox/test.run
-  docker volume rm test
-
-  exit 1
-fi
-
-# remove test remainings that are persistent
-docker rmi busybox/test.run
-docker volume rm test
