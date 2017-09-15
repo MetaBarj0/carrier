@@ -46,7 +46,7 @@ if [ ! $KERNEL_VERSION ]; then
 --------------------------------------------------------------------------------
 Hey! You didn't specify a version for the Linux kernel!
 Next time you'll start this container, specify the '-e' flag of the 'run'
-command for instance, 'docker run -e KERNEL_VERSION=4.12'. Note that only 4.x
+command for instance, 'docker run -e KERNEL_VERSION=4.12.12'. Note that only 4.x
 version are supported for now.
 Bye!
 --------------------------------------------------------------------------------
