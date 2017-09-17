@@ -137,10 +137,10 @@ EOI
 # a dockerfile to build a container for build testing and run testing
 cat << EOI > Dockerfile.test
 FROM metabarj0/builder as build
-COPY test.cpp" /tmp/
+COPY test.cpp /tmp/test.cpp
 RUN forward-command.sh g++ -std=c++1z /tmp/test.cpp -o /tmp/test.out
 FROM busybox as run
-COPY --from build /tmp/test.out /tmp/test.out
+COPY --from=build /tmp/test.out /tmp/test.out
 RUN /tmp/test.out
 EOI
 
@@ -151,8 +151,9 @@ echo Testing the toolchain...
 docker run --rm busybox/test
 result=$?
 
-# remove persistent stuff
+# remove persistent stuff and dangling images built from stages
 docker rmi busybox/test
+docker rmi $(docker images -q --filter 'dangling=true')
 
 if [ $result != 0 ]; then
 cat << EOI
