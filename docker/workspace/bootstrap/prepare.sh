@@ -107,7 +107,7 @@ xz -z9e -T 0 ${TARGET}.tar
 
 # grab docker files to create the gcc image
 for f in {Dockerfile,install.sh,forward-command.sh}; do
-  wget https://raw.githubusercontent.com/Metabarj0/scripts/master/docker/busybox_gcc/$f
+  wget https://raw.githubusercontent.com/Metabarj0/scripts/dev/docker/workspace/gcc/$f
 done
 chmod +x install.sh forward-command.sh
 
