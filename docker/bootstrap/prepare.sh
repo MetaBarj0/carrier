@@ -111,16 +111,16 @@ for f in {Dockerfile,install.sh,forward-command.sh}; do
 done
 chmod +x install.sh forward-command.sh
 
-# if an old metabarj0/builder repository exists, delete it
-REPOSITORY=$(docker images metabarj0/builder -q)
+# if an old metabarj0/gcc repository exists, delete it
+REPOSITORY=$(docker images metabarj0/gcc -q)
 
 if [ $REPOSITORY ]; then
   docker rmi $REPOSITORY
 fi
 
-# create the container builder, containing the gcc toolchain based on busybox and static musl
-echo Building metabarj0/builder image...
-docker build -t metabarj0/builder .
+# create the container gcc, containing the gcc toolchain based on busybox and static musl
+echo Building metabarj0/gcc image...
+docker build -t metabarj0/gcc .
 
 # the test source file
 cat << EOI > test.cpp
@@ -128,7 +128,7 @@ cat << EOI > test.cpp
 
 int main( int, char *[] )
 {
-  std::cout << "metabarj0/builder looks healthy!" << std::endl;
+  std::cout << "metabarj0/gcc looks healthy!" << std::endl;
 
   return 0;
 }
@@ -136,7 +136,7 @@ EOI
 
 # a dockerfile to build a container for build testing and run testing
 cat << EOI > Dockerfile.test
-FROM metabarj0/builder as build
+FROM metabarj0/gcc as build
 COPY test.cpp /tmp/test.cpp
 RUN forward-command.sh g++ -std=c++1z /tmp/test.cpp -o /tmp/test.out
 FROM busybox as run
