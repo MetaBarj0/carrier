@@ -54,6 +54,19 @@ EOI
   exit 1
 fi
 
+# get the version needed from environment, make
+if [ ! $MAKE_VERSION ]; then
+  cat << EOI
+--------------------------------------------------------------------------------
+Hey! You didn't specify a version for the 'make' utility!
+Next time you'll start this container, specify the '-e' flag of the 'run'
+command for instance, 'docker run -e MAKE_VERSION=4.2'.
+Bye!
+--------------------------------------------------------------------------------
+EOI
+  exit 1
+fi
+
 # update the system and install necessary packages
 pacman -Syu --noconfirm gcc make wget file git lzip docker
 
@@ -166,3 +179,13 @@ Very sorry! :'(
 EOI
   exit 1
 fi
+
+# creating a 'make' image
+echo 'Downloading make '$MAKE_VERSION'...'
+wget https://ftp.gnu.org/gnu/make/make-${MAKE_VERSION}.tar.bz2
+
+cat << EOI > Dockerfile.make
+FROM metabarj0/gcc as builder
+COPY make-${MAKE_VERSION}.tar.bz2 /tmp/
+RUN tar --directory /tmp -xf /tmp/make-${MAKE_VERSION}.tar.bz2 && rm /tmp/make-${MAKE_VERSION}.tar.bz2 && cd /tmp/make-${MAKE_VERSION} && mkdir build && cd build && ../configure --CC='forward-command.sh gcc' CFLAGS='-O3 -s' --build=amd64-linux-musl && ./build.sh && ./make install
+EOI
