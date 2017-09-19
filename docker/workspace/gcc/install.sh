@@ -11,6 +11,6 @@ tar -xf amd64-linux-musl.tar.xz --directory /usr/local/ && \
   rm /tmp/install.sh && \
   mv /tmp/forward-command.sh /usr/local/bin/
 
-for f in amd64-linux-musl-* do;
+for f in amd64-linux-musl-*; do
   ln -s $f $(echo $f | sed 's/amd64-linux-musl-//g')
 done
