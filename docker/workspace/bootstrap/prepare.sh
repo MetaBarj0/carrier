@@ -68,7 +68,7 @@ EOI
 fi
 
 # update the system and install necessary packages
-pacman -Syu --noconfirm gcc make wget file git lzip docker
+pacman -Syu --noconfirm --needed gcc make wget file git lzip docker
 
 TARGET=amd64-linux-musl
 
@@ -184,8 +184,28 @@ fi
 echo 'Downloading make '$MAKE_VERSION'...'
 wget https://ftp.gnu.org/gnu/make/make-${MAKE_VERSION}.tar.bz2
 
+cat << EOI > build-make.sh
+#!/bin/sh
+set -e
+cd /tmp
+tar -xf make-${MAKE_VERSION}.tar.bz2
+cd make-${MAKE_VERSION}
+mkdir build
+cd build
+../configure --prefix=/tmp/make-${MAKE_VERSION}/install CC='forward-command.sh gcc' CFLAGS='-O3 -s' --build='amd64-linux-musl'
+./build.sh
+./make install
+EOI
+
+chmod +x build-make.sh
+
 cat << EOI > Dockerfile.make
 FROM metabarj0/gcc as builder
-COPY make-${MAKE_VERSION}.tar.bz2 /tmp/
-RUN tar --directory /tmp -xf /tmp/make-${MAKE_VERSION}.tar.bz2 && rm /tmp/make-${MAKE_VERSION}.tar.bz2 && cd /tmp/make-${MAKE_VERSION} && mkdir build && cd build && ../configure --CC='forward-command.sh gcc' CFLAGS='-O3 -s' --build=amd64-linux-musl && ./build.sh && ./make install
+COPY make-${MAKE_VERSION}.tar.bz2 build-make.sh /tmp/
+RUN /tmp/build-make.sh
+FROM busybox
+COPY --from=builder /tmp/make-${MAKE_VERSION}/install/ /usr/local/
 EOI
+
+docker build -t metabarj0/make -f Dockerfile.make .
+docker rmi $(docker images -q --filter 'dangling=true')
