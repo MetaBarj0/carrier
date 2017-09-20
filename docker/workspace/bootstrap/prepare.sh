@@ -68,7 +68,7 @@ EOI
 fi
 
 # update the system and install necessary packages
-pacman -Syu --noconfirm --needed gcc make wget file git lzip docker
+pacman -Syu --noconfirm --needed gcc make wget file lzip docker unzip
 
 TARGET=amd64-linux-musl
 
@@ -209,3 +209,27 @@ EOI
 
 docker build -t metabarj0/make -f Dockerfile.make .
 docker rmi $(docker images -q --filter 'dangling=true')
+
+# last, create a minimal docker container
+cat << EOI > check.sh
+#!/bin/sh
+if [ ! -S /var/run/docker.sock ]; then
+  echo 'Oops! It looks like you did not bind-mounted the docker socket in this neat container!'
+  echo 'Next time you use the `docker run` command, do not forget to use the `-v` switch like :'
+  echo 'docker run --rm -v /var/run/docker.sock:/var/run/docker.sock'
+  echo 'for example...'
+  echo 'Bye!'
+fi
+exec $(echo "$@")
+EOI
+
+chmod +x check.sh
+
+cat << EOI > Dockerfile.docker
+FROM alpine
+RUN apk add --no-cache docker
+COPY check.sh /usr/local/bin
+ENTRYPOINT [ "/usr/local/bin/check.sh" ]
+EOI
+
+docker build -t metabarj0/docker -f Dockerfile.docker .
