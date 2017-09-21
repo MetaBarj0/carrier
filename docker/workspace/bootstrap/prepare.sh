@@ -153,6 +153,7 @@ FROM metabarj0/gcc as build
 COPY test.cpp /tmp/test.cpp
 RUN forward-command.sh g++ -std=c++1z /tmp/test.cpp -o /tmp/test.out
 FROM busybox as run
+MAINTAINER Metabarj0 <troctsch.cpp@gmail.com>
 COPY --from=build /tmp/test.out /tmp/test.out
 RUN /tmp/test.out
 EOI
@@ -204,6 +205,7 @@ FROM metabarj0/gcc as builder
 COPY make-${MAKE_VERSION}.tar.bz2 build-make.sh /tmp/
 RUN /tmp/build-make.sh
 FROM busybox
+MAINTAINER Metabarj0 <troctsch.cpp@gmail.com>
 COPY --from=builder /tmp/make-${MAKE_VERSION}/install/ /usr/local/
 EOI
 
@@ -227,6 +229,7 @@ chmod +x check.sh
 
 cat << EOI > Dockerfile.docker
 FROM alpine
+MAINTAINER Metabarj0 <troctsch.cpp@gmail.com>
 RUN apk add --no-cache docker
 COPY check.sh /usr/local/bin
 ENTRYPOINT [ "/usr/local/bin/check.sh" ]
