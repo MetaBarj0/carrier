@@ -217,7 +217,7 @@ cat << EOI > check.sh
 #!/bin/sh
 if [ ! -S /var/run/docker.sock ]; then
   echo 'Oops! It looks like you did not bind-mounted the docker socket in this neat container!'
-  echo 'Next time you use the `docker run` command, do not forget to use the `-v` switch like :'
+  echo 'Next time you use the 'docker run' command, do not forget to use the '-v' switch like :'
   echo 'docker run --rm -v /var/run/docker.sock:/var/run/docker.sock'
   echo 'for example...'
   echo 'Bye!'
