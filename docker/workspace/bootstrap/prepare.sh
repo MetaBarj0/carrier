@@ -223,6 +223,12 @@ if [ ! -S /var/run/docker.sock ]; then
   echo 'Bye!'
   exit 1
 fi
+
+# no argument provided, provide shell invocation
+if [ ! $1 ]; then
+ set -- /bin/sh "$@"
+fi
+
 exec $(echo "$@")
 EOI
 
