@@ -6,8 +6,8 @@ FROM metabarj0/gcc as gcc
 FROM metabarj0/make as make
 
 FROM busybox as ucl-build
-RUN chmod +x build.sh
 COPY build.sh /tmp/
+RUN chmod +x build.sh
 COPY --from=busybox /tmp/ucl-1.03.tar.gz /tmp/
 COPY --from=gcc /usr/local /usr/local/
 COPY --from=make /usr/local /usr/local/
