@@ -221,7 +221,14 @@ if [ ! -S /var/run/docker.sock ]; then
   echo 'docker run --rm -v /var/run/docker.sock:/var/run/docker.sock'
   echo 'for example...'
   echo 'Bye!'
+  exit 1
 fi
+
+# no argument provided, provide shell invocation
+if [ ! $1 ]; then
+ set -- /bin/sh "$@"
+fi
+
 exec $(echo "$@")
 EOI
 
