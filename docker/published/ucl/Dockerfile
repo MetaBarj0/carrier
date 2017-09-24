@@ -1,14 +1,13 @@
-FROM alpine as alpine
+FROM busybox as busybox
 WORKDIR /tmp
-RUN apk add --no-cache wget && \
-    wget http://www.oberhumer.com/opensource/ucl/download/ucl-1.03.tar.gz
+RUN wget http://www.oberhumer.com/opensource/ucl/download/ucl-1.03.tar.gz
 
 FROM metabarj0/gcc as gcc
 FROM metabarj0/make as make
 
 FROM busybox as ucl-build
 COPY build.sh /tmp/
-COPY --from=alpine /tmp/ucl-1.03.tar.gz /tmp/
+COPY --from=busybox /tmp/ucl-1.03.tar.gz /tmp/
 COPY --from=gcc /usr/local /usr/local/
 COPY --from=make /usr/local /usr/local/
 RUN /tmp/build.sh
