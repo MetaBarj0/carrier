@@ -56,7 +56,7 @@ echo "1/7 musl done."
 rm -rf build-binutils
 mkdir build-binutils
 cd build-binutils
-../binutils*/configure --prefix="$PREFIX" --target="$TARGET" --disable-bootstrap 1>/dev/null
+../binutils*/configure --prefix="$PREFIX" --target="$TARGET" --enable-gold=yes --disable-bootstrap 1>/dev/null
 make -j$WORKERS 1>/dev/null
 make install 1>/dev/null
 cd ..
@@ -67,7 +67,11 @@ echo "2/7 BINUTILS done."
 rm -rf build-gcc
 mkdir build-gcc
 cd build-gcc
-../gcc*/configure --prefix="$PREFIX" --target="$TARGET" --with-sysroot="$PREFIX" --disable-multilib --disable-libsanitizer --enable-languages=c,c++ 1>/dev/null
+../gcc*/configure \
+  --prefix="$PREFIX" --target="$TARGET" --enable-gold=yes --enable-lto \
+  --enable-lto \
+  --with-sysroot="$PREFIX" --disable-multilib --disable-libsanitizer \
+  --enable-languages=c,c++ 1>/dev/null
 make -j$WORKERS 1>/dev/null
 make install 1>/dev/null
 cd ..
@@ -112,7 +116,7 @@ echo "5/7 musl done."
 rm -rf build-binutils
 mkdir build-binutils
 cd build-binutils
-../binutils*/configure --prefix="$PREFIX" --target="$TARGET" --disable-bootstrap 1>/dev/null
+../binutils*/configure --prefix="$PREFIX" --target="$TARGET" --enable-gold=yes --disable-bootstrap 1>/dev/null
 make -j$WORKERS 1>/dev/null
 make install 1>/dev/null
 cd ..
@@ -123,7 +127,10 @@ echo "6/7 BINUTILS done."
 rm -rf build-gcc
 mkdir build-gcc
 cd build-gcc
-../gcc*/configure --prefix="$PREFIX" --target="$TARGET" --with-sysroot="$PREFIX" --disable-multilib --disable-libsanitizer --enable-languages=c,c++ --libexecdir="$PREFIX/lib" 1>/dev/null
+../gcc*/configure \
+  --prefix="$PREFIX" --target="$TARGET"  --enable-gold=yes --enable-lto \
+  --with-sysroot="$PREFIX" --disable-multilib --disable-libsanitizer \
+  --enable-languages=c,c++ --libexecdir="$PREFIX/lib" 1>/dev/null
 make -j$WORKERS 1>/dev/null
 make install 1>/dev/null
 cd ..
