@@ -13,7 +13,7 @@
 
 ## Create musl standalone(static) compiler : works with gcc-7.2.0
 ## Custom Optimizations
-OPT='-O3 -mtune=generic -fpic'
+OPT='-O3 -mtune=generic -fPIC'
 ## Number of threads
 WORKERS=4
 ## Arch short designation (amd64 not recognized by musl)
