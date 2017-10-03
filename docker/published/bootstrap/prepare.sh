@@ -93,7 +93,7 @@ wget http://www.musl-libc.org/releases/musl-1.1.16.tar.gz
 
 # grab the build script
 echo downloading the build script...
-wget https://raw.githubusercontent.com/MetaBarj0/scripts/master/shell/build-gcc-${GCC_VERSION}-musl.sh
+wget https://raw.githubusercontent.com/MetaBarj0/scripts/dev/shell/build-gcc-${GCC_VERSION}-musl.sh
 chmod +x build-gcc-${GCC_VERSION}-musl.sh
 
 # extract sources
