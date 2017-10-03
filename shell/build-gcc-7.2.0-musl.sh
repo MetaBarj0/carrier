@@ -45,7 +45,7 @@ cd ..
 rm -rf build-musl
 mkdir build-musl
 cd build-musl
-CROSS_COMPILE=" " ../musl*/configure --prefix="$PREFIX" --target="$ARCH" --disable-shared 1>/dev/null
+CROSS_COMPILE=" " ../musl*/configure --prefix="$PREFIX" --target="$ARCH" 1>/dev/null
 make -j$WORKERS 1>/dev/null
 make install 1>/dev/null
 cd ..
@@ -67,7 +67,7 @@ echo "2/7 BINUTILS done."
 rm -rf build-gcc
 mkdir build-gcc
 cd build-gcc
-../gcc*/configure --prefix="$PREFIX" --target="$TARGET" --with-sysroot="$PREFIX" --disable-multilib --disable-shared --disable-libsanitizer --enable-languages=c,c++ 1>/dev/null
+../gcc*/configure --prefix="$PREFIX" --target="$TARGET" --with-sysroot="$PREFIX" --disable-multilib --disable-libsanitizer --enable-languages=c,c++ 1>/dev/null
 make -j$WORKERS 1>/dev/null
 make install 1>/dev/null
 cd ..
@@ -101,7 +101,7 @@ cd ..
 rm -rf build-musl
 mkdir build-musl
 cd build-musl
-CROSS_COMPILE="$TARGET-" ../musl*/configure --prefix="$PREFIX" --target="$ARCH" --disable-shared --syslibdir="$PREFIX/lib" 1>/dev/null
+CROSS_COMPILE="$TARGET-" ../musl*/configure --prefix="$PREFIX" --target="$ARCH" --syslibdir="$PREFIX/lib" 1>/dev/null
 make -j$WORKERS 1>/dev/null
 make install 1>/dev/null
 cd ..
@@ -123,7 +123,7 @@ echo "6/7 BINUTILS done."
 rm -rf build-gcc
 mkdir build-gcc
 cd build-gcc
-../gcc*/configure --prefix="$PREFIX" --target="$TARGET" --with-sysroot="$PREFIX" --disable-multilib --disable-shared --disable-libsanitizer --enable-languages=c,c++ --libexecdir="$PREFIX/lib" 1>/dev/null
+../gcc*/configure --prefix="$PREFIX" --target="$TARGET" --with-sysroot="$PREFIX" --disable-multilib --disable-libsanitizer --enable-languages=c,c++ --libexecdir="$PREFIX/lib" 1>/dev/null
 make -j$WORKERS 1>/dev/null
 make install 1>/dev/null
 cd ..
