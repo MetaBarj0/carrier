@@ -68,7 +68,7 @@ EOI
 fi
 
 # update the system and install necessary packages
-pacman -Syu --noconfirm --needed gcc make wget file lzip docker unzip
+pacman -Syu --noconfirm --needed gcc make wget file lzip docker unzip bison
 
 TARGET=amd64-linux-musl
 

@@ -69,7 +69,6 @@ mkdir build-gcc
 cd build-gcc
 ../gcc*/configure \
   --prefix="$PREFIX" --target="$TARGET" --enable-gold=yes --enable-lto \
-  --enable-lto \
   --with-sysroot="$PREFIX" --disable-multilib --disable-libsanitizer \
   --enable-languages=c,c++ 1>/dev/null
 make -j$WORKERS 1>/dev/null
