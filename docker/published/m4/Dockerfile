@@ -9,6 +9,7 @@ FROM metabarj0/make as make
 FROM busybox as m4_build
 
 COPY --from=gcc /usr/local/ /usr/local/
+COPY --from=gcc /lib/ /lib/
 COPY --from=make /usr/local/ /usr/local/
 
 WORKDIR /tmp

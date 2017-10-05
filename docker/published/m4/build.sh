@@ -9,6 +9,6 @@ mkdir build && cd build
   --enable-c++ \
   CC='forward-command.sh gcc' \
   CXX='forward-command.sh g++' \
-  CFLAGS='-O3 -s' \
-  CXXFLAGS='-O3 -s'
+  CFLAGS='-O3 -s -static' \
+  CXXFLAGS='-O3 -s -static'
 make && make install
