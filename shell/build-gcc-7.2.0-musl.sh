@@ -11,9 +11,9 @@
 # Make sure that working directory does NOT contain anything except extracted source codes (No tarred archives, we will be using wildcards for directory names)
 # Go to extracted GCC source code and run ./contrib/download_prerequisites
 
-## Create musl standalone(static) compiler : works with gcc-7.2.0
+## Create musl standalone compiler : works with gcc-7.2.0
 ## Custom Optimizations
-OPT='-O3 -mtune=generic -fpic'
+OPT='-O3 -mtune=generic -fPIC'
 ## Number of threads
 WORKERS=4
 ## Arch short designation (amd64 not recognized by musl)
@@ -82,8 +82,8 @@ export CC="$TARGET-gcc"
 export CXX="$TARGET-g++"
 
 export PREFIX="`pwd`/$TARGET"
-export CFLAGS="$CFLAGS -static --sysroot="$PREFIX""
-export CXXFLAGS="$CXXFLAGS -static --sysroot="$PREFIX""
+export CFLAGS="$CFLAGS --sysroot="$PREFIX""
+export CXXFLAGS="$CXXFLAGS --sysroot="$PREFIX""
 
 ## Clean existing
 rm -rf "$PREFIX"
