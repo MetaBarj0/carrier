@@ -152,7 +152,7 @@ EOI
 cat << EOI > Dockerfile.test
 FROM metabarj0/gcc as build
 COPY test.cpp /tmp/test.cpp
-RUN forward-command.sh g++ -std=c++1z /tmp/test.cpp -o /tmp/test.out
+RUN forward-command.sh g++ -std=c++1z /tmp/test.cpp -O3 -s -static -o /tmp/test.out
 FROM busybox as run
 MAINTAINER Metabarj0 <troctsch.cpp@gmail.com>
 COPY --from=build /tmp/test.out /tmp/test.out
@@ -194,7 +194,7 @@ tar -xf make-${MAKE_VERSION}.tar.bz2
 cd make-${MAKE_VERSION}
 mkdir build
 cd build
-../configure --prefix=/tmp/make-${MAKE_VERSION}/install CC='forward-command.sh gcc' CFLAGS='-O3 -s' --build='amd64-linux-musl'
+../configure --prefix=/tmp/make-${MAKE_VERSION}/install CC='forward-command.sh gcc' CFLAGS='-O3 -s -static' --build='amd64-linux-musl'
 ./build.sh
 ./make install
 EOI
