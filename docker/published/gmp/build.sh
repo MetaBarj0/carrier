@@ -6,7 +6,7 @@ mkdir build && cd build
 ../configure \
   --prefix=/tmp/install \
   --enable-cxx=yes \
-  --enable-shared=no \
+  --enable-shared=yes \
   CC='forward-command.sh gcc' \
   CXX='forward-command.sh g++' \
   CFLAGS='-O3 -s' \

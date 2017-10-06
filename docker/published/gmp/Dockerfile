@@ -10,6 +10,7 @@ FROM metabarj0/m4 as m4
 FROM busybox as gmp_build
 
 COPY --from=gcc /usr/local/ /usr/local/
+COPY --from=gcc /lib/ /lib/
 COPY --from=make /usr/local/ /usr/local/
 COPY --from=m4 /usr/local/ /usr/local/
 
