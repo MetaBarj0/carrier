@@ -5,7 +5,7 @@ cd /tmp
 # move and cleanup libraries
 tar -xf amd64-linux-musl.tar.xz --directory / && \
   cp -P /usr/local/amd64-linux-musl/lib64/* /usr/local/amd64-linux-musl/lib/ && \
-  cp -P /usr/local/amd64-linux-musl/lib/* /usr/local/lib/ && \
+  cp -Pr /usr/local/amd64-linux-musl/lib/* /usr/local/lib/ && \
   rm -rf /usr/local/amd64-linux-musl/lib64 && \
   rm -rf /usr/local/amd64-linux-musl/lib && \
   rm /tmp/amd64-linux-musl.tar.xz && \
