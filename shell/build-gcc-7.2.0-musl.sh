@@ -81,7 +81,7 @@ echo "3/7 GCC done."
 export CC="$TARGET-gcc"
 export CXX="$TARGET-g++"
 
-export PREFIX="`pwd`/$TARGET"
+export PREFIX=/usr/local/
 export CFLAGS="$CFLAGS --sysroot="$PREFIX""
 export CXXFLAGS="$CXXFLAGS --sysroot="$PREFIX""
 
@@ -98,7 +98,7 @@ echo "4/7 LINUX headers done."
 ## Fix usr path
 cd "$PREFIX"
 ln -nfs . usr
-cd ..
+cd /tmp/$TARGET
 
 ## Build final musl
 rm -rf build-musl
@@ -135,15 +135,5 @@ make install 1>/dev/null
 cd ..
 rm -rf build-gcc
 
-## Move gcc include/lib to correct directories
-cd "$PREFIX/$TARGET"
-cp -rf include ..
-cp -rf lib ..
-cp -rf lib64/. ../lib
-rm -rf "$PREFIX/$TARGET"
-
 echo "7/7 GCC done."
-
-rm -rf "$PREFIX/../build-$TARGET"
-
 echo All done.
