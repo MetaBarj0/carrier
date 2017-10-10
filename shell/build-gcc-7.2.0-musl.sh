@@ -15,7 +15,7 @@
 ## Custom Optimizations
 OPT='-O3 -mtune=generic -fPIC'
 ## Number of threads
-WORKERS=4
+WORKERS=8
 ## Arch short designation (amd64 not recognized by musl)
 ARCH='x86_64'
 ## Arch full designation; must end with -musl 
