@@ -17,7 +17,9 @@ cp -P /usr/local/lib/ld-musl-x86_64.so.1 /lib/
 
 cd /usr/local/bin
 
-# create a bucn of handful aliases
+# create a bunch of handful aliases
 for f in amd64-linux-musl-*; do
-  ln -s $f $(echo $f | sed 's/amd64-linux-musl-//g')
+  if [ ! -f $f ]; then
+    ln -s $f $(echo $f | sed 's/amd64-linux-musl-//g')
+  fi
 done
