@@ -19,7 +19,8 @@ cd /usr/local/bin
 
 # create a bunch of handful aliases
 for f in amd64-linux-musl-*; do
-  if [ ! -f $f ]; then
-    ln -s $f $(echo $f | sed 's/amd64-linux-musl-//g')
+  target=$(echo $f | sed 's/amd64-linux-musl-//g')
+  if [ ! -f $target ]; then
+    ln -s $f $target
   fi
 done
