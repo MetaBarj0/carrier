@@ -14,8 +14,13 @@
 ## Create musl standalone compiler : works with gcc-7.2.0
 ## Custom Optimizations
 OPT='-O3 -mtune=generic -fPIC'
+
 ## Number of threads
-WORKERS=8
+WORKERS=$(wc -l <<< $(grep processor <<< $(cat /proc/cpuinfo)))
+if [ ! $WORKERS ]; then
+  WORKERS=1;
+fi
+
 ## Arch short designation (amd64 not recognized by musl)
 ARCH='x86_64'
 ## Arch full designation; must end with -musl 
