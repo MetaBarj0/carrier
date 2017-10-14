@@ -11,3 +11,7 @@ CFLAGS='-O3 -s' \
 JOBS=$(cat /proc/cpuinfo | grep processor | wc -l)
 
 make -j $JOBS && make install
+
+# relocate installed libraries
+find /tmp/install/lib -type f -name '*.la' -exec \
+  sed -i'' 's/\/tmp\/install\//\/usr\/local\//g' {} \;

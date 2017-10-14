@@ -1,18 +1,18 @@
 #!/bin/sh
-tar -xf gmp-6.1.2.tar.xz
-cd gmp-6.1.2
+tar -xf isl-0.18.tar.xz
+cd isl-0.18
 mkdir build && cd build
 
 ../configure \
   --prefix=/tmp/install \
-  --enable-cxx=yes \
   CFLAGS='-O3 -s' \
-  CXXFLAGS='-O3 -s'
+  CXXFLAGS='-O3 -s' \
+  LDFLAGS='-Wl,-rpath,/usr/local/lib/,-rpath-link,/usr/local/lib/'
 
 # Calculates the optimal job count
 JOBS=$(cat /proc/cpuinfo | grep processor | wc -l)
 
-make -j $JOBS && make -j $JOBS check && make install
+make -j $JOBS && make install
 
 # relocate installed libraries
 find /tmp/install/lib -type f -name '*.la' -exec \
