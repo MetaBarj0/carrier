@@ -14,7 +14,7 @@ if [ ! -z "$images" ]; then
     # the container is created, export it as a new image having the same
     # repository of the source one, removing all of its history. Finally,
     # delete the created container
-    cid=$(docker create $image sh)
+    cid=$(docker create $image)
     docker export $cid | docker import - $image
     docker rm $cid
   done
