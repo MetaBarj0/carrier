@@ -1,0 +1,55 @@
+# fetching sources using a prebuilt wget from alpine, wget in busybox will be
+# built later
+FROM alpine as wget_fetch
+RUN apk add --no-cache wget
+WORKDIR /tmp
+RUN wget --no-check-certificate https://ftp.gnu.org/gnu/wget/wget-1.19.tar.xz
+
+# intermediate stage to get toolchain files for the build. Using an intermediate
+# tarball to keep symlinks and don't follow them
+FROM metabarj0/gcc as gcc
+RUN tar -cf /tmp/gcc.tar /usr/local/ /lib/
+FROM metabarj0/make as make
+RUN tar -cf /tmp/make.tar /usr/local/
+FROM metabarj0/nettle as nettle
+RUN tar -cf /tmp/nettle.tar /usr/local/lib/
+FROM metabarj0/gmp as gmp
+RUN tar -cf /tmp/gmp.tar /usr/local/lib/
+FROM metabarj0/gnutls as gnutls
+RUN tar -cf /tmp/gnutls.tar /usr/local/
+
+# intermediate build stage
+FROM busybox as wget_build
+
+# copy and extract tarballs
+COPY --from=gcc /tmp/gcc.tar /tmp/
+RUN  tar --directory / -xf /tmp/gcc.tar && \
+  rm /tmp/gcc.tar
+COPY --from=make /tmp/make.tar /tmp/
+RUN  tar --directory / -xf /tmp/make.tar && \
+  rm /tmp/make.tar
+COPY --from=nettle /tmp/nettle.tar /tmp/
+RUN  tar --directory / -xf /tmp/nettle.tar && \
+  rm /tmp/nettle.tar
+COPY --from=gmp /tmp/gmp.tar /tmp/
+RUN  tar --directory / -xf /tmp/gmp.tar && \
+  rm /tmp/gmp.tar
+COPY --from=gnutls /tmp/gnutls.tar /tmp/
+RUN  tar --directory / -xf /tmp/gnutls.tar && \
+  rm /tmp/gnutls.tar
+
+# copy sources and build script then, execute the build script
+WORKDIR /tmp
+COPY --from=wget_fetch /tmp/wget-1.19.tar.xz .
+COPY build.sh .
+RUN ./build.sh
+
+# final stage, copy the result in a busybox image
+FROM busybox as wget
+COPY --from=wget_build /tmp/install/ /usr/local/
+COPY --from=gcc /lib/ /lib/
+COPY --from=gcc /usr/local/lib/libc.so /usr/local/lib/
+COPY --from=nettle /usr/local/lib /usr/local/lib
+COPY --from=gmp /usr/local/ /usr/local/
+COPY --from=gnutls /usr/local/lib/ /usr/local/lib/
+LABEL maintainer="metabarj0 <troctsch.cpp@gmail.com>"
