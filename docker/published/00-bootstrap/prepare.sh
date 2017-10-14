@@ -136,7 +136,7 @@ fi
 
 # create the container gcc, containing the gcc toolchain based on busybox and static musl
 echo Building metabarj0/gcc image...
-docker build -t metabarj0/gcc .
+docker build --squash -t metabarj0/gcc .
 
 # the test source file
 cat << EOI > test.cpp
@@ -162,7 +162,7 @@ RUN /tmp/test.out
 EOI
 
 # create a multi stage build container to build an executable and run it
-docker build -t busybox/test -f Dockerfile.test .
+docker build --squash -t busybox/test -f Dockerfile.test .
 
 echo Testing the toolchain...
 docker run --rm busybox/test
@@ -219,7 +219,7 @@ if [ $REPOSITORY ]; then
   docker rmi $REPOSITORY
 fi
 
-docker build -t metabarj0/make -f Dockerfile.make .
+docker build --squash -t metabarj0/make -f Dockerfile.make .
 
 # last, create a minimal docker container
 cat << EOI > check.sh
@@ -258,7 +258,7 @@ if [ $REPOSITORY ]; then
   docker rmi $REPOSITORY
 fi
 
-docker build -t metabarj0/docker-ancillary -f Dockerfile.docker .
+docker build --squash -t metabarj0/docker-ancillary -f Dockerfile.docker .
 
 # removing dangling images
 docker rmi $(docker images -q --filter 'dangling=true')
