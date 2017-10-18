@@ -10,6 +10,8 @@ FROM metabarj0/gcc as gcc
 RUN tar -cf /tmp/gcc.tar /usr/local/ /lib/
 FROM metabarj0/make as make
 RUN tar -cf /tmp/make.tar /usr/local/
+FROM metabarj0/ncurses as ncurses
+RUN tar -cf /tmp/ncurses.tar /usr/local/
 
 # intermediate build stage
 FROM busybox as cmake_build
@@ -21,6 +23,9 @@ RUN  tar --directory / -xf /tmp/gcc.tar && \
 COPY --from=make /tmp/make.tar /tmp/
 RUN  tar --directory / -xf /tmp/make.tar && \
   rm /tmp/make.tar
+COPY --from=ncurses /tmp/ncurses.tar /tmp/
+RUN  tar --directory / -xf /tmp/ncurses.tar && \
+  rm /tmp/ncurses.tar
 
 # copy sources and build script then, execute the build script
 WORKDIR /tmp
@@ -31,8 +36,29 @@ RUN ./build.sh
 # final stage, copy the result in a busybox image
 FROM busybox as cmake
 COPY --from=cmake_build /tmp/install/ /usr/local/
-COPY --from=gcc /usr/local/lib/libc.so /usr/local/lib/
-COPY --from=gcc /usr/local/lib/libgcc_s.so.1 /usr/local/lib/
-COPY --from=gcc /usr/local/lib/libstdc++.so.6 /usr/local/lib/
-COPY --from=gcc /lib/ /lib/
+# grab libraries from gcc.
+COPY --from=gcc /tmp/gcc.tar /tmp/
+
+# grab libraries from ncurses.
+COPY --from=ncurses /tmp/ncurses.tar /tmp/
+
+# because of poor tar implementation in busybox, especially about
+# wildcard support, need to do this awful hack
+RUN tar --directory / -xf /tmp/gcc.tar \
+        lib/ \
+        usr/local/lib/libc.so && \
+    tar --directory / -xf /tmp/gcc.tar \
+        $(tar --list -f /tmp/gcc.tar | grep -E 'libgcc_s\.so.*') && \
+    tar --directory / -xf /tmp/gcc.tar \
+        $(tar --list -f /tmp/gcc.tar | grep -E 'libstdc\+\+\.so.*') && \
+    rm -rf /tmp/gcc.tar
+
+RUN tar --directory / -xf /tmp/ncurses.tar \
+        usr/local/share/terminfo && \
+    tar --directory / -xf /tmp/ncurses.tar \
+        $(tar --list -f /tmp/gcc.tar | grep -E 'libncurses\.so.*') && \
+    rm -rf /tmp/ncurses.tar
+
+ENV TERMINFO /usr/local/share/terminfo
+
 LABEL maintainer="metabarj0 <troctsch.cpp@gmail.com>"

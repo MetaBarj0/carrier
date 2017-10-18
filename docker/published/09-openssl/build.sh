@@ -16,3 +16,7 @@ make -j $JOBS && make test && make install
 
 # remove an unneeded perl script
 rm /tmp/install/bin/c_rehash
+
+# relocate installed libraries
+find /tmp/install/lib -type f -name '*.la' -exec \
+  sed -i'' 's/\/tmp\/install\//\/usr\/local\//g' {} \;

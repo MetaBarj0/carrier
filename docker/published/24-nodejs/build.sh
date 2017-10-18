@@ -22,7 +22,3 @@ make -j $JOBS && make install
 # the shabang is not cool in npm and npx
 sed -i'' 's/#!.*/#!\/usr\/local\/bin\/node/' /tmp/install/lib/node_modules/npm/bin/npm-cli.js
 sed -i'' 's/#!.*/#!\/usr\/local\/bin\/node/' /tmp/install/lib/node_modules/npm/bin/npx-cli.js
-
-# relocate installed libraries
-find /tmp/install/lib -type f -name '*.la' -exec \
-  sed -i'' 's/\/tmp\/install\//\/usr\/local\//g' {} \;

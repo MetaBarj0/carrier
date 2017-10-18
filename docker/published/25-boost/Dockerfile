@@ -54,9 +54,9 @@ RUN tar --directory / -xf /tmp/gcc.tar \
         lib/ \
         usr/local/lib/libc.so && \
     tar --directory / -xf /tmp/gcc.tar \
-        $(tar --list -f /tmp/gcc.tar | grep libgcc_s.so*) && \
+        $(tar --list -f /tmp/gcc.tar | grep -E 'libgcc_s\.so.*') && \
     tar --directory / -xf /tmp/gcc.tar \
-        $(tar --list -f /tmp/gcc.tar | grep libstdc++.so*) && \
+        $(tar --list -f /tmp/gcc.tar | grep -E 'libstdc\+\+\.so.*') && \
     rm -rf /tmp/gcc.tar
 
 LABEL maintainer="metabarj0 <troctsch.cpp@gmail.com>"
