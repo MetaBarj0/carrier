@@ -26,7 +26,8 @@ ARCH='x86_64'
 ## Arch full designation; must end with -musl 
 TARGET='amd64-linux-musl'
 
-## End of user defined variables
+cd /tmp/$TARGET
+
 export PREFIX="$(pwd)/build-$TARGET"
 export CFLAGS="$OPT -w -s"
 export CXXFLAGS="$OPT -w -s"
@@ -103,6 +104,8 @@ echo "4/7 LINUX headers done."
 ## Fix usr path
 cd "$PREFIX"
 ln -nfs . usr
+
+# return to entrypoint directory
 cd /tmp/$TARGET
 
 ## Build final musl

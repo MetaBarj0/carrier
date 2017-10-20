@@ -92,11 +92,6 @@ wget https://ftp.gnu.org/gnu/linux-libre/4.x/${KERNEL_VERSION}-gnu/linux-libre-$
 echo downloading musl-libc-1.1.16 sources...
 wget http://www.musl-libc.org/releases/musl-1.1.16.tar.gz
 
-# grab the build script
-echo downloading the build script...
-wget https://raw.githubusercontent.com/MetaBarj0/scripts/dev/shell/build-gcc-${GCC_VERSION}-musl.sh
-chmod +x build-gcc-${GCC_VERSION}-musl.sh
-
 # extract sources
 lzip -d linux-libre-${KERNEL_VERSION}-gnu.tar.lz
 find . -maxdepth 1 -type f ! -name '*.sh' ! -exec tar -xf {} \;
@@ -106,26 +101,34 @@ rm -f *.tar*
 cd gcc-${GCC_VERSION}
 ./contrib/download_prerequisites
 
-cd ..
-
 # build the toolchain!
-./build-gcc-${GCC_VERSION}-musl.sh
+if [ ! -f /tmp/build-gcc-${GCC_VERSION}-musl.sh ]; then
+  echo 'Sorry, the gcc version you requested in not (yet) supported.'
+  echo 'Please, send an email to the maintainer of the project to ask'
+  echo 'for a support for this specific version. If he is in a good mood'
+  echo 'you could obtain what you are looking for!'
+  echo '<troctsch.cpp@gmail.com>'
+  echo 'Bye!'
+  exit 1
+fi
+
+cp /tmp/build-gcc-${GCC_VERSION}-musl.sh /tmp/$TARGET/build-gcc-${GCC_VERSION}-musl.sh
+/tmp/$TARGET/build-gcc-${GCC_VERSION}-musl.sh
 
 # do some cleanup
 rm -rf /tmp/${TARGET}
 cd /tmp
+
+# fixing path in *.la files targeting the tmp build directory
+for f in $(find /usr/local -name '*.la' -exec grep -H tmp {} \; | sed 's/:.*$//g'); do
+  sed -i'' 's/\/tmp\/amd64-linux-musl\/build-amd64-linux-musl/\/usr\/local/g'
+done
 
 echo packing the toolchain...
 PREFIX=/usr/local/
 tar -cf ${TARGET}.tar $PREFIX
 xz -z9e -T 0 ${TARGET}.tar
 rm -rf $PREFIX
-
-# grab docker files to create the gcc image
-for f in {Dockerfile,install.sh}; do
-  wget https://raw.githubusercontent.com/Metabarj0/scripts/dev/docker/workspace/gcc/$f
-done
-chmod +x install.sh
 
 # if an old metabarj0/gcc repository exists, delete it
 REPOSITORY=$(docker images metabarj0/gcc -q)
@@ -136,17 +139,22 @@ fi
 
 # create the container gcc, containing the gcc toolchain based on busybox and static musl
 echo Building metabarj0/gcc image...
-docker build --squash -t metabarj0/gcc .
+docker build --squash -t metabarj0/gcc -f Dockerfile.gcc .
 
 # the test source file
 cat << EOI > test.cpp
 #include <iostream>
 
+// c++17 feature
+namespace a::very::nested::one {}
+
 int main( int, char *[] )
 {
-  std::cout << "metabarj0/gcc looks healthy!" << std::endl;
+  // c++11 feature
+  std::cout << R"_(metabarj0/gcc looks healthy!)_" << std::endl;
 
-  return 0;
+  // c++14 feature
+  return ( []( auto ){ return 0; } )( 42 );
 }
 EOI
 
@@ -156,7 +164,6 @@ FROM metabarj0/gcc as build
 COPY test.cpp /tmp/test.cpp
 RUN g++ -std=c++1z /tmp/test.cpp -O3 -s -static -o /tmp/test.out
 FROM busybox as run
-MAINTAINER Metabarj0 <troctsch.cpp@gmail.com>
 COPY --from=build /tmp/test.out /tmp/test.out
 RUN /tmp/test.out
 EOI
@@ -170,7 +177,7 @@ result=$?
 
 # remove persistent stuff and dangling images built from stages
 docker rmi busybox/test
-docker rmi $(docker images -q --filter 'dangling=true')
+docker image prune -f
 
 if [ $result != 0 ]; then
 cat << EOI
@@ -208,7 +215,6 @@ FROM metabarj0/gcc as builder
 COPY make-${MAKE_VERSION}.tar.bz2 build-make.sh /tmp/
 RUN /tmp/build-make.sh
 FROM busybox
-MAINTAINER Metabarj0 <troctsch.cpp@gmail.com>
 COPY --from=builder /tmp/make-${MAKE_VERSION}/install/ /usr/local/
 EOI
 
@@ -221,7 +227,7 @@ fi
 
 docker build --squash -t metabarj0/make -f Dockerfile.make .
 
-# last, create a minimal docker container
+# last, create a simplistic docker container
 cat << EOI > check.sh
 #!/bin/sh
 if [ ! -S /var/run/docker.sock ]; then
@@ -261,4 +267,4 @@ fi
 docker build --squash -t metabarj0/docker-ancillary -f Dockerfile.docker .
 
 # removing dangling images
-docker rmi $(docker images -q --filter 'dangling=true')
+docker image prune -f
