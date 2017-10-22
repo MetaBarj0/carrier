@@ -1,16 +1,22 @@
 #!/bin/sh
-tar -xf gnutls-3.1.5.tar.xz
-cd gnutls-3.1.5
+tar -xf openssh-7.6p1.tar.gz
+cd openssh-7.6p1
 mkdir build && cd build
 
 ../configure \
-  --prefix=/tmp/install \
   CFLAGS='-O3 -s' \
-  CXXFLAGS='-O3 -s' \
-  LDFLAGS='-Wl,-rpath,/usr/local/amd64-linux-musl/lib64/,-rpath-link,/usr/local/amd64-linux-musl/lib64/,-rpath,/usr/local/lib/,-rpath-link,/usr/local/lib/'
+  LDFLAGS='-Wl,-rpath,/usr/local/lib/,-rpath-link,/usr/local/lib/' \
+  --prefix=/tmp/install
 
 # Calculates the optimal job count
 JOBS=$(cat /proc/cpuinfo | grep processor | wc -l)
+
+# add a privilege speparation user and group
+addgroup sshd
+adduser -D -H -G sshd sshd
+
+# explicitely add this directory to prevent an install error
+mkdir -p /tmp/install/lib
 
 make -j $JOBS && make install
 

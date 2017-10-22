@@ -7,7 +7,7 @@ mkdir build && cd build
   --prefix=/tmp/install \
   --enable-cxx=yes \
   CFLAGS='-O3 -s' \
-  CXXFLAGS='-O3 -s'
+  CXXFLAGS='-O3 -s -Wl,-rpath,/usr/local/amd64-linux-musl/lib64,-rpath-link,/usr/local/amd64-linux-musl/lib64'
 
 # Calculates the optimal job count
 JOBS=$(cat /proc/cpuinfo | grep processor | wc -l)

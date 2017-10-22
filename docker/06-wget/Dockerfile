@@ -12,7 +12,7 @@ RUN tar -cf /tmp/gcc.tar /usr/local/ /lib/
 FROM metabarj0/make as make
 RUN tar -cf /tmp/make.tar /usr/local/
 FROM metabarj0/nettle as nettle
-RUN tar -cf /tmp/nettle.tar /usr/local/lib/
+RUN tar -cf /tmp/nettle.tar /usr/local/
 FROM metabarj0/gmp as gmp
 RUN tar -cf /tmp/gmp.tar /usr/local/lib/
 FROM metabarj0/gnutls as gnutls
@@ -46,10 +46,27 @@ RUN ./build.sh
 
 # final stage, copy the result in a busybox image
 FROM busybox as wget
+
 COPY --from=wget_build /tmp/install/ /usr/local/
-COPY --from=gcc /lib/ /lib/
-COPY --from=gcc /usr/local/lib/libc.so /usr/local/lib/
-COPY --from=nettle /usr/local/lib /usr/local/lib
-COPY --from=gmp /usr/local/ /usr/local/
-COPY --from=gnutls /usr/local/lib/ /usr/local/lib/
+COPY --from=gcc /tmp/gcc.tar /tmp/
+COPY --from=gmp /tmp/gmp.tar /tmp/
+COPY --from=nettle /tmp/nettle.tar /tmp/
+COPY --from=gnutls /tmp/gnutls.tar /tmp/
+
+RUN tar --directory / -xf /tmp/gcc.tar \
+        lib/ \
+        usr/local/lib/libc.so && \
+    rm -rf /tmp/gcc.tar
+RUN tar --directory / -xf /tmp/gmp.tar \
+        $(tar --list -f /tmp/gmp.tar | grep -E 'libgmp\.so.*') && \
+    rm -rf /tmp/gmp.tar
+RUN tar --directory / -xf /tmp/nettle.tar \
+        $(tar --list -f /tmp/nettle.tar | grep -E 'libnettle\.so.*') && \
+    tar --directory / -xf /tmp/nettle.tar \
+        $(tar --list -f /tmp/nettle.tar | grep -E 'libhogweed\.so.*') && \
+    rm -rf /tmp/nettle.tar
+RUN tar --directory / -xf /tmp/gnutls.tar \
+        $(tar --list -f /tmp/gnutls.tar | grep -E 'libgnutls\.so.*') && \
+    rm -rf /tmp/gnutls.tar
+
 LABEL maintainer="metabarj0 <troctsch.cpp@gmail.com>"

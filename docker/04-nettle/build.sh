@@ -4,8 +4,8 @@ cd nettle-2.5
 mkdir build && cd build
 ../configure \
   --prefix=/tmp/install \
-  CFLAGS='-O3 -s -static'
-  CXXFLAGS='-O3 -s -static'
+  CFLAGS='-O3 -s'
+  CXXFLAGS='-O3 -s'
 
 # Calculates the optimal job count
 JOBS=$(cat /proc/cpuinfo | grep processor | wc -l)

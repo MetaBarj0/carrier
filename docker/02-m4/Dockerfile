@@ -32,5 +32,7 @@ RUN ./build.sh
 
 # final stage, copy the result in a busybox image
 FROM busybox as m4
-LABEL maintainer="metabarj0 <troctsch.cpp@gmail.com>"
 COPY --from=m4_build /tmp/install/ /usr/local
+COPY --from=gcc /usr/local/lib/libc.so /usr/local/lib/
+COPY --from=gcc /lib/ /lib/
+LABEL maintainer="metabarj0 <troctsch.cpp@gmail.com>"

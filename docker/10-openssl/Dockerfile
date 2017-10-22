@@ -1,8 +1,8 @@
 # fetching sources using a prebuilt wget from alpine, wget in busybox will be
 # built later
-FROM metabarj0/wget as zlib_fetch
+FROM metabarj0/wget as openssl_fetch
 WORKDIR /tmp
-RUN wget --no-check-certificate https://zlib.net/zlib-1.2.11.tar.xz
+RUN wget --no-check-certificate https://ftp.openssl.org/source/openssl-1.0.2l.tar.gz
 
 # intermediate stage to get toolchain files for the build. Using an intermediate
 # tarball to keep symlinks and don't follow them
@@ -10,9 +10,12 @@ FROM metabarj0/gcc as gcc
 RUN tar -cf /tmp/gcc.tar /usr/local/ /lib/
 FROM metabarj0/make as make
 RUN tar -cf /tmp/make.tar /usr/local/
+FROM metabarj0/zlib as zlib
+RUN tar -cf /tmp/zlib.tar /usr/local/
 
 # intermediate build stage
-FROM busybox as zlib_build
+FROM alpine as openssl_build
+RUN apk add --no-cache perl
 
 # copy and extract tarballs
 COPY --from=gcc /tmp/gcc.tar /tmp/
@@ -21,22 +24,30 @@ RUN  tar --directory / -xf /tmp/gcc.tar && \
 COPY --from=make /tmp/make.tar /tmp/
 RUN  tar --directory / -xf /tmp/make.tar && \
   rm /tmp/make.tar
+COPY --from=zlib /tmp/zlib.tar /tmp/
+RUN  tar --directory / -xf /tmp/zlib.tar && \
+  rm /tmp/zlib.tar
 
 # copy sources and build script then, execute the build script
 WORKDIR /tmp
-COPY --from=zlib_fetch /tmp/zlib-1.2.11.tar.xz .
+COPY --from=openssl_fetch /tmp/openssl-1.0.2l.tar.gz .
 COPY build.sh .
 RUN ./build.sh
 
 # final stage, copy the result in a busybox image
-FROM busybox as zlib
+FROM busybox as openssl
 
-COPY --from=zlib_build /tmp/install/ /usr/local
+COPY --from=openssl_build /tmp/install/ /usr/local/
+COPY --from=openssl_build /usr/local/ssl/ /usr/local/ssl/
 COPY --from=gcc /tmp/gcc.tar /tmp/
+COPY --from=zlib /tmp/zlib.tar /tmp/
 
 RUN tar --directory / -xf /tmp/gcc.tar \
         lib/ \
         usr/local/lib/libc.so && \
     rm -rf /tmp/gcc.tar
+RUN tar --directory / -xf /tmp/zlib.tar \
+        $(tar --list -f /tmp/zlib.tar | grep -E 'libz\.so.*') && \
+    rm -rf /tmp/zlib.tar
 
 LABEL maintainer="metabarj0 <troctsch.cpp@gmail.com>"

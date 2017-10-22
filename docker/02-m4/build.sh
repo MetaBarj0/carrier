@@ -7,8 +7,8 @@ mkdir build && cd build
   --prefix=/tmp/install \
   --enable-threads=posix \
   --enable-c++ \
-  CFLAGS='-O3 -s -static' \
-  CXXFLAGS='-O3 -s -static'
+  CFLAGS='-O3 -s' \
+  CXXFLAGS='-O3 -s'
 
 # Calculates the optimal job count
 JOBS=$(cat /proc/cpuinfo | grep processor | wc -l)

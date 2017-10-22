@@ -1,45 +1,41 @@
-# fetching sources using a prebuilt wget from alpine, wget in busybox will be
-# built later
-FROM alpine as gmp_fetch
-RUN apk add --no-cache wget
+FROM metabarj0/wget as upx_fetch
 WORKDIR /tmp
-RUN wget --no-check-certificate https://ftp.gnu.org/gnu/gmp/gmp-6.1.2.tar.xz
+RUN wget --no-check-certificate https://github.com/metabarj0/symmetrical-barnacle/raw/master/upx/master/20170925/upx-master.tar.xz
 
-# intermediate stage to get toolchain files for the build. Using an intermediate
-# tarball to keep symlinks and don't follow them
 FROM metabarj0/gcc as gcc
 RUN tar -cf /tmp/gcc.tar /usr/local/ /lib/
 FROM metabarj0/make as make
 RUN tar -cf /tmp/make.tar /usr/local/
-FROM metabarj0/m4 as m4
-RUN tar -cf /tmp/m4.tar /usr/local/
+FROM metabarj0/ucl as ucl
+RUN tar -cf /tmp/ucl.tar /usr/local/
+FROM metabarj0/zlib as zlib
+RUN tar -cf /tmp/zlib.tar /usr/local/
 
-# intermediate build stage
-FROM busybox as gmp_build
-
-# copy and extract tarballs
+FROM busybox as upx_build
 COPY --from=gcc /tmp/gcc.tar /tmp/
 RUN  tar --directory / -xf /tmp/gcc.tar && \
   rm /tmp/gcc.tar
-
 COPY --from=make /tmp/make.tar /tmp/
 RUN  tar --directory / -xf /tmp/make.tar && \
   rm /tmp/make.tar
+COPY --from=ucl /tmp/ucl.tar /tmp/
+RUN  tar --directory / -xf /tmp/ucl.tar && \
+  rm /tmp/ucl.tar
+COPY --from=zlib /tmp/zlib.tar /tmp/
+RUN  tar --directory / -xf /tmp/zlib.tar && \
+  rm /tmp/zlib.tar
 
-COPY --from=m4 /tmp/m4.tar /tmp/
-RUN  tar --directory / -xf /tmp/m4.tar && \
-  rm /tmp/m4.tar
-
-# copy sources and build script then, execute the build script
 WORKDIR /tmp
-COPY --from=gmp_fetch /tmp/gmp-6.1.2.tar.xz .
+COPY --from=upx_fetch /tmp/upx-master.tar.xz .
 COPY build.sh .
 RUN ./build.sh
 
-# final stage, copy the result in a busybox image
-FROM busybox as gmp
+FROM busybox as upx
+
+COPY --from=upx_build /tmp/install/ /usr/local/
 COPY --from=gcc /tmp/gcc.tar /tmp/
-COPY --from=gmp_build /tmp/install/ /usr/local/
+COPY --from=zlib /tmp/zlib.tar /tmp/
+
 RUN tar --directory / -xf /tmp/gcc.tar \
         lib/ \
         usr/local/lib/libc.so && \
@@ -48,4 +44,8 @@ RUN tar --directory / -xf /tmp/gcc.tar \
     tar --directory / -xf /tmp/gcc.tar \
         $(tar --list -f /tmp/gcc.tar | grep -E 'libstdc\+\+\.so.*') && \
     rm -rf /tmp/gcc.tar
+RUN tar --directory / -xf /tmp/zlib.tar \
+        $(tar --list -f /tmp/zlib.tar | grep -E 'libz\.so.*') && \
+    rm -rf /tmp/zlib.tar
+
 LABEL maintainer="metabarj0 <troctsch.cpp@gmail.com>"
