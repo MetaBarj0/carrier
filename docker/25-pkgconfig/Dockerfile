@@ -1,9 +1,8 @@
 # fetching sources using a prebuilt wget from alpine, wget in busybox will be
 # built later
-FROM alpine as m4_fetch
-RUN apk add --no-cache wget
+FROM metabarj0/wget as pkgconfig_fetch
 WORKDIR /tmp
-RUN wget --no-check-certificate https://ftp.gnu.org/gnu/m4/m4-1.4.18.tar.xz
+RUN wget --no-check-certificate https://pkgconfig.freedesktop.org/releases/pkg-config-0.29.2.tar.gz
 
 # intermediate stage to get toolchain files for the build. Using an intermediate
 # tarball to keep symlinks and don't follow them
@@ -13,7 +12,7 @@ FROM metabarj0/make as make
 RUN tar -cf /tmp/make.tar /usr/local/
 
 # intermediate build stage
-FROM busybox as m4_build
+FROM busybox as pkgconfig_build
 
 # copy and extract tarballs
 COPY --from=gcc /tmp/gcc.tar /tmp/
@@ -26,14 +25,14 @@ RUN  tar --directory / -xf /tmp/make.tar && \
 
 # copy sources and build script then, execute the build script
 WORKDIR /tmp
-COPY --from=m4_fetch /tmp/m4-1.4.18.tar.xz .
+COPY --from=pkgconfig_fetch /tmp/pkg-config-0.29.2.tar.gz .
 COPY build.sh .
 RUN ./build.sh
 
 # final stage, copy the result in a busybox image
-FROM busybox as m4
+FROM busybox as pkgconfig
 
-COPY --from=m4_build /tmp/install/ /usr/local
+COPY --from=pkgconfig_build /tmp/install/ /usr/local
 COPY --from=gcc /tmp/gcc.tar /tmp/
 
 RUN tar --directory / -xf /tmp/gcc.tar \
