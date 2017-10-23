@@ -33,9 +33,13 @@ COPY --from=expat /tmp/expat.tar /tmp/
 RUN  tar --directory / -xf /tmp/expat.tar && \
   rm /tmp/expat.tar
 
-copy --from=openssl /tmp/openssl.tar /tmp/
-run  tar --directory / -xf /tmp/openssl.tar && \
+COPY --from=openssl /tmp/openssl.tar /tmp/
+RUN  tar --directory / -xf /tmp/openssl.tar && \
   rm /tmp/openssl.tar
+
+COPY --from=zlib /tmp/zlib.tar /tmp/
+RUN  tar --directory / -xf /tmp/zlib.tar && \
+  rm /tmp/zlib.tar
 
 # copy sources and build script then, execute the build script
 WORKDIR /tmp

@@ -20,3 +20,11 @@ make -j $JOBS && make install
 # relocate installed libraries
 find /tmp/install/lib -type f -name '*.la' -exec \
   sed -i'' 's/\/tmp\/install\//\/usr\/local\//g' {} \;
+
+# fix prefix in pkgconfig files
+sed -i'' -r 's/^prefix\s*=.*/prefix=\/usr\/local/g' /tmp/install/lib/pkgconfig/icu-i18n.pc
+sed -i'' -r 's/^prefix\s*=.*/prefix=\/usr\/local/g' /tmp/install/lib/pkgconfig/icu-io.pc
+sed -i'' -r 's/^prefix\s*=.*/prefix=\/usr\/local/g' /tmp/install/lib/pkgconfig/icu-uc.pc
+
+# fix prefix in a Makefile
+sed -i'' -r 's/^prefix\s*=.*/prefix=\/usr\/local/g' /tmp/install/lib/icu/59.1/Makefile.inc

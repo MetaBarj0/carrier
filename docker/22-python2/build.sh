@@ -32,3 +32,6 @@ done
 # relocate installed libraries
 find /tmp/install/lib -type f -name '*.la' -exec \
   sed -i'' 's/\/tmp\/install\//\/usr\/local\//g' {} \;
+
+# fix prefix in pkgconfig files
+sed -i'' -r 's/^prefix=.*/prefix=\/usr\/local/g' /tmp/install/lib/pkgconfig/python-2.7.pc
