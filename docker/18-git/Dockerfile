@@ -24,12 +24,14 @@ FROM metabarj0/pcre2 as pcre2
 RUN tar -cf /tmp/pcre2.tar /usr/local/
 FROM metabarj0/python2 as python2
 RUN tar -cf /tmp/python2.tar /usr/local/
+FROM metabarj0/gettext as gettext
+RUN tar -cf /tmp/gettext.tar /usr/local/
+FROM metabarj0/perl as perl
+RUN tar -cf /tmp/perl.tar /usr/local/perl/
+FROM metabarj0/autoconf as autoconf
+RUN tar -cf /tmp/autoconf.tar /usr/local/
 
-# intermediate build stage
-FROM alpine as git_build
-
-# TODO : build these project too
-RUN apk add --no-cache perl autoconf gettext
+FROM busybox as git_build
 
 # copy and extract tarballs
 COPY --from=gcc /tmp/gcc.tar /tmp/
@@ -59,6 +61,18 @@ RUN  tar --directory / -xf /tmp/pcre2.tar && \
 COPY --from=python2 /tmp/python2.tar /tmp/
 RUN  tar --directory / -xf /tmp/python2.tar && \
   rm /tmp/python2.tar
+COPY --from=gettext /tmp/gettext.tar /tmp/
+RUN  tar --directory / -xf /tmp/gettext.tar && \
+  rm /tmp/gettext.tar
+COPY --from=perl /tmp/perl.tar /tmp/
+RUN  tar --directory / -xf /tmp/perl.tar && \
+  rm /tmp/perl.tar
+COPY --from=autoconf /tmp/autoconf.tar /tmp/
+RUN  tar --directory / -xf /tmp/autoconf.tar && \
+  rm /tmp/autoconf.tar
+
+# perl is installed into an exotic location
+ENV PATH /usr/local/perl/bin:${PATH}
 
 # copy sources and build script then, execute the build script
 WORKDIR /tmp
