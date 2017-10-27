@@ -14,8 +14,7 @@ FROM metabarj0/zlib as zlib
 RUN tar -cf /tmp/zlib.tar /usr/local/
 
 # intermediate build stage
-FROM alpine as openssl_build
-RUN apk add --no-cache perl
+FROM metabarj0/perl as openssl_build
 
 # copy and extract tarballs
 COPY --from=gcc /tmp/gcc.tar /tmp/
