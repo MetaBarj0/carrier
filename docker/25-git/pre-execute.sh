@@ -79,7 +79,7 @@ if [ -z "$GIT_LINUX_GROUP" ]; then
   echo 'lot of pain in the a**.'
   echo 'The next time you will run this container, please, provide a valid'
   echo 'user id using the -e switch like :'
-  echo 'docker run --rm -it metabarj0/git -e GIT_LINUX_USER=$(id -g)'
+  echo 'docker run --rm -it metabarj0/git -e GIT_LINUX_GROUP=$(id -g)'
   echo 'Bye!'
   exit 1
 fi
