@@ -18,6 +18,8 @@ export CXXFLAGS='-O3 -s -Wl,-rpath,/usr/local/amd64-linux-musl/lib64/,-rpath-lin
 export LDFLAGS='-Wl,-rpath,/usr/local/amd64-linux-musl/lib64/,-rpath-link,/usr/local/amd64-linux-musl/lib64/'
 make -j $JOBS && make install
 
+strip /tmp/install/bin/node
+
 # the shabang is not cool in lots of scripts, pointing to a wrong location for 'env'
 # the chosen way to fix modify the nodejs installation itself, not an environment
 # alteration. Thus, it'll be more easy to use this image as base block to build more

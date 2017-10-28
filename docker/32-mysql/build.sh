@@ -12,8 +12,8 @@ cmake \
   -DCMAKE_C_FLAGS_RELEASE='-O3 -s -DNDEBUG' \
   -DCMAKE_CXX_COMPILER=/usr/local/bin/g++ \
   -DCMAKE_CXX_FLAGS_RELEASE='-O3 -s -DNDEBUG' \
-  -DCMAKE_EXE_LINKER_FLAGS=-Wl,-rpath,/usr/local/lib/,-rpath-link,/usr/local/lib/ \
-  -DCMAKE_SHARED_LINKER_FLAGS=-Wl,-rpath,/usr/local/lib/,-rpath-link,/usr/local/lib/ \
+  -DCMAKE_EXE_LINKER_FLAGS=-Wl,-rpath,/usr/local/lib/,-rpath-link,/usr/local/lib/,-rpath,/usr/local/amd64-linux-musl/lib64/,-rpath-link,/usr/local/amd64-linux-musl/lib64/ \
+  -DCMAKE_SHARED_LINKER_FLAGS=-Wl,-rpath,/usr/local/lib/,-rpath-link,/usr/local/lib/,-rpath,/usr/local/amd64-linux-musl/lib64/,-rpath-link,/usr/local/amd64-linux-musl/lib64/ \
   -DWITH_PIC=ON \
   -DWITH_SSL=system \
   -DWITH_ZLIB=system \

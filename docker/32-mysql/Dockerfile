@@ -20,9 +20,7 @@ FROM metabarj0/openssl as openssl
 RUN tar -cf /tmp/openssl.tar /usr/local/
 
 # intermediate build stage
-FROM alpine as mysql_build
-
-RUN apk add --no-cache perl
+FROM metabarj0/perl as mysql_build
 
 # copy and extract tarballs
 COPY --from=gcc /tmp/gcc.tar /tmp/
