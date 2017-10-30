@@ -120,8 +120,8 @@ rm -rf /tmp/${TARGET}
 cd /tmp
 
 # fixing path in *.la files targeting the tmp build directory
-for f in $(find /usr/local -name '*.la' -exec grep -H tmp {} \; | sed 's/:.*$//g'); do
-  sed -i'' 's/\/tmp\/amd64-linux-musl\/build-amd64-linux-musl/\/usr\/local/g'
+for f in $(find /usr/local -name '*.la' -exec grep -H 'tmp' {} \; | sed 's/:.*//'); do
+  sed -i'' 's/\/tmp\/amd64-linux-musl\/build-amd64-linux-musl/\/usr\/local/g' $f
 done
 
 echo packing the toolchain...
