@@ -18,6 +18,11 @@ for d in $(sort <<< "$(find $script_dir -type d -maxdepth 1 ! -name 00-bootstrap
   image_name=$(basename $d)
   # replace numerical order by the repository owner
   image_name=$(sed -E 's/[0-9]{2}-(.+)/metabarj0\/\1/' <<< $image_name)
+
   # finally, build the image
   docker build --squash -t $image_name $d
+  
+  # cleanup stuff
+  docker rm $(docker ps -aq)
+  docker image prune -f
 done
