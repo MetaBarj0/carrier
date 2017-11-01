@@ -227,7 +227,7 @@ fi
 
 docker build --squash -t metabarj0/make -f Dockerfile.make .
 
-# last, create a simplistic docker container
+# last, create a simplistic docker client container
 cat << EOI > check.sh
 #!/bin/sh
 if [ ! -S /var/run/docker.sock ]; then
@@ -249,22 +249,35 @@ EOI
 
 chmod +x check.sh
 
-cat << EOI > Dockerfile.docker
-FROM alpine
-MAINTAINER Metabarj0 <troctsch.cpp@gmail.com>
+cat << EOI > Dockerfile.docker-cli
+FROM alpine as docker
 RUN apk add --no-cache docker
-COPY check.sh /usr/local/bin
+RUN tar -cf /tmp/docker.tar /usr/bin/docker /lib/ld-musl-x86_64.so.1 /lib/libc.musl-x86_64.so.1
+
+FROM busybox as docker-cli
+RUN mkdir -p /usr/bin/
+
+WORKDIR /tmp/
+
+COPY --from=docker /tmp/docker.tar ./
+RUN tar --directory / -xf docker.tar && \
+    rm -f docker.tar
+
+COPY check.sh /usr/local/bin/
+
 ENTRYPOINT [ "/usr/local/bin/check.sh" ]
+
+LABEL maintainer "Metabarj0 <troctsch.cpp@gmail.com>"
 EOI
 
-# if an old metabarj0/docker repository exists, delete it
-REPOSITORY=$(docker images metabarj0/docker -q)
+# if an old metabarj0/docker-cli repository exists, delete it
+REPOSITORY=$(docker images metabarj0/docker-cli -q)
 
 if [ $REPOSITORY ]; then
   docker rmi $REPOSITORY
 fi
 
-docker build --squash -t metabarj0/docker-ancillary -f Dockerfile.docker .
+docker build --squash -t metabarj0/docker-cli -f Dockerfile.docker-cli .
 
 # removing dangling images
 docker image prune -f
