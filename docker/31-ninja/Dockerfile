@@ -54,4 +54,8 @@ RUN tar --directory / -xf /tmp/gcc.tar \
         $(tar --list -f /tmp/gcc.tar | grep -E 'libstdc\+\+\.so.*') && \
     rm -rf /tmp/gcc.tar
 
-LABEL maintainer="metabarj0 <troctsch.cpp@gmail.com>"
+LABEL maintainer="metabarj0 <troctsch.cpp@gmail.com>" \
+      requires="metabarj0/gcc,\
+metabarj0/wget,\
+metabarj0/make,\
+metabarj0/python2"

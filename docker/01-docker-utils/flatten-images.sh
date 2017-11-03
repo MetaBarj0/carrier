@@ -14,6 +14,9 @@ if [ ! -z "$images" ]; then
     # the container is created, export it as a new image having the same
     # repository of the source one, removing all of its history. Finally,
     # delete the created container
+    # This method has the drawback of erasing image meta data (entry points...)
+    # thus it is strongly advised to use the squash feature of image build
+    # instead
     cid=$(docker create $image)
     docker export $cid | docker import - $image
     docker rm $cid

@@ -50,4 +50,8 @@ RUN tar --directory / -xf /tmp/gmp.tar \
         $(tar --list -f /tmp/gmp.tar | grep -E 'libgmp\.so.*') && \
     rm /tmp/gmp.tar
 
-LABEL maintainer="metabarj0 <troctsch.cpp@gmail.com>"
+LABEL maintainer="metabarj0 <troctsch.cpp@gmail.com>" \
+      requires="metabarj0/gcc,\
+metabarj0/wget,\
+metabarj0/make,\
+metabarj0/gmp"

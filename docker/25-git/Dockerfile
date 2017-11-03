@@ -119,4 +119,17 @@ RUN tar --directory / -xf /tmp/openssh.tar && \
 # check and forward commands
 ENTRYPOINT [ "pre-execute.sh" ]
 
-LABEL maintainer="metabarj0 <troctsch.cpp@gmail.com>"
+LABEL maintainer="metabarj0 <troctsch.cpp@gmail.com>" \
+      requires="metabarj0/gcc,\
+metabarj0/wget,\
+metabarj0/make,\
+metabarj0/openssh,\
+metabarj0/zlib,\
+metabarj0/curl,\
+metabarj0/openssl,\
+metabarj0/expat,\
+metabarj0/pcre2,\
+metabarj0/python2,\
+metabarj0/gettext,\
+metabarj0/perl,\
+metabarj0/autoconf"

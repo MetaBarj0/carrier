@@ -59,4 +59,9 @@ RUN tar --directory / -xf /tmp/openssl.tar \
         $(tar --list -f /tmp/openssl.tar | grep -E 'libcrypto\.so.*') && \
     rm -rf /tmp/openssl.tar
 
-LABEL maintainer="metabarj0 <troctsch.cpp@gmail.com>"
+LABEL maintainer="metabarj0 <troctsch.cpp@gmail.com>" \
+      requires="metabarj0/gcc,\
+metabarj0/wget,\
+metabarj0/make,\
+metabarj0/zlib,\
+metabarj0/openssl"

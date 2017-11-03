@@ -67,4 +67,8 @@ RUN tar --directory / -xf /tmp/nettle.tar \
     tar --directory / -xf /tmp/nettle.tar \
         $(tar --list -f /tmp/nettle.tar | grep -E 'libnettle\.so.*') && \
     rm -rf /tmp/nettle.tar
-LABEL maintainer="metabarj0 <troctsch.cpp@gmail.com>"
+LABEL maintainer="metabarj0 <troctsch.cpp@gmail.com>" \
+      requires="metabarj0/gcc,\
+metabarj0/make,\
+metabarj0/nettle,\
+metabarj0/gmp"

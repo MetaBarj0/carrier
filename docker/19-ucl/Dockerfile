@@ -22,4 +22,7 @@ RUN ./build.sh
 
 FROM busybox as ucl
 COPY --from=ucl_build /tmp/install/ /usr/local/
-LABEL maintainer="metabarj0 <troctsch.cpp@gmail.com>"
+LABEL maintainer="metabarj0 <troctsch.cpp@gmail.com>" \
+      requires="metabarj0/gcc,\
+metabarj0/wget,\
+metabarj0/make"

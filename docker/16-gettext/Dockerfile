@@ -54,4 +54,8 @@ RUN tar --directory / -xf /tmp/ncurses.tar \
         $(tar --list -f /tmp/ncurses.tar | grep -E 'libncurses\.so.*') && \
     rm -rf /tmp/ncurses.tar
 
-LABEL maintainer="metabarj0 <troctsch.cpp@gmail.com>"
+LABEL maintainer="metabarj0 <troctsch.cpp@gmail.com>" \
+      requires="metabarj0/gcc,\
+metabarj0/wget,\
+metabarj0/make,\
+metabarj0/ncurses"
