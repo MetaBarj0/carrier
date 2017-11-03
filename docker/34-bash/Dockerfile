@@ -61,4 +61,10 @@ RUN tar --directory / -xf /tmp/ncurses.tar \
 
 ENTRYPOINT [ "/usr/local/bin/bash", "-l" ]
 
-LABEL maintainer="metabarj0 <troctsch.cpp@gmail.com>"
+LABEL maintainer="metabarj0 <troctsch.cpp@gmail.com>" \
+      requires="metabarj0/gcc,\
+metabarj0/wget,\
+metabarj0/make,\
+metabarj0/ncurses,\
+metabarj0/gettext,\
+metabarj0/m4"

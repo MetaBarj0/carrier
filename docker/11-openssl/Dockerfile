@@ -49,4 +49,8 @@ RUN tar --directory / -xf /tmp/zlib.tar \
         $(tar --list -f /tmp/zlib.tar | grep -E 'libz\.so.*') && \
     rm -rf /tmp/zlib.tar
 
-LABEL maintainer="metabarj0 <troctsch.cpp@gmail.com>"
+LABEL maintainer="metabarj0 <troctsch.cpp@gmail.com>" \
+      requires="metabarj0/gcc,\
+metabarj0/wget,\
+metabarj0/make,\
+metabarj0/zlib"

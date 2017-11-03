@@ -1,6 +1,6 @@
 #!/bin/sh
-tar -xf node-v8.7.0.tar.gz
-cd node-v8.7.0
+tar -xf node-v8.9.0.tar.gz
+cd node-v8.9.0
 
 ./configure \
   --prefix=/tmp/install \

@@ -48,4 +48,7 @@ RUN tar --directory / -xf /tmp/gcc.tar \
 
 ENV TERMINFO /usr/local/share/terminfo
 
-LABEL maintainer="metabarj0 <troctsch.cpp@gmail.com>"
+LABEL maintainer="metabarj0 <troctsch.cpp@gmail.com>" \
+      requires="metabarj0/gcc,\
+metabarj0/wget,\
+metabarj0/make"

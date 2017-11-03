@@ -2,7 +2,7 @@
 # built later
 FROM metabarj0/wget as nodejs_fetch
 WORKDIR /tmp
-RUN wget --no-check-certificate https://nodejs.org/dist/v8.7.0/node-v8.7.0.tar.gz
+RUN wget --no-check-certificate https://nodejs.org/dist/v8.9.0/node-v8.9.0.tar.gz
 
 # intermediate stage to get toolchain files for the build. Using an intermediate
 # tarball to keep symlinks and don't follow them
@@ -52,7 +52,7 @@ WORKDIR /tmp
 
 ENV PKG_CONFIG_PATH=/usr/local/lib/pkgconfig/
 
-COPY --from=nodejs_fetch /tmp/node-v8.7.0.tar.gz .
+COPY --from=nodejs_fetch /tmp/node-v8.9.0.tar.gz .
 COPY build.sh .
 RUN ./build.sh
 
@@ -79,4 +79,11 @@ RUN tar --directory / -xf /tmp/icu4c.tar \
         $(tar --list -f /tmp/icu4c.tar | grep -E 'libicudata\.so.*') && \
     rm -rf /tmp/icu4c.tar
 
-LABEL maintainer="metabarj0 <troctsch.cpp@gmail.com>"
+LABEL maintainer="metabarj0 <troctsch.cpp@gmail.com>" \
+      requires="metabarj0/gcc,\
+metabarj0/wget,\
+metabarj0/make,\
+metabarj0/python2,\
+metabarj0/icu4c,\
+metabarj0/pkgconfig,\
+metabarj0/zlib"

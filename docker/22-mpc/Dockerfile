@@ -60,4 +60,9 @@ RUN tar --directory / -xf /tmp/mpfr.tar \
         $(tar --list -f /tmp/mpfr.tar | grep -E 'libmpfr\.so.*') && \
     rm /tmp/mpfr.tar
 
-LABEL maintainer="metabarj0 <troctsch.cpp@gmail.com>"
+LABEL maintainer="metabarj0 <troctsch.cpp@gmail.com>" \
+      requires="metabarj0/gcc,\
+metabarj0/wget,\
+metabarj0/make,\
+metabarj0/gmp,\
+metabarj0/mpfr"

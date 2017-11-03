@@ -69,4 +69,9 @@ RUN tar --directory / -xf /tmp/gnutls.tar \
         $(tar --list -f /tmp/gnutls.tar | grep -E 'libgnutls\.so.*') && \
     rm -rf /tmp/gnutls.tar
 
-LABEL maintainer="metabarj0 <troctsch.cpp@gmail.com>"
+LABEL maintainer="metabarj0 <troctsch.cpp@gmail.com>" \
+      requires="metabarj0/gcc,\
+metabarj0/make,\
+metabarj0/nettle,\
+metabarj0/gmp,\
+metabarj0/gnutls"
