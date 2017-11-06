@@ -1,6 +1,6 @@
 #!/bin/sh
-tar -xf openssl-1.0.2l.tar.gz
-cd openssl-1.0.2l
+tar -xf openssl-1.0.2m.tar.gz
+cd openssl-1.0.2m
 
 ./config \
   --prefix=/tmp/install \

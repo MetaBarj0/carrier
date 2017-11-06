@@ -29,7 +29,7 @@ RUN  tar --directory / -xf /tmp/zlib.tar && \
 
 # copy sources and build script then, execute the build script
 WORKDIR /tmp
-COPY --from=openssl_fetch /tmp/openssl-1.0.2l.tar.gz .
+COPY --from=openssl_fetch /tmp/openssl-1.0.2m.tar.gz .
 COPY build.sh .
 RUN ./build.sh
 
