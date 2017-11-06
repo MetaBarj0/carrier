@@ -2,7 +2,7 @@
 # built later
 FROM metabarj0/wget as openssl_fetch
 WORKDIR /tmp
-RUN wget --no-check-certificate https://ftp.openssl.org/source/openssl-1.0.2l.tar.gz
+RUN wget --no-check-certificate https://ftp.openssl.org/source/openssl-1.0.2m.tar.gz
 
 # intermediate stage to get toolchain files for the build. Using an intermediate
 # tarball to keep symlinks and don't follow them
