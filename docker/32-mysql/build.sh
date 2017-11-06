@@ -23,3 +23,7 @@ cmake \
 JOBS=$(cat /proc/cpuinfo | grep processor | wc -l)
 
 make -j $JOBS && make install
+
+# remove unnecessaey stuff
+cd /usr/local/mysql
+rm -rf mysql-test sql-bench docs man scripts

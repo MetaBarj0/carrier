@@ -64,8 +64,6 @@ COPY --from=mysql_build /usr/local/mysql/ /usr/local/mysql/
 
 ENV PATH /usr/local/mysql/bin:${PATH}
 
-COPY configuration.tar data.tar.bz2 mysql_server_reset.sh mysql_server_start.sh /usr/local/mysql/
-
 # grab third party libraries
 COPY --from=gcc /tmp/gcc.tar /tmp/
 COPY --from=openssl /tmp/openssl.tar /tmp/
@@ -94,8 +92,12 @@ RUN tar --directory / -xf /tmp/ncurses.tar \
         $(tar --list -f /tmp/ncurses.tar | grep -E 'libncurses\.so.*') && \
     rm -rf /tmp/ncurses.tar
 
+COPY configuration.tar data.tar.xz mysql_server_reset.sh mysql_server_start.sh /usr/local/mysql/
+
+# mount points for external persistent volumes
 VOLUME [ "/usr/local/mysql/data/" ]
 VOLUME [ "/usr/local/mysql/etc/" ]
+VOLUME [ "/usr/local/mysql/mysql-files/" ]
 
 EXPOSE 3306
 
