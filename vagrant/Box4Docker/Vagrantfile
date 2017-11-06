@@ -1,8 +1,8 @@
 Vagrant.configure("2") do |config|
 
   # environmental settings
-  $cpu=ENV.fetch('BOX4DOCKER_CPU', 8)
-  $memory=ENV.fetch('BOX4DOCKER_MEM', 8192)
+  $cpu=ENV.fetch('BOX4DOCKER_CPU', 1)
+  $memory=ENV.fetch('BOX4DOCKER_MEM', 1024)
   $vram=ENV.fetch('BOX4DOCKER_VRAM', 16)
 
   config.vm.box = "metabarj0/Box4Docker"
