@@ -54,7 +54,7 @@ RUN tar --directory / -xf /tmp/gcc.tar \
 RUN tar --directory / -xf /tmp/ncurses.tar \
         usr/local/share/terminfo && \
     tar --directory / -xf /tmp/ncurses.tar \
-        $(tar --list -f /tmp/ncurses.tar | grep -E 'libncurses\.so.*') && \
+        $(tar --list -f /tmp/ncurses.tar | grep -E 'libncursesw?\.so.*') && \
     rm -rf /tmp/ncurses.tar
 
 ENV TERMINFO /usr/local/share/terminfo
