@@ -75,7 +75,7 @@ fi
 if [ -z "$GIT_LINUX_GROUP" ]; then
   echo 'Hi there! I need a linux group id to execute my commands.'
   echo 'Preferably, you should give me your current group id. Therefore, I can'
-  echo 'create your git repository files with the correct user, saving you a'
+  echo 'create your git repository files with the correct group, saving you a'
   echo 'lot of pain in the a**.'
   echo 'The next time you will run this container, please, provide a valid'
   echo 'user id using the -e switch like :'
