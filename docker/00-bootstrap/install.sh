@@ -4,7 +4,8 @@ cd /tmp
 
 # move and cleanup libraries
 tar -xf amd64-linux-musl.tar.xz --directory / && \
-  rm /tmp/install.sh
+  rm /tmp/install.sh && \
+  rm /tmp/amd64-linux-musl.tar.xz
 
 # fix links necessary for the dynamic loader to work
 ln -sf /usr/local/lib/libc.so /usr/local/lib/ld-musl-x86_64.so.1
