@@ -228,7 +228,7 @@ fi
 docker build --squash -t metabarj0/make -f Dockerfile.make .
 
 # last, create a simplistic docker client container
-cat << EOI > check.sh
+cat << EOI > entrypoint.sh
 #!/bin/sh
 if [ ! -S /var/run/docker.sock ]; then
   echo 'Oops! It looks like you did not bind-mounted the docker socket in this neat container!'
@@ -247,7 +247,7 @@ fi
 exec \$(echo "\$@")
 EOI
 
-chmod +x check.sh
+chmod +x entrypoint.sh
 
 cat << EOI > Dockerfile.docker-cli
 FROM alpine as docker
@@ -263,9 +263,9 @@ COPY --from=docker /tmp/docker.tar ./
 RUN tar --directory / -xf docker.tar && \
     rm -f docker.tar
 
-COPY check.sh /usr/local/bin/
+COPY entrypoint.sh /usr/local/bin/
 
-ENTRYPOINT [ "/usr/local/bin/check.sh" ]
+ENTRYPOINT [ "/usr/local/bin/entrypoint.sh" ]
 
 LABEL maintainer "Metabarj0 <troctsch.cpp@gmail.com>"
 EOI

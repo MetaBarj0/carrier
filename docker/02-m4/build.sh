@@ -1,16 +1,30 @@
 #!/bin/sh
-tar -xf m4-1.4.18.tar.xz
-cd m4-1.4.18
-mkdir build && cd build
 
-../configure \
-  --prefix=/tmp/install \
-  --enable-threads=posix \
-  --enable-c++ \
-  CFLAGS='-O3 -s' \
-  CXXFLAGS='-O3 -s'
+# the first arg is the repository name
+if [ -z $1 ]; then
+  echo 'Missing repository name...exiting...'
+  exit 1
+fi
 
-# Calculates the optimal job count
-JOBS=$(cat /proc/cpuinfo | grep processor | wc -l)
+repository=$1
 
-make -j $JOBS && make install
+echo 'Building context...'
+
+# build the builder, using a disposable untagged image
+image=$(
+  docker build \
+    -q \
+    --build-arg REPOSITORY=$repository \
+    -f context/Dockerfile.build-image \
+    context | \
+  sed 's/sha256://'
+)
+
+# launch the build
+docker run \
+  --rm -it \
+  --mount type=bind,src=/var/run/docker.sock,dst=/var/run/docker.sock \
+  $image
+
+# cleanup the untagged image
+docker image prune -f
