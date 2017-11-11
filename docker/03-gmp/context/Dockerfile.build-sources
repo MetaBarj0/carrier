@@ -1,3 +1,6 @@
+# this dockerfile build sources using a script and sources tarball fetched
+# from the internet
+
 # fetching sources using a prebuilt wget from alpine, wget in busybox will be
 # built later
 FROM alpine as gmp_fetch
@@ -14,8 +17,8 @@ RUN tar -cf /tmp/make.tar /usr/local/
 FROM metabarj0/m4 as m4
 RUN tar -cf /tmp/m4.tar /usr/local/
 
-# intermediate build stage
-FROM busybox as gmp_build
+# build image based on docker-cli for future docker image manipulations
+FROM metabarj0/docker-cli as gmp_build
 
 # copy and extract tarballs
 COPY --from=gcc /tmp/gcc.tar /tmp/
@@ -33,22 +36,5 @@ RUN  tar --directory / -xf /tmp/m4.tar && \
 # copy sources and build script then, execute the build script
 WORKDIR /tmp
 COPY --from=gmp_fetch /tmp/gmp-6.1.2.tar.xz .
-COPY build.sh .
-RUN ./build.sh
-
-# final stage, copy the result in a busybox image
-FROM busybox as gmp
-COPY --from=gcc /tmp/gcc.tar /tmp/
-COPY --from=gmp_build /tmp/install/ /usr/local/
-RUN tar --directory / -xf /tmp/gcc.tar \
-        lib/ \
-        usr/local/lib/libc.so && \
-    tar --directory / -xf /tmp/gcc.tar \
-        $(tar --list -f /tmp/gcc.tar | grep -E 'libgcc_s\.so.*') && \
-    tar --directory / -xf /tmp/gcc.tar \
-        $(tar --list -f /tmp/gcc.tar | grep -E 'libstdc\+\+\.so.*') && \
-    rm -rf /tmp/gcc.tar
-LABEL maintainer="metabarj0 <troctsch.cpp@gmail.com>" \
-      requires="metabarj0/gcc,\
-metabarj0/make,\
-metabarj0/m4"
+COPY build-sources.sh functions.sh ./
+ENTRYPOINT [ "/tmp/build-sources.sh" ]

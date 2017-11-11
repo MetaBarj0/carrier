@@ -1,6 +1,6 @@
 #!/bin/sh
 
-# grab common stuff in build tools, a dockerfile and a script
+# grab the build script from build tools
 CURRENT_DIRECTORY=$(pwd -P)
 cd $(dirname $0)
 SCRIPT_DIRECTORY=$(pwd -P)
