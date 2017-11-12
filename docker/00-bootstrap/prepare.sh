@@ -27,6 +27,17 @@ EOI
   exit 1
 fi
 
+# check the asked version
+if [ ! -f /tmp/build-gcc-${GCC_VERSION}-musl.sh ]; then
+  echo 'Sorry, the gcc version you requested in not (yet) supported.'
+  echo 'Please, send an email to the maintainer of the project to ask'
+  echo 'for a support for this specific version. If he is in a good mood'
+  echo 'you could obtain what you are looking for!'
+  echo '<troctsch.cpp@gmail.com>'
+  echo 'Bye!'
+  exit 1
+fi
+
 if [ ! $BINUTILS_VERSION ]; then
   cat << EOI
 --------------------------------------------------------------------------------
@@ -102,16 +113,6 @@ cd gcc-${GCC_VERSION}
 ./contrib/download_prerequisites
 
 # build the toolchain!
-if [ ! -f /tmp/build-gcc-${GCC_VERSION}-musl.sh ]; then
-  echo 'Sorry, the gcc version you requested in not (yet) supported.'
-  echo 'Please, send an email to the maintainer of the project to ask'
-  echo 'for a support for this specific version. If he is in a good mood'
-  echo 'you could obtain what you are looking for!'
-  echo '<troctsch.cpp@gmail.com>'
-  echo 'Bye!'
-  exit 1
-fi
-
 cp /tmp/build-gcc-${GCC_VERSION}-musl.sh /tmp/$TARGET/build-gcc-${GCC_VERSION}-musl.sh
 /tmp/$TARGET/build-gcc-${GCC_VERSION}-musl.sh
 

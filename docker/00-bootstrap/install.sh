@@ -21,3 +21,8 @@ for f in amd64-linux-musl-*; do
     ln -s $f $target
   fi
 done
+
+# create the image.dist file using file installed in /usr/local and the link
+# created in /lib
+find /usr/local | sed 's/\.\///' > /image.dist
+echo '/lib' >> /image.dist

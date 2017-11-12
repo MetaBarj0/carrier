@@ -8,13 +8,13 @@ RUN wget --no-check-certificate https://ftp.gnu.org/gnu/nettle/nettle-2.5.tar.gz
 # intermediate stage to get toolchain files for the build. Using an intermediate
 # tarball to keep symlinks and don't follow them
 FROM metabarj0/gcc as gcc
-RUN tar -cf /tmp/gcc.tar /usr/local/ /lib/
+RUN tar -cf /tmp/gcc.tar --no-recursion $(cat /image.dist)
 FROM metabarj0/make as make
 RUN tar -cf /tmp/make.tar /usr/local/
 FROM metabarj0/m4 as m4
-RUN tar -cf /tmp/m4.tar $(cat /image.dist)
+RUN tar -cf /tmp/m4.tar --no-recursion $(cat /image.dist)
 FROM metabarj0/gmp as gmp
-RUN tar -cf /tmp/gmp.tar $(cat /image.dist)
+RUN tar -cf /tmp/gmp.tar --no-recursion $(cat /image.dist)
 
 # intermediate build stage
 FROM metabarj0/docker-cli as nettle_build
