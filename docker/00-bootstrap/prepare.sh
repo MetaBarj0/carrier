@@ -207,6 +207,10 @@ cd build
 ../configure --prefix=/tmp/make-${MAKE_VERSION}/install CFLAGS='-O3 -s -static' --build='amd64-linux-musl'
 ./build.sh
 ./make install
+
+cd /tmp/make-${MAKE_VERSION}/install
+tar -cf /tmp/make.tar .
+tar --list -f /tmp/make.tar | sed -r 's/^\./usr\/local/' > /tmp/image.dist
 EOI
 
 chmod +x build-make.sh
@@ -216,7 +220,9 @@ FROM metabarj0/gcc as builder
 COPY make-${MAKE_VERSION}.tar.bz2 build-make.sh /tmp/
 RUN /tmp/build-make.sh
 FROM busybox
-COPY --from=builder /tmp/make-${MAKE_VERSION}/install/ /usr/local/
+COPY --from=builder /tmp/make.tar /tmp/
+COPY --from=builder /tmp/image.dist /
+RUN mkdir -p /usr/local && tar --directory /usr/local -xf /tmp/make.tar && rm -f /tmp/make.tar
 EOI
 
 # if an old metabarj0/make repository exists, delete it

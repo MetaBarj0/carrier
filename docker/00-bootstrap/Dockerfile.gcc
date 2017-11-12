@@ -1,3 +1,4 @@
 FROM busybox
 COPY amd64-linux-musl.tar.xz install.sh /tmp/
-RUN /tmp/install.sh
+RUN /tmp/install.sh && \
+    rm -f /tmp/install.sh
