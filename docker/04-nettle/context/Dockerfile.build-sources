@@ -12,12 +12,12 @@ RUN tar -cf /tmp/gcc.tar /usr/local/ /lib/
 FROM metabarj0/make as make
 RUN tar -cf /tmp/make.tar /usr/local/
 FROM metabarj0/m4 as m4
-RUN tar -cf /tmp/m4.tar /usr/local/
+RUN tar -cf /tmp/m4.tar $(cat /image.dist)
 FROM metabarj0/gmp as gmp
-RUN tar -cf /tmp/gmp.tar /usr/local/
+RUN tar -cf /tmp/gmp.tar $(cat /image.dist)
 
 # intermediate build stage
-FROM busybox as nettle_build
+FROM metabarj0/docker-cli as nettle_build
 
 # copy and extract tarballs
 COPY --from=gcc /tmp/gcc.tar /tmp/
@@ -39,23 +39,5 @@ RUN  tar --directory / -xf /tmp/gmp.tar && \
 # copy sources and build script then, execute the build script
 WORKDIR /tmp
 COPY --from=nettle_fetch /tmp/nettle-2.5.tar.gz .
-COPY build.sh .
-RUN ./build.sh
-
-# final stage, copy the result in a busybox image
-FROM busybox as nettle
-COPY --from=nettle_build /tmp/install/ /usr/local
-COPY --from=gmp /tmp/gmp.tar /tmp/
-COPY --from=gcc /tmp/gcc.tar /tmp/
-RUN tar --directory / -xf /tmp/gcc.tar \
-        lib/ \
-        usr/local/lib/libc.so && \
-    rm -rf /tmp/gcc.tar
-RUN tar --directory / -xf /tmp/gmp.tar \
-        $(tar --list -f /tmp/gmp.tar | grep -E 'libgmp\.so.*') && \
-    rm -rf /tmp/gmp.tar
-LABEL maintainer="metabarj0 <troctsch.cpp@gmail.com>" \
-      requires="metabarj0/gcc,\
-metabarj0/make,\
-metabarj0/m4,\
-metabarj0/gmp"
+COPY build-sources.sh functions.sh ./
+ENTRYPOINT [ "/tmp/build-sources.sh" ]
