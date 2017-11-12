@@ -15,7 +15,7 @@ RUN tar -cf /tmp/gcc.tar /usr/local/ /lib/
 FROM metabarj0/make as make
 RUN tar -cf /tmp/make.tar /usr/local/
 FROM metabarj0/m4 as m4
-RUN tar -cf /tmp/m4.tar /usr/local/
+RUN tar -cf /tmp/m4.tar $(cat /image.dist)
 
 # build image based on docker-cli for future docker image manipulations
 FROM metabarj0/docker-cli as gmp_build
