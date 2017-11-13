@@ -64,6 +64,9 @@ collectSharedObjectDependencies() {
     fi
   done
 
+  # adding the dynamic loader link
+  echo '/lib/ld-musl-x86_64.so.1' >> /image.dist
+
   # sorting and removing duplicates in image.dist
   echo "$(sort /image.dist | uniq)" > /image.dist
 

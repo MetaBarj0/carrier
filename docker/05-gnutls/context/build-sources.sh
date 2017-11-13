@@ -35,9 +35,6 @@ docker diff $(hostname) | grep 'A '$PREFIX | sed 's/A\s//' > /image.dist
 # adding dynamic library dependencies
 collectSharedObjectDependencies
 
-# finally, adding the dynamic loader directory
-echo '/lib' >> /image.dist
-
 # intermediate clean
 docker image prune -f
 
