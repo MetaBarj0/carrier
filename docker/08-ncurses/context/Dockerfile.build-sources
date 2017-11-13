@@ -1,0 +1,30 @@
+# fetching sources using a prebuilt wget from alpine, wget in busybox will be
+# built later
+FROM metabarj0/wget as ncurses_fetch
+WORKDIR /tmp
+RUN wget --no-check-certificate https://ftp.gnu.org/gnu/ncurses/ncurses-6.0.tar.gz
+
+# intermediate stage to get toolchain files for the build. Using an intermediate
+# tarball to keep symlinks and don't follow them
+FROM metabarj0/gcc as gcc
+RUN tar -cf /tmp/gcc.tar --no-recursion $(cat /image.dist)
+FROM metabarj0/make as make
+RUN tar -cf /tmp/make.tar --no-recursion $(cat /image.dist)
+
+# intermediate build stage
+FROM metabarj0/docker-cli as ncurses_build
+
+# copy and extract tarballs
+COPY --from=gcc /tmp/gcc.tar /tmp/
+RUN  tar --directory / -xf /tmp/gcc.tar && \
+  rm /tmp/gcc.tar
+
+COPY --from=make /tmp/make.tar /tmp/
+RUN  tar --directory / -xf /tmp/make.tar && \
+  rm /tmp/make.tar
+
+# copy sources and build script then, execute the build script
+WORKDIR /tmp
+COPY --from=ncurses_fetch /tmp/ncurses-6.0.tar.gz .
+COPY build-sources.sh functions.sh ./
+ENTRYPOINT [ "/tmp/build-sources.sh" ]

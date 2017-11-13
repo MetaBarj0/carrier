@@ -1,20 +1,24 @@
 #!/bin/sh
 
 # the first arg is the repository name
-if [ -z $1 ]; then
+if [ -z "$1" ]; then
   echo 'Missing repository name...exiting...'
   exit 1
 fi
 
-repository=$1
+repository="$1"
 
 # the second arg is the caller script directory
-if [ -z $2 ]; then
+if [ -z "$2" ]; then
   echo 'Missing caller script directory path...exiting...'
   exit 1
 fi
 
-caller_script_directory=$2
+caller_script_directory="$2"
+
+# the third argument may contain extra Dockerfile commands for the final image
+# it is not mandatory
+extra_dockerfile_commands="$3"
 
 echo 'Building context...'
 
@@ -43,6 +47,7 @@ image=$(
 docker run \
   --rm -it \
   --mount type=bind,src=/var/run/docker.sock,dst=/var/run/docker.sock \
+  -e EXTRA_DOCKERFILE_COMMANDS="$extra_dockerfile_commands" \
   $image
 
 # cleanup the untagged image
