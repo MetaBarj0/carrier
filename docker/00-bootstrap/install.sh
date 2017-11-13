@@ -24,4 +24,4 @@ done
 # create the image.dist file using file installed in /usr/local and the link
 # created in /lib
 find /usr/local | sed 's/\.\///' > /image.dist
-echo '/lib' >> /image.dist
+echo '/lib/ld-musl-x86_64.so.1' >> /image.dist
