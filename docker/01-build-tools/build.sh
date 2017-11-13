@@ -8,6 +8,14 @@ fi
 
 repository=$1
 
+# the second arg is the caller script directory
+if [ -z $2 ]; then
+  echo 'Missing caller script directory path...exiting...'
+  exit 1
+fi
+
+caller_script_directory=$2
+
 echo 'Building context...'
 
 # grab common stuff in build tools, a dockerfile and scripts
@@ -19,15 +27,15 @@ cd $CURRENT_DIRECTORY
 cp $BUILD_TOOLS_DIRECTORY/Dockerfile.build-image \
    $BUILD_TOOLS_DIRECTORY/functions.sh \
    $BUILD_TOOLS_DIRECTORY/build-image.sh \
-   context
+   ${caller_script_directory}/context
 
 # build the builder, using a disposable untagged image
 image=$(
   docker build \
     -q \
     --build-arg REPOSITORY=$repository \
-    -f context/Dockerfile.build-image \
-    context | \
+    -f ${caller_script_directory}/context/Dockerfile.build-image \
+    ${caller_script_directory}/context | \
   sed 's/sha256://'
 )
 
@@ -41,6 +49,6 @@ docker run \
 docker image prune -f
 
 # cleanup common build tools
-rm -f context/Dockerfile.build-image \
-      context/build-image.sh \
-      context/functions.sh
+rm -f ${caller_script_directory}/context/Dockerfile.build-image \
+      ${caller_script_directory}/context/build-image.sh \
+      ${caller_script_directory}/context/functions.sh
