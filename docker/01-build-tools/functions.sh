@@ -9,19 +9,19 @@ tryExtractSharedObjectFromFile() {
   fi
 
   # get the name of the shared object if the file is binary
-  shared_objects=$(
+  needed_so_files=$(
     readelf -d $1 | grep NEEDED | sed -r 's/.+\[(.+)\]$/\1/') 2> /dev/null
 
   # shared objects found
-  if [ ! -z "$shared_objects" ]; then
+  if [ ! -z "$needed_so_files" ]; then
     # gets the absolute path of each shared object and put it in image.dist
-    files=
-    for so in $shared_objects; do
+    so_paths=
+    for so_file in $needed_so_files; do
       # get the absolute path
-      so_path="$(find $PREFIX -name $so)"
+      so_path="$(find $PREFIX -name $so_file)"
 
       # add the file in the list
-      files="$files"$'\n'"$so_path"
+      so_paths="$so_paths"$'\n'"$so_path"
 
       # if so_path is a link, recursively follow it and add it to the list
       while [ -L "$so_path" ]; do
@@ -29,11 +29,11 @@ tryExtractSharedObjectFromFile() {
         so_path="$(find $PREFIX -name $(readlink $so_path))"
 
 	# add it to the list
-        files="$files"$'\n'"$so_path"
+        so_paths="$so_paths"$'\n'"$so_path"
       done
     done
 
-    echo "$files"
+    echo "$so_paths"
   fi
 
   return 0
