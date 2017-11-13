@@ -29,7 +29,7 @@ docker run --rm -it \
 # repository name is dynamic. Extra dockerfile commands may be added
 cat << EOI | docker build --squash -t $REPOSITORY -
 FROM $REPOSITORY as tarball
-RUN tar -cf /tmp/package.tar /image.dist \$(cat /image.dist)
+RUN tar --no-recursion -cf /tmp/package.tar /image.dist \$(cat /image.dist)
 
 FROM busybox
 COPY --from=tarball /tmp/package.tar /tmp

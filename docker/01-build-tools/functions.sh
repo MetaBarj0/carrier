@@ -1,5 +1,47 @@
 #!/bin/sh
 
+registerBuiltFilesForPackaging() {
+  # get the diff between now and before the project was built, only in the
+  # prefix directory. Produce a list of added files after the build and
+  # installation
+  docker diff $(hostname) \
+  | grep -E '(A|C)\s'$PREFIX \
+  | sed -r 's/^(A|C)\s//' > /image.dist
+}
+
+package() {
+  # fix the list (file name containing space characters)
+  sed -i'' -r 's/(.*)(\s)(.*)/\1\\\2\3/g' /image.dist
+  
+  # commit changes
+  docker commit $(hostname) $REPOSITORY
+  
+  # intermediate clean
+  docker image prune -f
+}
+
+# a function that append stuff to a list that may be empty using a specified
+# separator or space
+append() {
+  # even if empty, an argument surrounded by "" is detected
+  if [ ! $# -eq 3 ]; then
+    echo 'append expects 3 arguments, no more, no les...exiting...'
+    return 1
+  fi
+
+  local list="$1"
+  local item="$2"
+  local separator="$3"
+
+  if [ -z "$list" ]; then
+    echo "$item"
+  else
+    echo "$list""$separator""$item"
+  fi
+
+  return 0
+}
+
 # try to extract each shared object dependecies for a specified file
 extractNeededSharedObjectsOf() {
   # I need a file as input
@@ -33,7 +75,7 @@ extractNeededSharedObjectsOf() {
         local so_path="$(find $PREFIX -name $so_file)"
 
         # add the file in the list
-        so_paths="$so_paths"$'\n'"$so_path"
+	so_paths="$(append "$so_paths" "$so_path" $'\n')"
 
         # if so_path is a link, recursively follow it and add it to the list
         while [ -L "$so_path" ]; do
@@ -41,7 +83,7 @@ extractNeededSharedObjectsOf() {
           so_path="$(find $PREFIX -name $(readlink $so_path))"
 
           # add it to the list
-          so_paths="$so_paths"$'\n'"$so_path"
+	  so_paths="$(append "$so_paths" "$so_path" $'\n')"
         done
       done
     fi
@@ -50,11 +92,7 @@ extractNeededSharedObjectsOf() {
   # dependencies have been found
   if [ ! -z "$so_paths" ]; then
     # adding to output that will contain the final result
-    if [ ! -z "$output" ]; then
-      output="$output"$'\n'"$so_paths"
-    else
-      output="$so_paths"
-    fi
+    output="$(append "$output" "$so_paths" $'\n')"
 
     # deduping
     output="$(echo "$output" | sort | uniq)"
