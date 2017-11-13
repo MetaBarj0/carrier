@@ -4,40 +4,65 @@
 extractNeededSharedObjectsOf() {
   # I need a file as input
   if [ -z "$1" ]; then
-    echo 'No file specified...exiting...'
+    echo 'Nothing specified as argument...exiting...'
     return 1
   fi
 
-  # get the name of the shared object if the file is binary
-  local needed_so_files=$(
-    readelf -d "$1" 2> /dev/null | grep NEEDED | sed -r 's/.+\[(.+)\]$/\1/')
+  # first arg is a least of at least one file
+  local input="$1"
 
-  # shared objects found
-  if [ ! -z "$needed_so_files" ]; then
-    # gets the absolute path of each shared object and put it in image.dist
-    local so_paths=
-    local so_file=
-    for so_file in $needed_so_files; do
-      # get the absolute path
-      local so_path="$(find $PREFIX -name $so_file)"
+  # second arg is a list of shared object directly or indirectly needed by the
+  # input file list
+  local output="$2"
 
-      # add the file in the list
-      so_paths="$so_paths"$'\n'"$so_path"
+  local input_file=
+  local so_paths=
+  for input_file in $input; do
+    # get the name of the shared object if the file is binary
+    local needed_so_files=$(
+      readelf -d "$input_file" 2> /dev/null \
+      | grep NEEDED \
+      | sed -r 's/.+\[(.+)\]$/\1/')
 
-      # if so_path is a link, recursively follow it and add it to the list
-      while [ -L "$so_path" ]; do
-        # get absolute file of the referenced
-        so_path="$(find $PREFIX -name $(readlink $so_path))"
+    # shared objects found
+    if [ ! -z "$needed_so_files" ]; then
+      # gets the absolute path of each shared object and put it in image.dist
+      local so_file=
+      for so_file in $needed_so_files; do
+        # get the absolute path
+        local so_path="$(find $PREFIX -name $so_file)"
 
-	# add it to the list
+        # add the file in the list
         so_paths="$so_paths"$'\n'"$so_path"
+
+        # if so_path is a link, recursively follow it and add it to the list
+        while [ -L "$so_path" ]; do
+          # get absolute file of the referenced
+          so_path="$(find $PREFIX -name $(readlink $so_path))"
+
+          # add it to the list
+          so_paths="$so_paths"$'\n'"$so_path"
+        done
       done
-    done
+    fi
+  done
 
-    # deduping and sorting
-    so_paths="$(echo "$so_paths" | sort | uniq)"
+  # dependencies have been found
+  if [ ! -z "$so_paths" ]; then
+    # adding to output that will contain the final result
+    if [ ! -z "$output" ]; then
+      output="$output"$'\n'"$so_paths"
+    else
+      output="$so_paths"
+    fi
 
-    echo "$so_paths"
+    # deduping
+    output="$(echo "$output" | sort | uniq)"
+
+    # continue to drill down
+    extractNeededSharedObjectsOf "$so_paths" "$output"
+  else
+    echo "$output"
   fi
 
   return 0

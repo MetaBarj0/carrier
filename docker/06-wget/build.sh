@@ -1,16 +1,10 @@
 #!/bin/sh
-tar -xf wget-1.19.tar.xz
-cd wget-1.19
-mkdir build && cd build
-../configure \
-  --prefix=/tmp/install \
-  --enable-threads=posix \
-  --with-ssl=gnutls \
-  --with-libgnutls-prefix=/usr/local/ \
-  CFLAGS='-O3 -s' \
-  LDFLAGS='-Wl,-rpath,/usr/local/lib/,-rpath-link,/usr/local/lib/'
 
-# Calculates the optimal job count
-JOBS=$(cat /proc/cpuinfo | grep processor | wc -l)
+# grab the build script from the build tools
+CURRENT_DIRECTORY=$(pwd -P)
+cd $(dirname $0)
+SCRIPT_DIRECTORY=$(pwd -P)
+BUILD_TOOLS_DIRECTORY=$SCRIPT_DIRECTORY/../01-build-tools
+cd $CURRENT_DIRECTORY
 
-make -j $JOBS && make install
+exec $BUILD_TOOLS_DIRECTORY/build.sh metabarj0/wget $SCRIPT_DIRECTORY
