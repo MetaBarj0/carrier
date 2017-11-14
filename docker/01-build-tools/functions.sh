@@ -39,8 +39,8 @@ registerBuiltFilesForPackaging() {
   # prefix directory. Produce a list of added files after the build and
   # installation
   docker diff $(hostname) \
-  | grep -E '(A|C)\s'$PREFIX \
-  | sed -r 's/^(A|C)\s//' > /image.dist
+  | grep -E '^A\s'$PREFIX \
+  | sed -r 's/^A\s//' > /image.dist
 }
 
 # finalize the packaging process, fixing /image.dist file paths and commiting
