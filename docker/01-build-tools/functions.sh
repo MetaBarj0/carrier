@@ -1,5 +1,3 @@
-#!/bin/sh
-
 # intended to be called after a successful sources build. This function make
 # the built image a package reusable as base block in other image builds
 package() {
