@@ -8,8 +8,8 @@ RUN apk add --no-cache wget
 WORKDIR /tmp
 RUN wget --no-check-certificate https://ftp.gnu.org/gnu/m4/m4-1.4.18.tar.xz
 
-# intermediate stage to get toolchain files for the build. Using an intermediate
-# tarball to keep symlinks and don't follow them
+# intermediate stage to get toolchain files for the build. 
+# package them to keep symlinks and don't follow them
 FROM metabarj0/gcc as gcc
 RUN exportPackageTo /tmp/gcc
 FROM metabarj0/make as make

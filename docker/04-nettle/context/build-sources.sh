@@ -24,18 +24,5 @@ JOBS=$(cat /proc/cpuinfo | grep processor | wc -l)
 # build and install
 make -j $JOBS && make install
 
-# get the diff between now and before the project was built, only in the prefix
-# directory. Produce a list of added files after the build and installation
-docker diff $(hostname) | grep 'A '$PREFIX | sed 's/A\s//' > /image.dist
-
-# import generic functions
-. /tmp/functions.sh
-
-# adding dynamic library dependencies
-collectSharedObjectDependencies
-
-# intermediate clean
-docker image prune -f
-
-# commit changes
-docker commit $(hostname) $REPOSITORY
+# make this image a package
+package
