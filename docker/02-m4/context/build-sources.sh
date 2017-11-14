@@ -29,11 +29,5 @@ make -j $JOBS && make install
 # import generic functions
 . /tmp/functions.sh
 
-# register built file for packaging
-registerBuiltFilesForPackaging
-
-# adding dynamic library dependencies
-collectSharedObjectDependencies
-
-# finalize the packaging
+# make this image a package
 package

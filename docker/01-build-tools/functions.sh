@@ -1,5 +1,41 @@
 #!/bin/sh
 
+# intended to be called after a successful sources build. This function make
+# the built image a package reusable as base block in other image builds
+package() {
+  # register built file for packaging
+  registerBuiltFilesForPackaging
+
+  # adding dynamic library dependencies
+  collectSharedObjectDependencies
+
+  # finalize the packaging
+  finalizePackage
+}
+
+# intended to be called after a successful sources build. This function make
+# the built image a package reusable as base block in other image builds.
+# Moreover, you can include files and or directories from dependencies used to
+# build this image
+packageIncluding() {
+  # register built file for packaging
+  registerBuiltFilesForPackaging
+
+  # adding dynamic library dependencies
+  collectSharedObjectDependencies
+
+  # include wanted files and directories
+  include # ...
+
+  # finalize the packaging
+  finalizePackage
+}
+
+include() {
+  :
+}
+
+# write all built files in /image.dist file of the image
 registerBuiltFilesForPackaging() {
   # get the diff between now and before the project was built, only in the
   # prefix directory. Produce a list of added files after the build and
@@ -9,13 +45,15 @@ registerBuiltFilesForPackaging() {
   | sed -r 's/^(A|C)\s//' > /image.dist
 }
 
-package() {
+# finalize the packaging process, fixing /image.dist file paths and commiting
+# changes of the container in the image
+finalizePackage() {
   # fix the list (file name containing space characters)
   sed -i'' -r 's/(.*)(\s)(.*)/\1\\\2\3/g' /image.dist
-  
+
   # commit changes
   docker commit $(hostname) $REPOSITORY
-  
+
   # intermediate clean
   docker image prune -f
 }
@@ -123,7 +161,7 @@ collectSharedObjectDependencies() {
         fi
       done
     fi
-  
+
     # file or symlink found
     if [ -f $x -o -L $x ]; then
       so="$(extractNeededSharedObjectsOf $x)"
