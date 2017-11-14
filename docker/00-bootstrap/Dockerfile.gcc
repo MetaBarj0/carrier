@@ -1,5 +1,5 @@
 FROM busybox
 COPY amd64-linux-musl.tar.xz install.sh /tmp/
-COPY exportPackageTo /usr/local/bin/
+COPY exportPackageTo importPackageFrom /usr/local/bin/
 RUN /tmp/install.sh && \
     rm -f /tmp/install.sh

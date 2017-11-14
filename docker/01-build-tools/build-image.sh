@@ -33,7 +33,8 @@ RUN tar --no-recursion -cf /tmp/package.tar /image.dist \$(cat /image.dist)
 
 FROM busybox
 COPY --from=package /tmp/package.tar /tmp/
-COPY --from=package /tmp/exportPackageTo /usr/local/bin/
+COPY --from=package /usr/local/bin/exportPackageTo /usr/local/bin/
+COPY --from=package /usr/local/bin/importPackageFrom /usr/local/bin/
 RUN tar --directory / -xf /tmp/package.tar && \
     rm -f /tmp/package.tar
 $(echo "$EXTRA_DOCKERFILE_COMMANDS")

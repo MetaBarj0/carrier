@@ -141,7 +141,7 @@ if [ $REPOSITORY ]; then
   docker rmi $REPOSITORY
 fi
 
-# creating the exportPackageTo script to be used in metabarj0/gcc image
+# creating the exportPackageTo script
 cat << EOI > exportPackageTo
 #!/bin/sh
 
@@ -159,9 +159,36 @@ mkdir -p "\$package_directory"
 tar \
   -cf "\$package_directory"/"\$package_file_name" \
   --no-recursion \
-  \$(cat /image.dist)
+  \$(cat /image.dist) 2> /dev/null
+
+if [ ! \$? -eq 0 ]; then
+  echo 'Error while creating package...exiting...'
+  exit 1
+fi
 EOI
 chmod +x exportPackageTo
+
+# create the importPackageFrom script
+cat << EOI > importPackageFrom
+#!/bin/sh
+
+if [ -z "\$1" ]; then
+  echo 'Expecting a package...exiting...'
+  exit 1
+fi
+
+# testing the package
+tar -tf "\$1" 2> /dev/null 1> /dev/null
+
+if [ ! \$? -eq 0 ]; then
+  echo 'Invalid or corrupted package...exiting...'
+  exit 1
+fi
+
+# extracting the package and cleanup
+tar --directory / -xf "\$1" && rm -f "\$1"
+EOI
+chmod +x importPackageFrom
 
 # create the container gcc, containing the gcc toolchain based on busybox and static musl
 echo Building metabarj0/gcc image...
@@ -245,7 +272,7 @@ FROM metabarj0/gcc as builder
 COPY make-${MAKE_VERSION}.tar.bz2 build-make.sh /tmp/
 RUN /tmp/build-make.sh
 FROM busybox
-COPY exportPackageTo /usr/local/bin/
+COPY exportPackageTo importPackageFrom /usr/local/bin/
 COPY --from=builder /tmp/make.tar /tmp/
 COPY --from=builder /tmp/image.dist /
 RUN mkdir -p /usr/local && tar --directory /usr/local -xf /tmp/make.tar && rm -f /tmp/make.tar
