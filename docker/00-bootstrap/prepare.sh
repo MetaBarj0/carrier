@@ -82,6 +82,9 @@ fi
 pacman -Syu --noconfirm --needed \
   gcc make wget file lzip docker unzip bison
 
+# saving state to accelerate future uses
+docker commit $(hostname) $(docker ps --filter id=$(hostname) --format='{{.Image}}')
+
 TARGET=amd64-linux-musl
 
 cd /tmp
@@ -139,7 +142,7 @@ if [ $REPOSITORY ]; then
 fi
 
 # creating the exportPackageTo script to be used in metabarj0/gcc image
-cat << EOI > exportToPackage
+cat << EOI > exportPackageTo
 #!/bin/sh
 
 if [ -z "\$1" ]; then
@@ -158,7 +161,7 @@ tar \
   --no-recursion \
   \$(cat /image.dist)
 EOI
-chmod +x exportToPackage
+chmod +x exportPackageTo
 
 # create the container gcc, containing the gcc toolchain based on busybox and static musl
 echo Building metabarj0/gcc image...
@@ -232,7 +235,7 @@ cd build
 
 cd /tmp/make-${MAKE_VERSION}/install
 tar -cf /tmp/make.tar .
-tar --list -f /tmp/make.tar | sed -r 's/^\./usr\/local/' > /tmp/image.dist
+tar --list -f /tmp/make.tar | sed -r 's/^\./\/usr\/local/' > /tmp/image.dist
 EOI
 
 chmod +x build-make.sh
