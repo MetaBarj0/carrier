@@ -28,11 +28,12 @@ docker run --rm -it \
 # built and the file /image.dist containing all the files to package
 # repository name is dynamic. Extra dockerfile commands may be added
 cat << EOI | docker build --squash -t $REPOSITORY -
-FROM $REPOSITORY as tarball
+FROM $REPOSITORY as package
 RUN tar --no-recursion -cf /tmp/package.tar /image.dist \$(cat /image.dist)
 
 FROM busybox
-COPY --from=tarball /tmp/package.tar /tmp
+COPY --from=package /tmp/package.tar /tmp/
+COPY --from=package /tmp/exportPackageTo /usr/local/bin/
 RUN tar --directory / -xf /tmp/package.tar && \
     rm -f /tmp/package.tar
 $(echo "$EXTRA_DOCKERFILE_COMMANDS")

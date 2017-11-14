@@ -30,5 +30,5 @@ RUN  tar --directory / -xf /tmp/make.tar && \
 # copy sources and build script, the image is ready to be run
 WORKDIR /tmp
 COPY --from=m4_fetch /tmp/m4-1.4.18.tar.xz .
-COPY build-sources.sh functions.sh ./
+COPY build-sources.sh functions.sh exportPackageTo ./
 ENTRYPOINT [ "/tmp/build-sources.sh" ]

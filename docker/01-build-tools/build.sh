@@ -30,6 +30,7 @@ BUILD_TOOLS_DIRECTORY=$SCRIPT_DIRECTORY/../01-build-tools
 cd $CURRENT_DIRECTORY
 cp $BUILD_TOOLS_DIRECTORY/Dockerfile.build-image \
    $BUILD_TOOLS_DIRECTORY/functions.sh \
+   $BUILD_TOOLS_DIRECTORY/exportPackageTo \
    $BUILD_TOOLS_DIRECTORY/build-image.sh \
    ${caller_script_directory}/context
 
@@ -56,4 +57,5 @@ docker image prune -f
 # cleanup common build tools
 rm -f ${caller_script_directory}/context/Dockerfile.build-image \
       ${caller_script_directory}/context/build-image.sh \
+      ${caller_script_directory}/context/exportPackageTo \
       ${caller_script_directory}/context/functions.sh

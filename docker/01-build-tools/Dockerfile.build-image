@@ -17,6 +17,7 @@ COPY Dockerfile.build-sources \
      build-image.sh \
      build-sources.sh \
      functions.sh \
+     exportPackageTo \
      ./
 
 # use the legacy entry point of the docker-cli image, verifying that the docker

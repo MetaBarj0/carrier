@@ -138,6 +138,28 @@ if [ $REPOSITORY ]; then
   docker rmi $REPOSITORY
 fi
 
+# creating the exportPackageTo script to be used in metabarj0/gcc image
+cat << EOI > exportToPackage
+#!/bin/sh
+
+if [ -z "\$1" ]; then
+  echo 'Expecting a destination for the package...exiting...'
+  exit 1
+fi
+
+package_directory="\$(dirname "\$1")"
+package_file_name="\$(basename "\$1")"
+
+mkdir -p "\$package_directory"
+
+# create a tar archive in destination, no more, no less
+tar \
+  -cf "\$package_directory"/"\$package_file_name" \
+  --no-recursion \
+  \$(cat /image.dist)
+EOI
+chmod +x exportToPackage
+
 # create the container gcc, containing the gcc toolchain based on busybox and static musl
 echo Building metabarj0/gcc image...
 docker build --squash -t metabarj0/gcc -f Dockerfile.gcc .
@@ -220,6 +242,7 @@ FROM metabarj0/gcc as builder
 COPY make-${MAKE_VERSION}.tar.bz2 build-make.sh /tmp/
 RUN /tmp/build-make.sh
 FROM busybox
+COPY exportPackageTo /usr/local/bin/
 COPY --from=builder /tmp/make.tar /tmp/
 COPY --from=builder /tmp/image.dist /
 RUN mkdir -p /usr/local && tar --directory /usr/local -xf /tmp/make.tar && rm -f /tmp/make.tar
