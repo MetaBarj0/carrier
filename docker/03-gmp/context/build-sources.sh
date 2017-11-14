@@ -25,8 +25,5 @@ JOBS=$(cat /proc/cpuinfo | grep processor | wc -l)
 # build and install
 make -j $JOBS && make -j $JOBS check && make install
 
-# import generic functions
-. /tmp/functions.sh
-
 # make this image a package
 package

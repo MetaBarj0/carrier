@@ -6,6 +6,9 @@ if [ -z $REPOSITORY ]; then
   exit 1
 fi
 
+# insert the source statment for functions.sh, freeing the user to do it
+sed -i'' '2i\. ./functions.sh' build-sources.sh
+
 # this script will build a docker image responsible of building sources and
 # commit the build result into another docker image for packaging
 
