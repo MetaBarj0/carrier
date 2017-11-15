@@ -23,7 +23,7 @@ packageIncluding() {
   collectSharedObjectDependencies
 
   # include wanted files and directories
-  include # ...
+  include "$@"
 
   # finalize the packaging
   finalizePackage
@@ -47,7 +47,6 @@ registerBuiltFilesForPackaging() {
 # changes of the container in the image
 finalizePackage() {
   # fix the list (file name containing space characters)
-  sed -i'' -r 's/(.*)(\s)(.*)/\1\\\2\3/g' /image.dist
 
   # commit changes
   docker commit $(hostname) $REPOSITORY

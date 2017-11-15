@@ -8,6 +8,12 @@ fi
 
 repository="$1"
 
+# remove existing tag or image
+repository_id=$(docker image ls -q "$repository")
+if [ ! -z "$repository_id" ]; then
+  docker rmi "$repository"
+fi
+
 # the second arg is the caller script directory
 if [ -z "$2" ]; then
   echo 'Missing caller script directory path...exiting...'

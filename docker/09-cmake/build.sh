@@ -16,6 +16,6 @@ EOI
 
 exec \
   $BUILD_TOOLS_DIRECTORY/build.sh \
-  metabarj0/ncurses \
+  metabarj0/cmake \
   $SCRIPT_DIRECTORY \
   "$EXTRA_DOCKERFILE_COMMANDS"

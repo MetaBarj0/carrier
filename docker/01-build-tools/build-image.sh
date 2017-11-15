@@ -32,14 +32,14 @@ docker run --rm -it \
 # repository name is dynamic. Extra dockerfile commands may be added
 cat << EOI | docker build --squash -t $REPOSITORY -
 FROM $REPOSITORY as package
-RUN tar --no-recursion -cf /tmp/package.tar /image.dist \$(cat /image.dist)
+RUN exportPackageTo /tmp/package
 
 FROM busybox
-COPY --from=package /tmp/package.tar /tmp/
 COPY --from=package /usr/local/bin/exportPackageTo /usr/local/bin/
 COPY --from=package /usr/local/bin/importPackageFrom /usr/local/bin/
-RUN tar --directory / -xf /tmp/package.tar && \
-    rm -f /tmp/package.tar
+COPY --from=package /tmp/package /tmp/
+COPY --from=package /image.dist /
+RUN importPackageFrom /tmp/package
 $(echo "$EXTRA_DOCKERFILE_COMMANDS")
 LABEL maintainer="metabarj0 <troctsch.cpp@gmail.com>"
 EOI

@@ -155,11 +155,14 @@ package_file_name="\$(basename "\$1")"
 
 mkdir -p "\$package_directory"
 
-# create a tar archive in destination, no more, no less
-tar \
-  -cf "\$package_directory"/"\$package_file_name" \
-  --no-recursion \
-  \$(cat /image.dist) 2> /dev/null
+
+# change IFS in case some files or directories contain spaces in their name
+# and create a tar archive in destination, no more, no less
+# eval is necessary for the command to execute without hicup
+IFS=\$'\n' \
+eval 'tar --no-recursion \
+          -cf "\$package_directory"/"\$package_file_name" \
+	  \$(cat /image.dist)'
 
 if [ ! \$? -eq 0 ]; then
   echo 'Error while creating package...exiting...'
