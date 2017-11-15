@@ -53,6 +53,11 @@ include() {
 
 # write all built files in /image.dist file of the image
 registerBuiltFilesForPackaging() {
+  if [ -z "$PREFIX" ]; then
+    echo 'No prefix specified, $PREFIX must be defined...exiting...'
+    return 1
+  fi
+
   # get the diff between now and before the project was built, only in the
   # prefix directory. Produce a list of added files after the build and
   # installation
@@ -104,6 +109,9 @@ extractNeededSharedObjectsOf() {
     return 1
   fi
 
+  # root path in which search for shared objects
+  local ROOT=/usr/local
+
   # first arg is a least of at least one file
   local input="$1"
 
@@ -126,7 +134,7 @@ extractNeededSharedObjectsOf() {
       local so_file=
       for so_file in $needed_so_files; do
         # get the absolute path
-        local so_path="$(find $PREFIX -name $so_file)"
+        local so_path="$(find $ROOT -name $so_file)"
 
         # add the file in the list
 	so_paths="$(append "$so_paths" "$so_path" $'\n')"
@@ -134,7 +142,7 @@ extractNeededSharedObjectsOf() {
         # if so_path is a link, recursively follow it and add it to the list
         while [ -L "$so_path" ]; do
           # get absolute file of the referenced
-          so_path="$(find $PREFIX -name $(readlink $so_path))"
+          so_path="$(find $ROOT -name $(readlink $so_path))"
 
           # add it to the list
 	  so_paths="$(append "$so_paths" "$so_path" $'\n')"
