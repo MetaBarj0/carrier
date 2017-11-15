@@ -1,0 +1,43 @@
+# this dockerfile build sources using a script and sources tarball fetched
+# from the internet
+
+# fetching sources using a prebuilt wget from alpine, wget in busybox will be
+# built later
+FROM metabarj0/wget as openssl_fetch
+WORKDIR /tmp
+RUN wget --no-check-certificate https://ftp.openssl.org/source/openssl-1.0.2m.tar.gz
+
+# intermediate stage to get toolchain files for the build. 
+# package them to keep symlinks and don't follow them
+FROM metabarj0/gcc as gcc
+RUN exportPackageTo /tmp/gcc
+FROM metabarj0/make as make
+RUN exportPackageTo /tmp/make
+FROM metabarj0/zlib as zlib
+RUN exportPackageTo /tmp/zlib
+FROM metabarj0/perl as perl
+RUN exportPackageTo /tmp/perl
+
+# intermediate build stage
+FROM metabarj0/docker-cli as openssl_build
+
+WORKDIR /tmp
+COPY --from=openssl_fetch /tmp/openssl-1.0.2m.tar.gz .
+COPY build-sources.sh functions.sh ./
+COPY exportPackageTo importPackageFrom /usr/local/bin/
+
+# copy and import packages of dependencies
+COPY --from=gcc /tmp/gcc ./
+RUN importPackageFrom gcc
+COPY --from=make /tmp/make ./
+RUN importPackageFrom make
+COPY --from=zlib /tmp/zlib ./
+RUN importPackageFrom zlib
+COPY --from=perl /tmp/perl ./
+RUN importPackageFrom perl
+
+# need to extend PATH
+ENV PATH /usr/local/perl/bin:${PATH}
+
+# the image is ready to be run
+ENTRYPOINT [ "/tmp/build-sources.sh" ]
