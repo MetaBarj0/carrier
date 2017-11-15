@@ -24,7 +24,6 @@ PREFIX=/usr/local
   --enable-weak-symbols \
   --with-terminfo-dirs="/etc/terminfo:${PREFIX}/share/terminfo" \
   --enable-pc-files \
-  --enable-widec \
   CFLAGS='-O3 -s' \
   CXXFLAGS='-O3 -s' \
   LDFLAGS='-Wl,-rpath,/usr/local/lib/,-rpath-link,/usr/local/lib/'

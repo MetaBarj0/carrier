@@ -30,7 +30,25 @@ packageIncluding() {
 }
 
 include() {
-  :
+  if [ -z "$@" ]; then
+    echo 'Nothing to include...consider using package next time...continuing'
+  fi
+
+  # browse items
+  for item in $@; do
+    if [ ! -e "$item" ]; then
+      echo "$item"' no such file or directory...exiting...'
+      return 1
+    fi
+
+    # directory implies a recursive scan and touch for the future docker commit
+    # add files to image.dist
+    if [ -d "$item" ]; then
+      find "$item" -exec touch "{}" \; -exec echo "{}" \; >> /image.dist
+    else
+      touch "$item" && echo "$item" >> /image.dist
+    fi
+  done
 }
 
 # write all built files in /image.dist file of the image
@@ -46,7 +64,8 @@ registerBuiltFilesForPackaging() {
 # finalize the packaging process, fixing /image.dist file paths and commiting
 # changes of the container in the image
 finalizePackage() {
-  # fix the list (file name containing space characters)
+  # sorting and removing duplicates in image.dist
+  echo "$(sort /image.dist | uniq)" > /image.dist
 
   # commit changes
   docker commit $(hostname) $REPOSITORY
@@ -171,9 +190,6 @@ collectSharedObjectDependencies() {
 
   # adding the dynamic loader link
   echo '/lib/ld-musl-x86_64.so.1' >> /image.dist
-
-  # sorting and removing duplicates in image.dist
-  echo "$(sort /image.dist | uniq)" > /image.dist
 
   return 0
 }

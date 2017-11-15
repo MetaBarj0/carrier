@@ -1,5 +1,4 @@
 #!/bin/sh
-
 # the repository name must exist in the environment
 if [ -z $REPOSITORY ]; then
   echo 'Missing repository name...exiting...'
@@ -28,4 +27,4 @@ export LDFLAGS='-Wl,-rpath,/usr/local/amd64-linux-musl/lib64/,-rpath-link,/usr/l
 make -j $JOBS && make -j $JOBS install
 
 # make this image a package
-packageIncluding /usr/share/terminfo
+packageIncluding /usr/local/share/terminfo

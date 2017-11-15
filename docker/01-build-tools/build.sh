@@ -1,5 +1,7 @@
 #!/bin/sh
 
+set -e
+
 # the first arg is the repository name
 if [ -z "$1" ]; then
   echo 'Missing repository name...exiting...'
@@ -8,9 +10,10 @@ fi
 
 repository="$1"
 
-# remove existing tag or image
+# retag existing image
 repository_id=$(docker image ls -q "$repository")
 if [ ! -z "$repository_id" ]; then
+  docker tag "$repository" "$repository"$(date +%Y%m%d%H%M%S)
   docker rmi "$repository"
 fi
 
