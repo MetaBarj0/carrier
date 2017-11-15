@@ -37,5 +37,5 @@ RUN importPackageFrom m4
 COPY --from=gmp /tmp/gmp ./
 RUN importPackageFrom gmp
 
-# copy sources and build script then, execute the build script
+# image is ready to be run
 ENTRYPOINT [ "/tmp/build-sources.sh" ]
