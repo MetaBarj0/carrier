@@ -41,5 +41,5 @@ RUN importPackageFrom gmp
 COPY --from=gnutls /tmp/gnutls ./
 RUN importPackageFrom gnutls
 
-# copy sources and build script then, execute the build script
+# the image is ready to be run
 ENTRYPOINT [ "/tmp/build-sources.sh" ]
