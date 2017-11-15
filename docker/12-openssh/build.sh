@@ -1,25 +1,18 @@
 #!/bin/sh
-tar -xf openssh-7.6p1.tar.gz
-cd openssh-7.6p1
-mkdir build && cd build
 
-../configure \
-  CFLAGS='-O3 -s' \
-  LDFLAGS='-Wl,-rpath,/usr/local/lib/,-rpath-link,/usr/local/lib/' \
-  --prefix=/tmp/install
+# grab the build script from the build tools
+CURRENT_DIRECTORY=$(pwd -P)
+cd $(dirname $0)
+SCRIPT_DIRECTORY=$(pwd -P)
+BUILD_TOOLS_DIRECTORY=$SCRIPT_DIRECTORY/../01-build-tools
+cd $CURRENT_DIRECTORY
 
-# Calculates the optimal job count
-JOBS=$(cat /proc/cpuinfo | grep processor | wc -l)
+# if this image require some extra commands (environment vars, volumes...), put
+# them here
+EXTRA_DOCKERFILE_COMMANDS=
 
-# add a privilege speparation user and group
-addgroup sshd
-adduser -D -H -G sshd sshd
-
-# explicitely add this directory to prevent an install error
-mkdir -p /tmp/install/lib
-
-make -j $JOBS && make install
-
-# relocate installed libraries
-find /tmp/install/lib -type f -name '*.la' -exec \
-  sed -i'' 's/\/tmp\/install\//\/usr\/local\//g' {} \;
+exec \
+  $BUILD_TOOLS_DIRECTORY/build.sh \
+  metabarj0/openssh \
+  $SCRIPT_DIRECTORY \
+  "$EXTRA_DOCKERFILE_COMMANDS"

@@ -11,12 +11,11 @@ cd openssl-1.0.2m
 
 PREFIX=/usr/local
 
-./config \
-  --prefix=$PREFIX \
-  --openssldir=${PREFIX}/ssl \
-  shared zlib \
-  -O3 -s \
-  -Wl,-rpath,/usr/local/lib/,-rpath-link,/usr/local/lib/
+CFLAGS='-O3 -s -fPIC -Wl,-rpath,/usr/local/lib/,-rpath-link,/usr/local/lib/,-rpath,/usr/local/amd64-linux-musl/lib64/,-rpath-link,/usr/local/amd64-linux-musl/lib64/' \
+  ./config \
+    shared zlib \
+    --prefix=$PREFIX \
+    --openssldir=${PREFIX}/ssl
 
 # Calculates the optimal job count
 JOBS=$(cat /proc/cpuinfo | grep processor | wc -l)

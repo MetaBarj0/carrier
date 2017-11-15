@@ -3,10 +3,10 @@
 
 # fetching sources using a prebuilt wget from alpine, wget in busybox will be
 # built later
-FROM metabarj0/wget as openssl_fetch
+FROM metabarj0/wget as openssh_fetch
 WORKDIR /tmp
 RUN wget --no-check-certificate \
-         https://ftp.openssl.org/source/openssl-1.0.2m.tar.gz
+         https://ftp4.usa.openbsd.org/pub/OpenBSD/OpenSSH/portable/openssh-7.6p1.tar.gz
 
 # intermediate stage to get toolchain files for the build. 
 # package them to keep symlinks and don't follow them
@@ -16,14 +16,14 @@ FROM metabarj0/make as make
 RUN exportPackageTo /tmp/make
 FROM metabarj0/zlib as zlib
 RUN exportPackageTo /tmp/zlib
-FROM metabarj0/perl as perl
-RUN exportPackageTo /tmp/perl
+FROM metabarj0/openssl as openssl
+RUN exportPackageTo /tmp/openssl
 
 # intermediate build stage
-FROM metabarj0/docker-cli as openssl_build
+FROM metabarj0/docker-cli as openssh_build
 
 WORKDIR /tmp
-COPY --from=openssl_fetch /tmp/openssl-1.0.2m.tar.gz .
+COPY --from=openssh_fetch /tmp/openssh-7.6p1.tar.gz .
 COPY build-sources.sh functions.sh ./
 COPY exportPackageTo importPackageFrom /usr/local/bin/
 
@@ -34,11 +34,8 @@ COPY --from=make /tmp/make ./
 RUN importPackageFrom make
 COPY --from=zlib /tmp/zlib ./
 RUN importPackageFrom zlib
-COPY --from=perl /tmp/perl ./
-RUN importPackageFrom perl
-
-# need to extend PATH
-ENV PATH /usr/local/perl/bin:${PATH}
+COPY --from=openssl /tmp/openssl ./
+RUN importPackageFrom openssl
 
 # the image is ready to be run
 ENTRYPOINT [ "/tmp/build-sources.sh" ]
