@@ -1,20 +1,21 @@
 #!/bin/sh
-tar -xf autoconf-2.69.tar.xz
-cd autoconf-2.69
-mkdir build && cd build
 
-../configure \
-  --prefix=/tmp/install \
-  CFLAGS='-O3 -s' \
-  CXXFLAGS='-O3 -s'
+# grab the build script from the build tools
+CURRENT_DIRECTORY=$(pwd -P)
+cd $(dirname $0)
+SCRIPT_DIRECTORY=$(pwd -P)
+BUILD_TOOLS_DIRECTORY=$SCRIPT_DIRECTORY/../01-build-tools
+cd $CURRENT_DIRECTORY
 
-# Calculates the optimal job count
-JOBS=$(cat /proc/cpuinfo | grep processor | wc -l)
+# if this image require some extra commands (environment vars, volumes...), put
+# them here
+EXTRA_DOCKERFILE_COMMANDS="$(cat << EOI
+ENV PATH /usr/local/perl/bin/:${PATH}
+EOI
+)"
 
-make -j $JOBS && make install
-
-# relocate installation directory
-cd /tmp/install
-for f in $(find . -type f -exec grep -H '/tmp/install' {} \; | sort | uniq | sed 's/:.*//'); do
-  sed -i'' 's/\/tmp\/install/\/usr\/local/g' $f
-done
+exec \
+  $BUILD_TOOLS_DIRECTORY/build.sh \
+  metabarj0/autoconf \
+  $SCRIPT_DIRECTORY \
+  "$EXTRA_DOCKERFILE_COMMANDS"

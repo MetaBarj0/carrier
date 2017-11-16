@@ -13,7 +13,7 @@ package() {
 
 # intended to be called after a successful sources build. This function make
 # the built image a package reusable as base block in other image builds.
-# Moreover, you can include files and or directories from dependencies used to
+# Moreover, you can include files, directories or complete package used to
 # build this image
 packageIncluding() {
   # register built file for packaging
@@ -22,33 +22,120 @@ packageIncluding() {
   # adding dynamic library dependencies
   collectSharedObjectDependencies
 
-  # include wanted files and directories
+  # include wanted files, directories or packages
   include "$@"
 
   # finalize the packaging
   finalizePackage
 }
 
-include() {
-  if [ -z "$@" ]; then
-    echo 'Nothing to include...consider using package next time...continuing'
+# internal function taking a packaged (metabarj0/*) docker image as input and
+# returning a list of its packaged files
+getPackageFiles() {
+  # need an image name as input
+  if [ -z "$1" ]; then
+    echo 'No docker image specified...exiting...'
   fi
 
-  # browse items
-  for item in $@; do
-    if [ ! -e "$item" ]; then
-      echo "$item"' no such file or directory...exiting...'
+  # ask docker for images...
+  local image=$(docker image ls -q "$1")
+
+  if [ -z "$image" ]; then
+    echo 'Inexisting docker image: '"$image"'...exiting...'
+    return 1
+  fi
+
+  # output must be one and only one image
+  if [ $(echo "$image" | wc -l) -gt 1 ]; then
+    echo 'Ambiguous image name specified: '"$image"'...exiting...'
+    return 1
+  fi
+
+  # get the image.dist file from the image, bypassing registered entrypoint if
+  # any
+  local dist_file_content="$(
+    docker run --rm --entrypoint='' "$image" cat /image.dist 2> /dev/null)"
+
+  # error while querying image.dist file content
+  if [ ! $? -eq 0 ]; then
+    echo 'Could not get '"$image"' package content...exiting...'
+    return 1
+  fi
+
+  # browse package content, keeping only files
+  local files=
+  for x in $dist_file_content; do
+    # just in case the package specified exists but is not a direct dependency
+    # the the one being built
+    if [ ! -e "$x" ]; then
+      # a non dependency package has not its file copied in the image being
+      # built
+      echo 'Cannot find '"$x"' in the current image.'
+      echo 'Make sure the package you are requesting is a dependency of the'
+      echo 'one you are building...exiting'
       return 1
     fi
 
-    # directory implies a recursive scan and touch for the future docker commit
-    # add files to image.dist
-    if [ -d "$item" ]; then
-      find "$item" -exec touch "{}" \; -exec echo "{}" \; >> /image.dist
-    else
-      touch "$item" && echo "$item" >> /image.dist
+    # collect only files
+    if [ -f "$x" ]; then
+      files="$(append "$files" "$x" $'\n')"
     fi
   done
+
+  echo "$files"
+}
+
+# internal function taking a sequence as input and return another sequence
+# without duplicated values. Each value of the list is followed by a new line
+# character
+makeUnique() {
+  local list=
+  for item in $@; do
+    list="$(append "$list" "$item" $'\n')"
+  done
+
+  echo "$list" | sort | uniq
+}
+
+# internal function designed to include files, directories or entire package
+# inside the buildt image. This function is intended to be called by the
+# 'packageIncluding' function
+include() {
+  if [ -z "$@" ]; then
+    echo 'Nothing to include. Consider using package next time...continuing...'
+    return 0
+  fi
+
+  # final file list to include, will be deduped
+  local file_list=
+  # browse items without dupes
+  for item in $(makeUnique "$@"); do
+    if [ -d "$item" ]; then # directory
+      file_list="$(append "$file_list" "$(find "$item")" $'\n')"
+    elif [ -f "$item" ]; then # file
+      file_list="$(append "$file_list" "$item" $'\n')"
+    else # packaged docker image?
+      # get each files of the package (only files are returned to avoid
+      # unnecessary recursive scan of existing directories
+      local package_files=$(getPackageFiles "$item")
+
+      # item is neither a file, a directory nor a packaged docker image
+      if [ ! $? -eq 0 ]; then
+        echo 'Invalid argument '"$item"' specified...exiting...'
+	return 1
+      fi
+
+      # recursive call with the list of files
+      include "$package_files"
+    fi
+  done
+
+  # dedupe the file list before adding it to image.dist and touch each of its
+  # file
+  file_list="$(makeUnique "$file_list")"
+  for f in $file_list; do touch "$f"; done
+
+  echo "$file_list" >> /image.dist
 }
 
 # write all built files in /image.dist file of the image
@@ -84,7 +171,7 @@ finalizePackage() {
 append() {
   # even if empty, an argument surrounded by "" is detected
   if [ ! $# -eq 3 ]; then
-    echo 'append expects 3 arguments, no more, no les...exiting...'
+    echo 'append expects 3 arguments, no more, no less...exiting...'
     return 1
   fi
 
