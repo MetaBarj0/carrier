@@ -1,20 +1,18 @@
 #!/bin/sh
-tar -xf pcre2-10.30.tar.bz2
-cd pcre2-10.30
-mkdir build && cd build
 
-../configure \
-  --prefix=/tmp/install
+# grab the build script from the build tools
+CURRENT_DIRECTORY=$(pwd -P)
+cd $(dirname $0)
+SCRIPT_DIRECTORY=$(pwd -P)
+BUILD_TOOLS_DIRECTORY=$SCRIPT_DIRECTORY/../01-build-tools
+cd $CURRENT_DIRECTORY
 
-# Calculates the optimal job count
-JOBS=$(cat /proc/cpuinfo | grep processor | wc -l)
+# if this image require some extra commands (environment vars, volumes...), put
+# them here
+EXTRA_DOCKERFILE_COMMANDS=
 
-make -j $JOBS && make install
-
-# relocate installed libraries
-find /tmp/install/lib -type f -name '*.la' -exec \
-  sed -i'' 's/\/tmp\/install\//\/usr\/local\//g' {} \;
-
-# fix prefix in pkgconfig files
-sed -i'' -r 's/^prefix=.*/prefix=\/usr\/local/g' /tmp/install/lib/pkgconfig/libpcre2-8.pc
-sed -i'' -r 's/^prefix=.*/prefix=\/usr\/local/g' /tmp/install/lib/pkgconfig/libpcre2-posix.pc
+exec \
+  $BUILD_TOOLS_DIRECTORY/build.sh \
+  metabarj0/pcre2 \
+  $SCRIPT_DIRECTORY \
+  "$EXTRA_DOCKERFILE_COMMANDS"
