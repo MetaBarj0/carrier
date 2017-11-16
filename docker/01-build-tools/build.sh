@@ -46,7 +46,7 @@ cp $BUILD_TOOLS_DIRECTORY/Dockerfile.build-image \
 
 # build the builder, using a disposable untagged image
 image=$(
-  docker build \
+  docker build --squash \
     -q \
     --build-arg REPOSITORY=$repository \
     -f ${caller_script_directory}/context/Dockerfile.build-image \
@@ -61,7 +61,7 @@ docker run \
   -e EXTRA_DOCKERFILE_COMMANDS="$extra_dockerfile_commands" \
   $image
 
-# cleanup the untagged image
+# cleanup the untagged images
 docker image prune -f
 
 # cleanup common build tools

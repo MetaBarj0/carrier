@@ -19,7 +19,7 @@ sed -i'' '3i\. ./functions.sh' build-sources.sh
 # commit the build result into another docker image for packaging
 
 # build the image an initiate the source build
-docker build \
+docker build --squash \
   -t $REPOSITORY \
   -f Dockerfile.build-sources .
 

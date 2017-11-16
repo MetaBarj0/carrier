@@ -6,22 +6,21 @@ if [ -z $REPOSITORY ]; then
 fi
 
 # extract sources and prepare for build
-tar -xf openssh-7.6p1.tar.gz
-cd openssh-7.6p1
+tar -xf curl-7.56.0.tar.bz2
+cd curl-7.56.0
 mkdir build && cd build
 
 PREFIX=/usr/local
 
 ../configure \
+  --prefix=$PREFIX \
+  --enable-optimize \
   CFLAGS='-O3 -s' \
-  LDFLAGS='-Wl,-rpath,/usr/local/lib/,-rpath-link,/usr/local/lib/,-rpath,/usr/local/lib64/,-rpath-link,/usr/local/lib64/' \
-  --prefix=$PREFIX
+  CXXFLAGS='-O3 -s' \
+  LDFLAGS='-Wl,-rpath,/usr/local/lib,-rpath-link,/usr/local/lib/,-rpath,/usr/local/lib64,-rpath-link,/usr/local/lib64/'
 
 # Calculates the optimal job count
 JOBS=$(cat /proc/cpuinfo | grep processor | wc -l)
-
-# explicitely add this directory to prevent an install error
-mkdir -p ${PREFIX}/lib
 
 make -j $JOBS && make install
 
