@@ -12,14 +12,8 @@ ENV REPOSITORY=${REPOSITORY}
 # isolate work directory
 WORKDIR /tmp
 
-# get scripts to build docker images and build the sources
-COPY Dockerfile.build-sources \
-     build-image.sh \
-     build-sources.sh \
-     functions.sh \
-     exportPackageTo \
-     importPackageFrom \
-     ./
+# get everything in context to build the sources
+COPY * ./
 
 # use the legacy entry point of the docker-cli image, verifying that the docker
 # socket is present
