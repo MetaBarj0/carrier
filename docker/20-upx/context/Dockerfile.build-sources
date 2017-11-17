@@ -1,0 +1,39 @@
+# this dockerfile build sources using a script and sources tarball fetched
+# from the internet
+
+FROM metabarj0/wget as upx_fetch
+WORKDIR /tmp
+RUN wget --no-check-certificate \
+         https://github.com/metabarj0/symmetrical-barnacle/raw/master/upx/master/20170925/upx-master.tar.xz
+
+# intermediate stage to get toolchain files for the build. 
+# package them to keep symlinks and don't follow them
+FROM metabarj0/gcc as gcc
+RUN exportPackageTo /tmp/gcc
+FROM metabarj0/make as make
+RUN exportPackageTo /tmp/make
+FROM metabarj0/ucl as ucl
+RUN exportPackageTo /tmp/ucl
+FROM metabarj0/zlib as zlib
+RUN exportPackageTo /tmp/zlib
+
+# intermediate build stage
+FROM metabarj0/docker-cli as upx_build
+
+WORKDIR /tmp
+COPY --from=upx_fetch /tmp/upx-master.tar.xz .
+COPY build-sources.sh functions.sh ./
+COPY exportPackageTo importPackageFrom /usr/local/bin/
+
+# copy and import packages of dependencies
+COPY --from=gcc /tmp/gcc ./
+RUN importPackageFrom gcc
+COPY --from=make /tmp/make ./
+RUN importPackageFrom make
+COPY --from=ucl /tmp/ucl ./
+RUN importPackageFrom ucl
+COPY --from=zlib /tmp/zlib ./
+RUN importPackageFrom zlib
+
+# the image is ready to be run
+ENTRYPOINT [ "/tmp/build-sources.sh" ]

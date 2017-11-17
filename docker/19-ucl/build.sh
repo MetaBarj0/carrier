@@ -1,20 +1,18 @@
 #!/bin/sh
-tar -xf ucl-1.03.tar.gz
-cd ucl-1.03
 
-mkdir build
-cd build
+# grab the build script from the build tools
+CURRENT_DIRECTORY=$(pwd -P)
+cd $(dirname $0)
+SCRIPT_DIRECTORY=$(pwd -P)
+BUILD_TOOLS_DIRECTORY=$SCRIPT_DIRECTORY/../01-build-tools
+cd $CURRENT_DIRECTORY
 
-../configure \
-  --prefix=/tmp/install \
-  CFLAGS='-O3 -s -std=gnu90' \
-  CXXFLAGS='-O3 -s'
+# if this image require some extra commands (environment vars, volumes...), put
+# them here
+EXTRA_DOCKERFILE_COMMANDS=
 
-# Calculates the optimal job count
-JOBS=$(cat /proc/cpuinfo | grep processor | wc -l)
-
-make -j $JOBS && make install
-
-# relocate installed libraries
-find /tmp/install/lib -type f -name '*.la' -exec \
-  sed -i'' 's/\/tmp\/install\//\/usr\/local\//g' {} \;
+exec \
+  $BUILD_TOOLS_DIRECTORY/build.sh \
+  metabarj0/ucl \
+  $SCRIPT_DIRECTORY \
+  "$EXTRA_DOCKERFILE_COMMANDS"

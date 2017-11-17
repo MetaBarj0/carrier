@@ -1,19 +1,18 @@
 #!/bin/sh
-tar -xf upx-master.tar.xz
-cd upx-master
 
-# change the script interpreter to /bin/sh
-sed -i'' 's/#!.*/#!\/bin\/sh/g' src/stub/scripts/check_whitespace.sh
+# grab the build script from the build tools
+CURRENT_DIRECTORY=$(pwd -P)
+cd $(dirname $0)
+SCRIPT_DIRECTORY=$(pwd -P)
+BUILD_TOOLS_DIRECTORY=$SCRIPT_DIRECTORY/../01-build-tools
+cd $CURRENT_DIRECTORY
 
-# Calculates the optimal job count
-JOBS=$(cat /proc/cpuinfo | grep processor | wc -l)
+# if this image require some extra commands (environment vars, volumes...), put
+# them here
+EXTRA_DOCKERFILE_COMMANDS=
 
-CXXFLAGS='-O3 -s -Wl,-rpath,/usr/local/amd64-linux-musl/lib64/,-rpath-link,/usr/local/amd64-linux-musl/lib64/' \
-  make -j $JOBS all CHECK_WHITESPACE=/bin/true
-
-mkdir -p /tmp/install/bin
-
-mv src/upx.out /tmp/install/bin/upx
-
-# make a test by packing upx itself
-/tmp/install/bin/upx --brute /tmp/install/bin/upx
+exec \
+  $BUILD_TOOLS_DIRECTORY/build.sh \
+  metabarj0/upx \
+  $SCRIPT_DIRECTORY \
+  "$EXTRA_DOCKERFILE_COMMANDS"
