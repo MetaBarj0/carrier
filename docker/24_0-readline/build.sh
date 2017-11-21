@@ -9,13 +9,10 @@ cd $CURRENT_DIRECTORY
 
 # if this image require some extra commands (environment vars, volumes...), put
 # them here
-EXTRA_DOCKERFILE_COMMANDS=$(cat << EOI
-ENV TERMINFO /usr/local/share/terminfo
-EOI
-)
+EXTRA_DOCKERFILE_COMMANDS=
 
 exec \
   $BUILD_TOOLS_DIRECTORY/build.sh \
-  metabarj0/gdb \
+  metabarj0/readline \
   $SCRIPT_DIRECTORY \
   "$EXTRA_DOCKERFILE_COMMANDS"

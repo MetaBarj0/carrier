@@ -1,0 +1,67 @@
+# this dockerfile build sources using a script and sources tarball fetched
+# from the internet
+
+# fetching sources using a prebuilt wget from alpine, wget in busybox will be
+# built later
+FROM metabarj0/wget as gdb_fetch
+WORKDIR /tmp
+RUN wget --no-check-certificate https://ftp.gnu.org/gnu/gdb/gdb-8.0.1.tar.xz
+
+# intermediate stage to get toolchain files for the build. 
+# package them to keep symlinks and don't follow them
+FROM metabarj0/gcc as gcc
+RUN exportPackageTo /tmp/gcc
+FROM metabarj0/make as make
+RUN exportPackageTo /tmp/make
+FROM metabarj0/gmp as gmp
+RUN exportPackageTo /tmp/gmp
+FROM metabarj0/mpfr as mpfr
+RUN exportPackageTo /tmp/mpfr
+FROM metabarj0/mpc as mpc
+RUN exportPackageTo /tmp/mpc
+FROM metabarj0/isl as isl
+RUN exportPackageTo /tmp/isl
+FROM metabarj0/zlib as zlib
+RUN exportPackageTo /tmp/zlib
+FROM metabarj0/ncurses as ncurses
+RUN exportPackageTo /tmp/ncurses
+FROM metabarj0/readline as readline
+RUN exportPackageTo /tmp/readline
+FROM metabarj0/texinfo as texinfo
+RUN exportPackageTo /tmp/texinfo
+
+# intermediate build stage
+FROM metabarj0/docker-cli as gdb_build
+
+WORKDIR /tmp
+COPY --from=gdb_fetch /tmp/gdb-8.0.1.tar.xz .
+COPY build-sources.sh functions.sh ./
+COPY exportPackageTo importPackageFrom /usr/local/bin/
+
+# copy and import packages of dependencies
+COPY --from=gcc /tmp/gcc ./
+RUN importPackageFrom gcc
+COPY --from=make /tmp/make ./
+RUN importPackageFrom make
+COPY --from=gmp /tmp/gmp ./
+RUN importPackageFrom gmp
+COPY --from=mpfr /tmp/mpfr ./
+RUN importPackageFrom mpfr
+COPY --from=mpc /tmp/mpc ./
+RUN importPackageFrom mpc
+COPY --from=isl /tmp/isl ./
+RUN importPackageFrom isl
+COPY --from=zlib /tmp/zlib ./
+RUN importPackageFrom zlib
+COPY --from=ncurses /tmp/ncurses ./
+RUN importPackageFrom ncurses
+COPY --from=readline /tmp/readline ./
+RUN importPackageFrom readline
+COPY --from=texinfo /tmp/texinfo ./
+RUN importPackageFrom texinfo
+
+# I need to find perl
+ENV PATH /usr/local/perl/bin:${PATH}
+
+# the image is ready to be run
+ENTRYPOINT [ "/tmp/build-sources.sh" ]
