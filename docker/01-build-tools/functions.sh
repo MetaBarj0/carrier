@@ -122,7 +122,7 @@ include() {
       # item is neither a file, a directory nor a packaged docker image
       if [ ! $? -eq 0 ]; then
         echo 'Invalid argument '"$item"' specified...exiting...'
-	return 1
+        return 1
       fi
 
       # recursive call with the list of files
@@ -224,7 +224,7 @@ extractNeededSharedObjectsOf() {
         local so_path="$(find $ROOT -name $so_file)"
 
         # add the file in the list
-	so_paths="$(append "$so_paths" "$so_path" $'\n')"
+        so_paths="$(append "$so_paths" "$so_path" $'\n')"
 
         # if so_path is a link, recursively follow it and add it to the list
         while [ -L "$so_path" ]; do
@@ -232,7 +232,7 @@ extractNeededSharedObjectsOf() {
           so_path="$(find $ROOT -name $(readlink $so_path))"
 
           # add it to the list
-	  so_paths="$(append "$so_paths" "$so_path" $'\n')"
+          so_paths="$(append "$so_paths" "$so_path" $'\n')"
         done
       done
     fi
@@ -267,7 +267,7 @@ collectSharedObjectDependencies() {
       for f in $(find $x -type f); do
         so="$(extractNeededSharedObjectsOf $f)"
         if [ ! -z "$so" ]; then
-	  # some shared objects have been found
+          # some shared objects have been found
           echo "$so" >> /image.dist
         fi
       done
@@ -277,7 +277,7 @@ collectSharedObjectDependencies() {
     if [ -f $x -o -L $x ]; then
       so="$(extractNeededSharedObjectsOf $x)"
       if [ ! -z "$so" ]; then
-	  # some shared objects have been found
+          # some shared objects have been found
         echo "$so" >> /image.dist
       fi
     fi
