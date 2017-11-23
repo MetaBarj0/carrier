@@ -101,7 +101,7 @@ makeUnique() {
 # inside the buildt image. This function is intended to be called by the
 # 'packageIncluding' function
 include() {
-  if [ -z "$@" ]; then
+  if [ $# -lt 1 ]; then
     echo 'Nothing to include. Consider using package next time...continuing...'
     return 0
   fi
@@ -117,7 +117,7 @@ include() {
     else # packaged docker image?
       # get each files of the package (only files are returned to avoid
       # unnecessary recursive scan of existing directories
-      local package_files=$(getPackageFiles "$item")
+      local package_files="$(getPackageFiles "$item")"
 
       # item is neither a file, a directory nor a packaged docker image
       if [ ! $? -eq 0 ]; then

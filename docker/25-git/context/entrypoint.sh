@@ -99,13 +99,15 @@ if [ $(whoami) != git ]; then
   # the subscript is only a call to this one but it expand here the value of
   # $@, avoiding to have to supply the 'su -c ...' command with arguments as
   # it does not work as intended
-  cat << EOI > git-execute.sh
+  cat << EOI > entrypoint-as-git.sh
 #!/bin/sh
-exec pre-execute.sh "$@"
+exec entrypoint.sh "$@"
+rm -f \$0
 EOI
-  chmod +x git-execute.sh
+  chown git:git entrypoint-as-git.sh
+  chmod +x entrypoint-as-git.sh
   
-  exec su git -c ./git-execute.sh
+  exec su git -c ./entrypoint-as-git.sh
 # Here, i am the 'git' user
 else
   # some global configuration for git

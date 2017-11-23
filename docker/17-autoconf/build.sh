@@ -10,7 +10,7 @@ cd $CURRENT_DIRECTORY
 # if this image require some extra commands (environment vars, volumes...), put
 # them here
 EXTRA_DOCKERFILE_COMMANDS="$(cat << EOI
-ENV PATH /usr/local/perl/bin/:${PATH}
+ENV PATH /usr/local/perl/bin/:/usr/local/bin/:/usr/bin/:/bin/
 EOI
 )"
 

@@ -1,0 +1,73 @@
+# fetching sources using a prebuilt wget from alpine, wget in busybox will be
+# built later
+FROM metabarj0/wget as git_fetch
+WORKDIR /tmp
+RUN wget --no-check-certificate \
+         https://github.com/git/git/archive/v2.15.0-rc1.tar.gz
+
+# intermediate stage to get toolchain files for the build. 
+# package them to keep symlinks and don't follow them
+FROM metabarj0/gcc as gcc
+RUN exportPackageTo /tmp/gcc
+FROM metabarj0/make as make
+RUN exportPackageTo /tmp/make
+
+FROM metabarj0/openssh as openssh
+RUN exportPackageTo /tmp/openssh
+FROM metabarj0/zlib as zlib
+RUN exportPackageTo /tmp/zlib
+FROM metabarj0/curl as curl
+RUN exportPackageTo /tmp/curl
+FROM metabarj0/openssl as openssl
+RUN exportPackageTo /tmp/openssl
+FROM metabarj0/expat as expat
+RUN exportPackageTo /tmp/expat
+FROM metabarj0/pcre2 as pcre2
+RUN exportPackageTo /tmp/pcre2
+FROM metabarj0/python2 as python2
+RUN exportPackageTo /tmp/python2
+FROM metabarj0/gettext as gettext
+RUN exportPackageTo /tmp/gettext
+FROM metabarj0/autoconf as autoconf
+RUN exportPackageTo /tmp/autoconf
+FROM metabarj0/m4 as m4
+RUN exportPackageTo /tmp/m4
+
+FROM metabarj0/docker-cli as git_build
+WORKDIR /tmp
+COPY --from=git_fetch /tmp/v2.15.0-rc1.tar.gz .
+COPY build-sources.sh functions.sh ./
+COPY exportPackageTo importPackageFrom /usr/local/bin/
+COPY entrypoint.sh /usr/local/bin/
+
+# copy and import packages of dependencies
+COPY --from=gcc /tmp/gcc ./
+RUN importPackageFrom gcc
+COPY --from=make /tmp/make ./
+RUN importPackageFrom make
+COPY --from=zlib /tmp/zlib ./
+RUN importPackageFrom zlib
+COPY --from=openssh /tmp/openssh ./
+RUN importPackageFrom openssh
+COPY --from=curl /tmp/curl ./
+RUN importPackageFrom curl
+COPY --from=openssl /tmp/openssl ./
+RUN importPackageFrom openssl
+COPY --from=expat /tmp/expat ./
+RUN importPackageFrom expat
+COPY --from=pcre2 /tmp/pcre2 ./
+RUN importPackageFrom pcre2
+COPY --from=python2 /tmp/python2 ./
+RUN importPackageFrom python2
+COPY --from=gettext /tmp/gettext ./
+RUN importPackageFrom gettext
+COPY --from=autoconf /tmp/autoconf ./
+RUN importPackageFrom autoconf
+COPY --from=m4 /tmp/m4 ./
+RUN importPackageFrom m4
+
+# I need to find perl
+ENV PATH /usr/local/perl/bin:${PATH}
+
+# the image is ready to be run
+ENTRYPOINT [ "/tmp/build-sources.sh" ]
