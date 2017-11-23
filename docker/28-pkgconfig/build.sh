@@ -1,14 +1,18 @@
 #!/bin/sh
-tar -xf pkg-config-0.29.2.tar.gz
-cd pkg-config-0.29.2
-mkdir build && cd build
 
-../configure \
-  --prefix=/tmp/install \
-  --with-internal-glib \
-  CFLAGS='-O3 -s'
+# grab the build script from the build tools
+CURRENT_DIRECTORY=$(pwd -P)
+cd $(dirname $0)
+SCRIPT_DIRECTORY=$(pwd -P)
+BUILD_TOOLS_DIRECTORY=$SCRIPT_DIRECTORY/../01-build-tools
+cd $CURRENT_DIRECTORY
 
-# Calculates the optimal job count
-JOBS=$(cat /proc/cpuinfo | grep processor | wc -l)
+# if this image require some extra commands (environment vars, volumes...), put
+# them here
+EXTRA_DOCKERFILE_COMMANDS=
 
-make -j $JOBS && make install
+exec \
+  $BUILD_TOOLS_DIRECTORY/build.sh \
+  metabarj0/pkgconfig \
+  $SCRIPT_DIRECTORY \
+  "$EXTRA_DOCKERFILE_COMMANDS"
