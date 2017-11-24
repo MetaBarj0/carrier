@@ -1,29 +1,30 @@
 #!/bin/sh
-tar -xf mysql-5.6.38.tar.gz
 
-# deploy patches
-tar --directory mysql-5.6.38 -xf patch.tar
+# grab the build script from the build tools
+CURRENT_DIRECTORY=$(pwd -P)
+cd $(dirname $0)
+SCRIPT_DIRECTORY=$(pwd -P)
+BUILD_TOOLS_DIRECTORY=$SCRIPT_DIRECTORY/../01-build-tools
+cd $CURRENT_DIRECTORY
 
-cd mysql-5.6.38
-mkdir build && cd build
+# if this image require some extra commands (environment vars, volumes...), put
+# them here
+EXTRA_DOCKERFILE_COMMANDS="$(cat << EOI
+ENV TERMINFO /usr/local/share/terminfo
+ENV PATH /usr/local/mysql/bin:\${PATH}
 
-cmake \
-  -DCMAKE_BUILD_TYPE=Release \
-  -DCMAKE_C_FLAGS_RELEASE='-O3 -s -DNDEBUG' \
-  -DCMAKE_CXX_COMPILER=/usr/local/bin/g++ \
-  -DCMAKE_CXX_FLAGS_RELEASE='-O3 -s -DNDEBUG' \
-  -DCMAKE_EXE_LINKER_FLAGS=-Wl,-rpath,/usr/local/lib/,-rpath-link,/usr/local/lib/,-rpath,/usr/local/amd64-linux-musl/lib64/,-rpath-link,/usr/local/amd64-linux-musl/lib64/ \
-  -DCMAKE_SHARED_LINKER_FLAGS=-Wl,-rpath,/usr/local/lib/,-rpath-link,/usr/local/lib/,-rpath,/usr/local/amd64-linux-musl/lib64/,-rpath-link,/usr/local/amd64-linux-musl/lib64/ \
-  -DWITH_PIC=ON \
-  -DWITH_SSL=system \
-  -DWITH_ZLIB=system \
-  ..
+VOLUME [ "/usr/local/mysql/data/" ]
+VOLUME [ "/usr/local/mysql/etc/" ]
+VOLUME [ "/usr/local/mysql/mysql-files/" ]
 
-# Calculates the optimal job count
-JOBS=$(cat /proc/cpuinfo | grep processor | wc -l)
+EXPOSE 3306
 
-make -j $JOBS && make install
+ENTRYPOINT [ "/usr/local/mysql/mysql_server_start.sh" ]
+EOI
+)"
 
-# remove unnecessaey stuff
-cd /usr/local/mysql
-rm -rf mysql-test sql-bench docs man scripts
+exec \
+  $BUILD_TOOLS_DIRECTORY/build.sh \
+  metabarj0/mysql \
+  $SCRIPT_DIRECTORY \
+  "$EXTRA_DOCKERFILE_COMMANDS"
