@@ -1,20 +1,18 @@
 #!/bin/sh
-tar -xf v1.8.2.tar.gz
-cd ninja-1.8.2
 
-# patching the configuration script on busybox
-sed -i'' 's/#!.*/#!\/usr\/local\/bin\/python/g' configure.py
+# grab the build script from the build tools
+CURRENT_DIRECTORY=$(pwd -P)
+cd $(dirname $0)
+SCRIPT_DIRECTORY=$(pwd -P)
+BUILD_TOOLS_DIRECTORY=$SCRIPT_DIRECTORY/../01-build-tools
+cd $CURRENT_DIRECTORY
 
-export CFLAGS='-O3 -s'
-export CXXFLAGS='-O3 -s'
-export LDFLAGS='-Wl,-rpath,/usr/local/amd64-linux-musl/lib64/,-rpath-link,/usr/local/amd64-linux-musl/lib64/'
+# if this image require some extra commands (environment vars, volumes...), put
+# them here
+EXTRA_DOCKERFILE_COMMANDS=
 
-./configure.py \
-  --bootstrap \
-  --platform=linux
-
-strip ninja
-
-mkdir -p /tmp/install/bin
-
-cp ninja /tmp/install/bin
+exec \
+  $BUILD_TOOLS_DIRECTORY/build.sh \
+  metabarj0/ninja \
+  $SCRIPT_DIRECTORY \
+  "$EXTRA_DOCKERFILE_COMMANDS"
