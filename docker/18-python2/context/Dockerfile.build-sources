@@ -14,8 +14,6 @@ FROM metabarj0/gcc as gcc
 RUN exportPackageTo /tmp/gcc
 FROM metabarj0/make as make
 RUN exportPackageTo /tmp/make
-FROM metabarj0/openssl as openssl
-RUN exportPackageTo /tmp/openssl
 FROM metabarj0/expat as expat
 RUN exportPackageTo /tmp/expat
 FROM metabarj0/zlib as zlib
@@ -35,8 +33,6 @@ COPY --from=gcc /tmp/gcc ./
 RUN importPackageFrom gcc
 COPY --from=make /tmp/make ./
 RUN importPackageFrom make
-COPY --from=openssl /tmp/openssl ./
-RUN importPackageFrom openssl
 COPY --from=expat /tmp/expat ./
 RUN importPackageFrom expat
 COPY --from=zlib /tmp/zlib ./

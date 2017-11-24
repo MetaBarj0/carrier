@@ -34,4 +34,4 @@ find ${PREFIX}/lib/python2.7 -type f -name '*.pyc' -delete
 find ${PREFIX}/lib/python2.7 -type f -name '*.pyo' -delete
 
 # make this image a package
-packageIncluding metabarj0/openssl
+package

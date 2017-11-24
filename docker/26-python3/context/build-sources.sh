@@ -33,4 +33,4 @@ make -j $JOBS && make install
 find /usr/local/lib/python3.6 -type f -name '*.pyc' -delete
 
 # make this image a package
-packageIncluding metabarj0/openssl
+package
