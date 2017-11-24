@@ -32,6 +32,8 @@ FROM metabarj0/autoconf as autoconf
 RUN exportPackageTo /tmp/autoconf
 FROM metabarj0/m4 as m4
 RUN exportPackageTo /tmp/m4
+FROM metabarj0/diffutils as diffutils
+RUN exportPackageTo /tmp/diffutils
 
 FROM metabarj0/docker-cli as git_build
 WORKDIR /tmp
@@ -65,6 +67,8 @@ COPY --from=autoconf /tmp/autoconf ./
 RUN importPackageFrom autoconf
 COPY --from=m4 /tmp/m4 ./
 RUN importPackageFrom m4
+COPY --from=diffutils /tmp/diffutils ./
+RUN importPackageFrom diffutils
 
 # I need to find perl
 ENV PATH /usr/local/perl/bin:${PATH}

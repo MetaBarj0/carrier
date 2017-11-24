@@ -33,4 +33,5 @@ make -j $JOBS \
 packageIncluding \
   /usr/local/bin/entrypoint.sh \
   metabarj0/python2 \
-  metabarj0/openssh
+  metabarj0/openssh \
+  metabarj0/diffutils
