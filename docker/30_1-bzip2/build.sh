@@ -13,6 +13,6 @@ EXTRA_DOCKERFILE_COMMANDS=
 
 exec \
   $BUILD_TOOLS_DIRECTORY/build.sh \
-  metabarj0/boost \
+  metabarj0/bzip2 \
   $SCRIPT_DIRECTORY \
   "$EXTRA_DOCKERFILE_COMMANDS"
