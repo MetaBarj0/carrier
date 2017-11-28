@@ -16,6 +16,6 @@ EOI
 
 exec \
   $BUILD_TOOLS_DIRECTORY/build.sh \
-  metabarj0/readline \
+  metabarj0/lua \
   $SCRIPT_DIRECTORY \
   "$EXTRA_DOCKERFILE_COMMANDS"

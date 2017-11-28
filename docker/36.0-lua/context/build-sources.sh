@@ -6,22 +6,25 @@ if [ -z $REPOSITORY ]; then
 fi
 
 # extract sources and prepare for build
-tar -xf readline-7.0.tar.gz
-cd readline-7.0
-
-mkdir build && cd build
+tar -xf lua-5.3.4.tar.gz
+cd lua-5.3.4
 
 PREFIX=/usr/local
-
-../configure \
-  --prefix=$PREFIX \
-  --with-curses \
-  CFLAGS='-O3 -s'
 
 # Calculates the optimal job count
 JOBS=$(cat /proc/cpuinfo | grep processor | wc -l)
 
-make -j $JOBS && make install
+make CFLAGS='-O3 -s' LDFLAGS='-lncurses' -j $JOBS linux
+
+# move built files manually
+cd src
+mv lua luac ${PREFIX}/bin
+mv liblua.a ${PREFIX}/lib
+
+# copy documentations
+mkdir -p ${PREFIX}/share/lua
+cd ../doc
+mv * ${PREFIX}/share/lua
 
 # make this image a package
-packageIncluding metabarj0/ncurses
+package
