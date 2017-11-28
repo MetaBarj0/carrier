@@ -1,3 +1,10 @@
+# pausing function waiting for a return hit. Useful for debugging, pausing stuff
+# running in the container to allow the user to attach to it
+pause() {
+  echo 'Press return to continue...' 1>&2
+  read
+}
+
 # intended to be called after a successful sources build. This function make
 # the built image a package reusable as base block in other image builds
 package() {
