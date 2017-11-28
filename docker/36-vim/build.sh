@@ -1,19 +1,23 @@
 #!/bin/sh
-tar -xf master.tar.gz
-cd vim-master
 
-CFLAGS='-O3 -s' \
-  LDFLAGS='-Wl,-rpath,/usr/local/lib/,-rpath-link,/usr/local/lib/' \
-  ./configure \
-    --prefix=/tmp/install \
-    --enable-pythoninterp=dynamic \
-    --enable-gui=no \
-    --disable-nls \
-    --without-x \
-    --enable-multibyte \
-    --with-compiledby='metabarj0'
+# grab the build script from the build tools
+CURRENT_DIRECTORY=$(pwd -P)
+cd $(dirname $0)
+SCRIPT_DIRECTORY=$(pwd -P)
+BUILD_TOOLS_DIRECTORY=$SCRIPT_DIRECTORY/../01-build-tools
+cd $CURRENT_DIRECTORY
 
-# Calculates the optimal job count
-JOBS=$(cat /proc/cpuinfo | grep processor | wc -l)
+# if this image require some extra commands (environment vars, volumes...), put
+# them here
+EXTRA_DOCKERFILE_COMMANDS="$(cat << EOI
+ENV TERMINFO /usr/local/share/terminfo
+VOLUME [ "/home/vim/.vim" ]
+ENTRYPOINT [ "entrypoint.sh" ]
+EOI
+)"
 
-make -j $JOBS && make install
+exec \
+  $BUILD_TOOLS_DIRECTORY/build.sh \
+  metabarj0/vim \
+  $SCRIPT_DIRECTORY \
+  "$EXTRA_DOCKERFILE_COMMANDS"

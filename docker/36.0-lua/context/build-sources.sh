@@ -18,6 +18,10 @@ make CFLAGS='-O3 -s' LDFLAGS='-lncurses' -j $JOBS linux
 
 # move built files manually
 cd src
+
+mkdir -p ${PREFIX}
+
+mv *.h ${PREFIX}/include
 mv lua luac ${PREFIX}/bin
 mv liblua.a ${PREFIX}/lib
 
