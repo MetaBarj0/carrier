@@ -1,5 +1,4 @@
 #!/bin/sh
-
 # the repository name must exist in the environment
 if [ -z $REPOSITORY ]; then
   echo 'Missing repository name...exiting...'
