@@ -1,0 +1,16 @@
+# manifest file of the project. Describes the dependencies of the project in
+# term of docker image and which images are exposed once the project is built
+
+# these are dependencies required by this project; manifest, gcc, make and
+# docker-cli are built by the bootstrap project.
+REQUIRES="
+metabarj0/manifest
+metabarj0/gcc
+metabarj0/make
+metabarj0/docker-cli
+"
+
+# this section contains all docker image built by this project
+PROVIDES="
+metabarj0/m4
+"
