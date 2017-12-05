@@ -31,11 +31,10 @@ extra_dockerfile_commands="$3"
 
 echo 'Building context...'
 
-# grab common stuff in build tools, a dockerfile and scripts
+# get the build tools directory
 CURRENT_DIRECTORY=$(pwd -P)
 cd $(dirname $0)
-SCRIPT_DIRECTORY=$(pwd -P)
-BUILD_TOOLS_DIRECTORY=$SCRIPT_DIRECTORY/../01-build-tools
+BUILD_TOOLS_DIRECTORY=$(pwd -P)
 cd $CURRENT_DIRECTORY
 cp $BUILD_TOOLS_DIRECTORY/Dockerfile.build-image \
    $BUILD_TOOLS_DIRECTORY/functions.sh \

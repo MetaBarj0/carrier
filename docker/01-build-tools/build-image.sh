@@ -1,5 +1,4 @@
 #!/bin/sh
-
 set -e
 
 # the repository name must exist in the environment
