@@ -89,6 +89,27 @@ TARGET=amd64-linux-musl
 
 cd /tmp
 
+# grab a snapshot of the master branch of the git repository containing all
+# projects directories and create an image with it. This image will be used
+# by each project build later.
+wget https://github.com/MetaBarj0/scripts/archive/master.tar.gz
+tar -xf master.tar.gz scripts-master/docker && rm -f master.tar.gz
+mv scripts-master/docker .
+rm -rf scripts-master
+tar -cf docker.tar docker
+
+cat << EOI > Dockerfile.manifest
+FROM busybox
+COPY docker.tar /
+RUN tar -xf /docker.tar && rm -rf /docker.tar
+EOI
+
+docker build --squash -t metabarj0/manifest -f Dockerfile.manifest .
+
+docker image prune -f
+
+rm -rf docker docker.tar Dockerfile.manifest
+
 mkdir -p $TARGET
 
 cd $TARGET
