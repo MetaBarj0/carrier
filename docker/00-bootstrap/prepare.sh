@@ -104,11 +104,14 @@ COPY docker.tar /
 RUN tar -xf /docker.tar && rm -rf /docker.tar
 EOI
 
+docker rmi metabarj0/manifest
 docker build --squash -t metabarj0/manifest -f Dockerfile.manifest .
 
 docker image prune -f
 
 rm -rf docker docker.tar Dockerfile.manifest
+
+# manifest built, go on with gcc
 
 mkdir -p $TARGET
 
