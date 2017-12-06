@@ -118,7 +118,6 @@ chmod +x update
 
 cat << EOI > Dockerfile.manifest
 FROM busybox
-COPY docker.tar /
 COPY run_forever update /bin/
 RUN update
 ENTRYPOINT run_forever

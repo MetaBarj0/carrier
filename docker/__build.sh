@@ -46,9 +46,9 @@ EOI
     id=$(docker image ls -q $i)
     if [ -z $id ]; then
       echo 'Hmm...the mandatory image '$i' has not been found on your' 1>&2
-      echo 'docker host...That is annoying! Make sure you have built and'1>&2
+      echo 'docker host...That is annoying! Make sure you have built and' 1>&2
       echo 'run the bootstrap project before attempting to build any' 1>&2
-      echo 'further project. Bootstrap is the only one who need to be'
+      echo 'further project. Bootstrap is the only one who need to be' 1>&2
       echo 'built by hand.' 1>&2
       exit 1
     fi
