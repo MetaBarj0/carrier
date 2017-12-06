@@ -23,7 +23,7 @@ if [ -z "$2" ]; then
   exit 1
 fi
 
-caller_script_directory="$2"
+project_directory="$2"
 
 # the third argument may contain extra Dockerfile commands for the final image
 # it is not mandatory
@@ -41,15 +41,15 @@ cp $BUILD_TOOLS_DIRECTORY/Dockerfile.build-image \
    $BUILD_TOOLS_DIRECTORY/exportPackageTo \
    $BUILD_TOOLS_DIRECTORY/importPackageFrom \
    $BUILD_TOOLS_DIRECTORY/build-image.sh \
-   ${caller_script_directory}/context
+   ${project_directory}/context
 
 # build the builder, using a disposable untagged image
 image=$(
   docker build --squash \
     -q \
     --build-arg REPOSITORY=$repository \
-    -f ${caller_script_directory}/context/Dockerfile.build-image \
-    ${caller_script_directory}/context | \
+    -f ${project_directory}/context/Dockerfile.build-image \
+    ${project_directory}/context | \
   sed 's/sha256://'
 )
 
@@ -64,8 +64,8 @@ docker run \
 docker image prune -f
 
 # cleanup common build tools
-rm -f ${caller_script_directory}/context/Dockerfile.build-image \
-      ${caller_script_directory}/context/build-image.sh \
-      ${caller_script_directory}/context/exportPackageTo \
-      ${caller_script_directory}/context/importPackageFrom \
-      ${caller_script_directory}/context/functions.sh
+rm -f ${project_directory}/context/Dockerfile.build-image \
+      ${project_directory}/context/build-image.sh \
+      ${project_directory}/context/exportPackageTo \
+      ${project_directory}/context/importPackageFrom \
+      ${project_directory}/context/functions.sh

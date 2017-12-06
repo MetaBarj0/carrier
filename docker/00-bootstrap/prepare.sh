@@ -89,27 +89,53 @@ TARGET=amd64-linux-musl
 
 cd /tmp
 
-# grab a snapshot of the master branch of the git repository containing all
-# projects directories and create an image with it. This image will be used
-# by each project build later.
+# create the manifest docker image
+
+# idiot script that run forever, allowing a container continue running in
+# detached mode to exec stuff inside
+cat << EOI > run_forever
+#!/bin/sh
+while true; do
+  sleep 10
+done
+EOI
+chmod +x run_forever
+
+# script to update the manifest
+cat << EOI > update
+#!/bin/sh
+cd /tmp
 wget https://github.com/MetaBarj0/scripts/archive/master.tar.gz
 tar -xf master.tar.gz scripts-master/docker && rm -f master.tar.gz
-mv scripts-master/docker .
+mv scripts-master/docker /
+rm -f /docker.tar.bz2
+tar -cf /docker.tar /docker
+rm -rf /docker
+bzip2 -9 /docker.tar
 rm -rf scripts-master
-tar -cf docker.tar docker
+EOI
+chmod +x update
 
 cat << EOI > Dockerfile.manifest
 FROM busybox
 COPY docker.tar /
-RUN tar -xf /docker.tar && rm -rf /docker.tar
+COPY run_forever update /bin/
+RUN update
+ENTRYPOINT run_forever
 EOI
 
-docker rmi metabarj0/manifest
+# if an old metabarj0/manifest repository exists, delete it
+REPOSITORY=$(docker images metabarj0/manifest -q)
+
+if [ $REPOSITORY ]; then
+  docker rmi $REPOSITORY
+fi
+
 docker build --squash -t metabarj0/manifest -f Dockerfile.manifest .
 
 docker image prune -f
 
-rm -rf docker docker.tar Dockerfile.manifest
+rm -rf Dockerfile.manifest run_forever update
 
 # manifest built, go on with gcc
 
