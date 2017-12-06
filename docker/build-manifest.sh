@@ -90,7 +90,7 @@ setupDirectories() {
   # extract the build tools directory and expose it as global
   cd $(dirname $0)
   local this_directory=$(pwd -P)
-  BUILD_TOOLS_DIRECTORY=${this_directory}/__build-tools
+  BUILD_TOOLS_DIRECTORY=${this_directory}/build-tools
 
   # extract the project directory and expose it as global
   cd $(dirname "$1")

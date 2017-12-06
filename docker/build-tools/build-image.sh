@@ -13,7 +13,6 @@ sed -i'' '2i\set -e' build-sources.sh
 # insert the source statment for functions.sh, freeing the user to do it
 sed -i'' '3i\. ./functions.sh' build-sources.sh
 
-
 # this script will build a docker image responsible of building sources and
 # commit the build result into another docker image for packaging
 

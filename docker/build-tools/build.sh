@@ -41,15 +41,15 @@ cp $BUILD_TOOLS_DIRECTORY/Dockerfile.build-image \
    $BUILD_TOOLS_DIRECTORY/exportPackageTo \
    $BUILD_TOOLS_DIRECTORY/importPackageFrom \
    $BUILD_TOOLS_DIRECTORY/build-image.sh \
-   ${project_directory}/context
+   ${project_directory}
 
 # build the builder, using a disposable untagged image
 image=$(
   docker build --squash \
     -q \
     --build-arg REPOSITORY=$repository \
-    -f ${project_directory}/context/Dockerfile.build-image \
-    ${project_directory}/context | \
+    -f ${project_directory}/Dockerfile.build-image \
+    ${project_directory} | \
   sed 's/sha256://'
 )
 
@@ -64,8 +64,8 @@ docker run \
 docker image prune -f
 
 # cleanup common build tools
-rm -f ${project_directory}/context/Dockerfile.build-image \
-      ${project_directory}/context/build-image.sh \
-      ${project_directory}/context/exportPackageTo \
-      ${project_directory}/context/importPackageFrom \
-      ${project_directory}/context/functions.sh
+rm -f ${project_directory}/Dockerfile.build-image \
+      ${project_directory}/build-image.sh \
+      ${project_directory}/exportPackageTo \
+      ${project_directory}/importPackageFrom \
+      ${project_directory}/functions.sh
