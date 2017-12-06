@@ -119,8 +119,9 @@ buildProject() {
     # preparing manifest content to be copied on the host
     docker cp $image_id:/docker.tar.bz2 $BUILD_TOOLS_DIRECTORY/
     docker kill $image_id
-    tar --directory $BUILD_TOOLS_DIRECTORY -xf docker.tar.bz2
-    rm -f docker.tar.bz2
+    tar --directory $BUILD_TOOLS_DIRECTORY \
+        -xf ${BUILD_TOOLS_DIRECTORY}/docker.tar.bz2
+    rm -f ${BUILD_TOOLS_DIRECTORY}/docker.tar.bz2
   fi
 
   # build all dependencies of this project first if there are
