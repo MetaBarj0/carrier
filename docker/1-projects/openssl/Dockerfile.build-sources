@@ -6,7 +6,7 @@
 FROM metabarj0/wget as openssl_fetch
 WORKDIR /tmp
 RUN wget --no-check-certificate \
-         https://ftp.openssl.org/source/openssl-1.0.2m.tar.gz
+         https://ftp.openssl.org/source/openssl-1.0.2n.tar.gz
 
 # intermediate stage to get toolchain files for the build. 
 # package them to keep symlinks and don't follow them
@@ -23,7 +23,7 @@ RUN exportPackageTo /tmp/perl
 FROM metabarj0/docker-cli as openssl_build
 
 WORKDIR /tmp
-COPY --from=openssl_fetch /tmp/openssl-1.0.2m.tar.gz .
+COPY --from=openssl_fetch /tmp/openssl-1.0.2n.tar.gz .
 COPY build-sources.sh functions.sh ./
 COPY exportPackageTo importPackageFrom /usr/local/bin/
 

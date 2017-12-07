@@ -6,8 +6,8 @@ if [ -z $REPOSITORY ]; then
 fi
 
 # extract sources and prepare for build
-tar -xf openssl-1.0.2m.tar.gz
-cd openssl-1.0.2m
+tar -xf openssl-1.0.2n.tar.gz
+cd openssl-1.0.2n
 
 PREFIX=/usr/local
 
