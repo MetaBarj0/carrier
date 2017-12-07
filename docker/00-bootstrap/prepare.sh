@@ -242,7 +242,52 @@ tar --directory / -xf "\$1" && rm -f "\$1"
 EOI
 chmod +x importPackageFrom
 
-# create the container gcc, containing the gcc toolchain based on busybox and static musl
+# script to install the built gcc image
+cat << EOI > install.sh
+#!/bin/sh
+
+cd /tmp
+
+# move and cleanup libraries
+tar -xf amd64-linux-musl.tar.xz --directory / && \
+  rm /tmp/amd64-linux-musl.tar.xz
+
+# fix links necessary for the dynamic loader to work
+ln -sf /usr/local/lib/libc.so /usr/local/lib/ld-musl-x86_64.so.1
+mkdir -p /lib
+cp -P /usr/local/lib/ld-musl-x86_64.so.1 /lib/
+
+cd /usr/local/bin
+
+# create a bunch of handful aliases
+for f in amd64-linux-musl-*; do
+  target=\$(echo \$f | sed 's/amd64-linux-musl-//g')
+  if [ ! -f \$target ]; then
+    ln -s \$f \$target
+  fi
+done
+
+# create the image.dist file using file installed in /usr/local and the link
+# created in /lib; excluding import, export package feature
+find /usr/local \
+  ! -name importPackageFrom \
+  ! -name exportPackageTo \
+| sed 's/\.\///' > /image.dist
+
+echo '/lib/ld-musl-x86_64.so.1' >> /image.dist
+EOI
+chmod +x install.sh
+
+# dockerfile to build the gcc image
+cat << EOI > Dockerfile.gcc
+FROM busybox
+COPY amd64-linux-musl.tar.xz install.sh /tmp/
+COPY exportPackageTo importPackageFrom /usr/local/bin/
+RUN /tmp/install.sh && \
+    rm -f /tmp/install.sh
+EOI
+
+# create the gcc image, containing the gcc toolchain based on busybox and musl
 echo Building metabarj0/gcc image...
 docker build --squash -t metabarj0/gcc -f Dockerfile.gcc .
 
@@ -364,7 +409,7 @@ chmod +x entrypoint.sh
 cat << EOI > Dockerfile.docker-cli
 FROM alpine as docker
 RUN apk add --no-cache docker
-RUN tar -cf /tmp/docker.tar /usr/bin/docker /lib/ld-musl-x86_64.so.1 /lib/libc.musl-x86_64.so.1
+RUN tar -cf /tmp/docker.tar /usr/bin/docker /lib/ld-musl-x86_64.so.1 /lib/libc.musl-x86_64.so.1 /usr/lib/libltdl.so*
 
 FROM busybox as docker-cli
 RUN mkdir -p /usr/bin/

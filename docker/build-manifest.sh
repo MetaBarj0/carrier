@@ -86,7 +86,7 @@ buildDependencies() {
       find $BUILD_TOOLS_DIRECTORY \
         -name manifest \
         -exec \
-          grep -EH $dep {} \; \
+          grep -EH 'PROVIDES='$dep {} \; \
           | sed -r 's/^([^:]+):.+/\1/'
     )
 
