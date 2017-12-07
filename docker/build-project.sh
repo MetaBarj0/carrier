@@ -105,7 +105,7 @@ setupDirectories() {
   # extract the build tools directory and expose it as global
   cd $(dirname $0)
   local this_directory=$(pwd -P)
-  BUILD_TOOLS_DIRECTORY=${this_directory}/1-build-tools
+  BUILD_TOOLS_DIRECTORY=${this_directory}/1-projects/_build-tools
 
   # extract the project directory and expose it as global
   cd $(dirname "$1")
@@ -132,7 +132,7 @@ buildProject() {
     docker exec $image_id update
   
     # preparing manifest content to be copied on the host
-    docker cp $image_id:/docker.tar.bz2 $BUILD_TOOLS_DIRECTORY/
+    docker cp $image_id:/docker.tar.bz2 $BUILD_TOOLS_DIRECTORY
     docker kill $image_id
     tar --directory $BUILD_TOOLS_DIRECTORY \
         -xf ${BUILD_TOOLS_DIRECTORY}/docker.tar.bz2
