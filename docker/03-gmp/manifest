@@ -1,0 +1,19 @@
+# manifest file of the project. Describes the dependencies of the project in
+# term of docker image and which images are exposed once the project is built
+
+# these are dependencies required by this project; manifest, gcc, make and
+# docker-cli are built by the bootstrap project and are implicitely required
+REQUIRES="metabarj0/m4"
+
+# this section contains the docker image built by this project. only one image
+# can be built per project
+PROVIDES=metabarj0/gmp
+
+# this section contains extra dockerfile commands to add at last just before the
+# final image is being built. Consider to add ENV, VOLUME, ENTRYPOINT, EXPOSE, 
+# LABEL or CMD commands here if necessary
+EXTRA_DOCKERFILE_COMMANDS=""
+
+# feel free to add stuff here if you need. The only requirement being to use the
+# 'sh' syntax and features.
+# Note that this file is entirely parsed before any image build.

@@ -55,7 +55,23 @@ EOI
   done
 }
 
+increaseRecursiveLevel() {
+  # does work even if the var is not set first
+  export RECURSIVE_LEVEL=$(( RECURSIVE_LEVEL + 1 ))
+}
+
+decreaseRecursiveLevel() {
+  # unset the var once 0 is reached
+  export RECURSIVE_LEVEL=$(( RECURSIVE_LEVEL - 1 ))
+  if [ $RECURSIVE_LEVEL -eq 0 ]; then
+    unset RECURSIVE_LEVEL
+  fi
+}
+
 buildDependencies() {
+  # any dependency build will increase the recursive level
+  increaseRecursiveLevel
+
   # browse all dependencies
   for dep in $REQUIRES; do
     # first, check on the host if the image exists; if so, continue without
@@ -67,20 +83,19 @@ buildDependencies() {
 
     # no existing image found on the host, building it
     local dependency_manifest=$(
-      dirname $(
-        find $BUILD_TOOLS_DIRECTORY \
-          -name manifest \
-          -exec \
-            grep -EH $dep {} \; \
-            | sed -r 's/^([^:]+):.+/\1/'
-
-      )
+      find $BUILD_TOOLS_DIRECTORY \
+        -name manifest \
+        -exec \
+          grep -EH $dep {} \; \
+          | sed -r 's/^([^:]+):.+/\1/'
     )
 
     # about to trigger a recursive build in a subshell
-    RECURSIVE_CALL=$(( RECURSIVE_CALL + 1 ))
     ( exec $0 "$dependency_manifest" )
   done
+
+  # dependecies build done, decrese the recursive level, unsetting it if 0
+  decreaseRecursiveLevel
 }
 
 setupDirectories() {
@@ -109,7 +124,7 @@ buildProject() {
 
   # verify if any dependency has been built, avoiding an unnecessary manifest 
   # pull
-  if [ -z ${RECURSIVE_CALL+x} ]; then
+  if [ -z ${RECURSIVE_LEVEL+0} ]; then
     # background no-op running of a manifest container
     local image_id=$(docker run --rm -d metabarj0/manifest)
 
@@ -138,8 +153,10 @@ buildProject() {
       "$EXTRA_DOCKERFILE_COMMANDS"
   )
   
-  # cleanup
-  rm -rf ${BUILD_TOOLS_DIRECTORY}/docker
+  # cleanup if not in a recursive call
+  if [ -z ${RECURSIVE_LEVEL+0} ] || [ $RECURSIVE_LEVEL -eq 0 ]; then
+    rm -rf ${BUILD_TOOLS_DIRECTORY}/docker
+  fi
 }
 
 # running the script, forwarding passed arguments
