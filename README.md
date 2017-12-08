@@ -47,7 +47,7 @@ This project will build the bare minimum to build other images, it will create 4
 - a working gcc toolchain (only the 7.2.0 is supported for now) with c and c++ language activated linked against the
   `musl-libc`
 - a working make
-- a working docker client image `docker-cli` designed to work with your docker host, this is not docker in docker but docker aside docker. It is used as an internal tool to build your projects. It only contains the docker client program as well as an entrypoint to ensure you correctly bound the host socket with a running container of this image.
+- a working docker client image `docker-cli` designed to work with your docker host. It is used as an internal tool to build your projects. It only contains the docker client program as well as an entrypoint to ensure you correctly bound the host socket with a running container of this image.
 
 To build the bootstrap image please, refer to the `README` file in its directory.
 
