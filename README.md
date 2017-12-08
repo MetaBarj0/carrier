@@ -20,7 +20,7 @@ HOW TO USE IT?
 
 This is a repository of scripts for various programs. So far, `docker` and `vagrant` are concerned.
 
-First, you must have `vagrant 2.0`+ and `virtual box 5.1`+ installed on you host machine.
+First, you must have `vagrant 2.0`+ (https://www.vagrantup.com/downloads.html) and `virtual box 5.1`+ (https://www.virtualbox.org/wiki/Downloads) installed on you host machine.
 The constraint of Virtualbox exists because so far, I provide only a a Vagrant box with the virtual box provider
 
 You can modify the virtual machine configuration as you like in the Vagrantfile, especially the part about
