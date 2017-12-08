@@ -12,6 +12,7 @@
 # ...
 # " as an example. Note that each value must be a conform docker image name.
 REQUIRES="metabarj0/python2
+metabarj0/wget
 metabarj0/icu4c
 metabarj0/zlib
 metabarj0/pkgconfig"

@@ -12,6 +12,7 @@
 # ...
 # " as an example. Note that each value must be a conform docker image name.
 REQUIRES="metabarj0/gmp
+metabarj0/wget
 metabarj0/mpfr
 metabarj0/mpc
 metabarj0/isl

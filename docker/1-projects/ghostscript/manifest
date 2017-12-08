@@ -11,7 +11,8 @@
 # dependency4
 # ...
 # " as an example. Note that each value must be a conform docker image name.
-REQUIRES=""
+REQUIRES="
+metabarj0/wget"
 
 # this section contains the docker image built by this project. only one image
 # can be built per project. Once this project is built, the value of this

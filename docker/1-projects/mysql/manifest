@@ -12,6 +12,7 @@
 # ...
 # " as an example. Note that each value must be a conform docker image name.
 REQUIRES="metabarj0/cmake
+metabarj0/wget
 metabarj0/ncurses
 metabarj0/zlib
 metabarj0/openssl
