@@ -1,0 +1,31 @@
+WHAT?
+=====
+
+This directory contains all docker related stuff. It allows you to build the
+bootstrap project, the one you must begin with before going any further.
+Once the bootstrap has been run, you can build any project contained in the
+project subdirectory.
+
+BOOTSTRAP
+=========
+
+The 0-bootstrap subdirectory contains all that is necessary to build and run
+the docker bootstrap image. For more details, read the README file inside the
+0-bootstrap directory
+
+PROJECTS
+========
+
+The 1-projects directory contains several project aiming to provide various
+ready to use appliances in the form of runnable docker images. For more details
+please read the README file in the 1-projects directory.
+
+BUILD SCRIPT
+============
+
+The build-project script is the entrypoint to build a specifi project located
+for instance in the 1-projects directory.
+The only argument it needs is the valid file path of a manifest file located in
+a project directory, for instance: projects/m4/manifest.
+Once invoked properly, it will build the targeted appliance as well as all its
+required dependencies.
