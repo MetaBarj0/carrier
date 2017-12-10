@@ -23,7 +23,11 @@ EOI
     exit 1
   fi
   
-  if [ ! -f "$1" ];then
+  # try to resolve the manifest file path by:
+  #  - appending it to the current user directory, useful if relative path is
+  #    provided
+  #  - testing directly the file path, useful if absolute path is provided
+  if [ ! -f ${USER_DIRECTORY}/"$1" ] && [ ! -f "$1" ]; then
     echo "$argument_error_message" 1>&2
     exit 1
   fi
@@ -100,7 +104,7 @@ buildDependencies() {
 
 setupDirectories() {
   # extract useful directory paths
-  local user_directory=$(pwd -P)
+  USER_DIRECTORY=$(pwd -P)
 
   # extract the build tools directory and expose it as global
   cd $(dirname $0)
@@ -108,19 +112,29 @@ setupDirectories() {
   BUILD_TOOLS_DIRECTORY=${this_directory}/1-projects/_build-tools
 
   # extract the project directory and expose it as global
-  cd $(dirname "$1")
+  cd $(dirname $(resolveManifestFilePath "$@"))
   PROJECT_DIRECTORY=$(pwd -P)
   
   # restore the current user directory as it was before this script execution
-  cd $user_directory
+  cd $USER_DIRECTORY
+}
+
+resolveManifestFilePath() {
+  # testing absolute path first
+  if [ -f "$1" ]; then
+    cd $(dirname "$1")
+    echo $(pwd -P)/manifest
+    cd $USER_DIRECTORY
+  # then testing relative path
+  else
+    echo ${USER_DIRECTORY}/"$1"
+  fi
 }
 
 buildProject() {
   # source the content of the manifest passed, that will initialize some useful 
   # variables
-  . "$1"
-
-  setupDirectories "$@"
+  . "$(resolveManifestFilePath "$@")"
 
   # verify if any dependency has been built, avoiding an unnecessary manifest 
   # pull
@@ -160,6 +174,7 @@ buildProject() {
 }
 
 # running the script, forwarding passed arguments
+setupDirectories "$@"
 checkArguments "$@"
 checkFoundationImages "$@"
 buildProject "$@"
