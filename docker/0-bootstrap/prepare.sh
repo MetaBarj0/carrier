@@ -105,14 +105,14 @@ chmod +x run_forever
 cat << EOI > update
 #!/bin/sh
 cd /tmp
-wget https://github.com/MetaBarj0/scripts/archive/master.tar.gz
-tar -xf master.tar.gz scripts-master/docker && rm -f master.tar.gz
-mv scripts-master/docker /
+wget https://github.com/MetaBarj0/carrier/archive/master.tar.gz
+tar -xf master.tar.gz carrier-master/docker && rm -f master.tar.gz
+mv carrier-master/docker /
 rm -f /docker.tar.bz2
 tar -cf /docker.tar /docker
 rm -rf /docker
 bzip2 -9 /docker.tar
-rm -rf scripts-master
+rm -rf carrier-master
 EOI
 chmod +x update
 
