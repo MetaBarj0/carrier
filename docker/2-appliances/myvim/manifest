@@ -1,0 +1,9 @@
+# This is the manifest file for the appliance. It describes how it is composed,
+# therefore, must contains some variables ruling how the appliances is built.
+
+# The REQUIRES variable contains the dependencies required in term of docker
+# images. If images are not present on the docker host system, the system will
+# attempt to build it.
+REQUIRES="metabarj0/vim
+metabarj0/ctags
+metabarj0/coreutils"

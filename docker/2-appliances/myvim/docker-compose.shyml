@@ -1,0 +1,15 @@
+version: "3"
+
+volumes:
+  .vim:
+
+services:
+  myvim:
+    build: ./
+    container_name: myvim
+    image: myvim:latest
+    volumes:
+      - .vim:/home/vim/.vim
+    environment:
+      - VIM_LINUX_USER=$(id -u)
+      - VIM_LINUX_GROUP=$(id -g)
