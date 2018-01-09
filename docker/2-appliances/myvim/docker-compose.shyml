@@ -10,6 +10,7 @@ services:
     image: myvim:latest
     volumes:
       - .vim:/home/vim/.vim
+      - /var/run/docker.sock:/var/run/docker.sock
     environment:
       - VIM_LINUX_USER=$(id -u)
       - VIM_LINUX_GROUP=$(id -g)

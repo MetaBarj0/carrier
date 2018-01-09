@@ -8,8 +8,8 @@ RUN exportPackageTo /tmp/ctags
 FROM metabarj0/coreutils
 RUN exportPackageTo /tmp/coreutils
 
-# importing packages in a blank image
-FROM busybox
+# importing packages in a docker client image
+FROM metabarj0/docker-cli
 
 COPY --from=vim /tmp/vim /tmp/
 RUN importPackageFrom /tmp/vim
@@ -20,6 +20,7 @@ RUN importPackageFrom /tmp/ctags
 COPY --from=coreutils /tmp/coreutils /tmp/
 RUN importPackageFrom /tmp/coreutils
 
-COPY run_forever.sh /usr/local/bin/
+# import the entrypoint
+COPY entrypoint.sh /usr/local/bin/
 
-ENTRYPOINT [ "entrypoint.sh", "/usr/local/bin/run_forever.sh" ]
+ENTRYPOINT "entrypoint.sh"
