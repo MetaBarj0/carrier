@@ -152,8 +152,8 @@ echo downloading linux-${KERNEL_VERSION} sources...
 wget https://ftp.gnu.org/gnu/linux-libre/4.x/${KERNEL_VERSION}-gnu/linux-libre-${KERNEL_VERSION}-gnu.tar.lz
 
 # grab musl-libc
-echo downloading musl-libc-1.1.16 sources...
-wget http://www.musl-libc.org/releases/musl-1.1.16.tar.gz
+echo downloading musl-libc-1.1.18 sources...
+wget http://www.musl-libc.org/releases/musl-1.1.18.tar.gz
 
 # extract sources
 lzip -d linux-libre-${KERNEL_VERSION}-gnu.tar.lz
@@ -189,58 +189,6 @@ REPOSITORY=$(docker images metabarj0/gcc -q)
 if [ $REPOSITORY ]; then
   docker rmi $REPOSITORY
 fi
-
-# creating the exportPackageTo script
-cat << EOI > exportPackageTo
-#!/bin/sh
-
-if [ -z "\$1" ]; then
-  echo 'Expecting a destination for the package...exiting...'
-  exit 1
-fi
-
-package_directory="\$(dirname "\$1")"
-package_file_name="\$(basename "\$1")"
-
-mkdir -p "\$package_directory"
-
-
-# change IFS in case some files or directories contain spaces in their name
-# and create a tar archive in destination, no more, no less
-# eval is necessary for the command to execute without hicup
-IFS=\$'\n' \
-eval 'tar --no-recursion \
-          -cf "\$package_directory"/"\$package_file_name" \
-	  \$(cat /image.dist)'
-
-if [ ! \$? -eq 0 ]; then
-  echo 'Error while creating package...exiting...'
-  exit 1
-fi
-EOI
-chmod +x exportPackageTo
-
-# create the importPackageFrom script
-cat << EOI > importPackageFrom
-#!/bin/sh
-
-if [ -z "\$1" ]; then
-  echo 'Expecting a package...exiting...'
-  exit 1
-fi
-
-# testing the package
-tar -tf "\$1" 2> /dev/null 1> /dev/null
-
-if [ ! \$? -eq 0 ]; then
-  echo 'Invalid or corrupted package...exiting...'
-  exit 1
-fi
-
-# extracting the package and cleanup
-tar --directory / -xf "\$1" && rm -f "\$1"
-EOI
-chmod +x importPackageFrom
 
 # script to install the built gcc image
 cat << EOI > install.sh

@@ -1,3 +1,42 @@
+# wait an user input to put in a variable and echo this variable. If no
+# input is made by the user before an end-of-line character, the provided
+# default value is used. This function explicitely fails if no default value is
+# provided.
+readValueWithDefault() {
+  if [ -z "$1" ]; then
+    echo 'No default value specified...exiting...'
+    return 1
+  fi
+
+  read value
+
+  if [ -z "$value" ]; then
+    value="$1"
+  fi
+
+  echo "$value"
+}
+
+# generate a random modified base64 string from a number specified as argument.
+# The number is a factor multiplied by 6 thus, the output string has a length
+# multiple of 8 characters. The base 64 is modified as the '/' will be replaced
+# by the '-' character. hence, it'll be more path friendly
+generateRandomString() {
+  # grab the factor from argument, assumes 1 if not provided
+  local factor=$([ -z "$1" ] && echo 1 || echo "$1")
+
+  # use dd with /dev/urandom, piped on base64, piped on sed to change '/' with
+  # '-'
+  local output=$(
+    dd if=/dev/urandom \
+       ibs=6 \
+       count="$factor" 2>/dev/null \
+    | base64 \
+    | sed 's/\//-/g')
+
+  echo "$output"
+}
+
 # pausing function waiting for a return hit. Useful for debugging, pausing stuff
 # running in the container to allow the user to attach to it
 pause() {

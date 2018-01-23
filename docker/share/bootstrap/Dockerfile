@@ -1,7 +1,11 @@
 FROM base/archlinux
 
 WORKDIR /tmp
-COPY prepare.sh build-gcc-7.2.0-musl.sh ./
+COPY prepare.sh \
+     build-gcc-7.2.0-musl.sh \
+     exportPackageTo \
+     importPackageFrom \
+     ./
 
 ENTRYPOINT ./prepare.sh
 
