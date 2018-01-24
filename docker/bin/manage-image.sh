@@ -177,26 +177,26 @@ buildProject() {
   # change directory to the image staging directory to work
   cd $IMAGE_STAGING_DIRECTORY
 
-  # verify if any dependency has been built, avoiding an unnecessary manifest 
-  # pull, this test is true if we are not in a recursive call
-  if [ -z ${RECURSIVE_LEVEL+0} ]; then
-    # background running of a manifest container
-    local image_id=$(docker run --rm -d metabarj0/manifest)
-
-    # update the manifest
-    docker exec $image_id update
-  
-    # preparing manifest content to be copied on the host in the image
-    # staging directory, then kill the running container
-    docker cp $image_id:/docker.tar.bz2 .
-    docker kill $image_id
-
-    tar -xf docker.tar.bz2
-    rm -f docker.tar.bz2
-  fi
-
   # build all dependencies of this project first if there are
   if [ ! -z "$REQUIRES" ]; then
+    # verify if any dependency has been built, avoiding an unnecessary manifest 
+    # pull, this test is true if we are not in a recursive call
+    if [ -z ${RECURSIVE_LEVEL+0} ]; then
+      # background running of a manifest container
+      local image_id=$(docker run --rm -d metabarj0/manifest)
+
+      # update the manifest
+      docker exec $image_id update
+
+      # preparing manifest content to be copied on the host in the image
+      # staging directory, then kill the running container
+      docker cp $image_id:/docker.tar.bz2 .
+      docker kill $image_id
+
+      tar -xf docker.tar.bz2
+      rm -f docker.tar.bz2
+    fi
+
     buildDependencies "$@"
   fi
   
