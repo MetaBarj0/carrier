@@ -118,9 +118,9 @@ buildDependencies() {
 
     # no existing image found on the host, building it, the current directory
     # being the image staging directory, there must be a docker directory to
-    # look into
+    # look into from the global docker tmp directory
     local dependency_manifest=$(
-      find docker \
+      find ${DOCKER_TMP_DIRECTORY} \
         -name manifest \
         -exec \
           grep -EH 'PROVIDES='$dep {} \; \
