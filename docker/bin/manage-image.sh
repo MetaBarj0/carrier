@@ -117,22 +117,18 @@ buildDependencies() {
     fi
 
     # no existing image found on the host, building it, the current directory
-    # being the image staging directory
+    # being the image staging directory, look into the staging area
     local dependency_manifest=$(
-      find . \
+      find $DOCKER_TMP_DIRECTORY \
         -name manifest \
         -exec \
           grep -EH 'PROVIDES='$dep {} \; \
           | sed -r 's/^([^:]+):.+/\1/'
     )
 
-    # transform dependency_manifest to be an absolute path
+    # transform dependency_manifest to be just the image name
     local dependency_manifest_dir=$(dirname $dependency_manifest)
-    cd $dependency_manifest_dir
-
-    dependency_manifest=${dependency_manifest_dir}/manifest
-
-    cd -
+    dependency_manifest=$(basename $dependency_manifest_dir)
 
     # any dependency build will increase the recursive level
     increaseRecursiveLevel
@@ -189,13 +185,13 @@ buildProject() {
     # update the manifest
     docker exec $image_id update
   
-    # preparing manifest content to be copied on the host in the current
-    # directory, then kill the running container
-    docker cp $image_id:/docker.tar.bz2 .
+    # preparing manifest content to be copied on the host in the staging
+    # area, then kill the running container
+    docker cp $image_id:/docker.tar.bz2 $DOCKER_TMP_DIRECTORY
     docker kill $image_id
 
-    tar -xf docker.tar.bz2
-    rm -f docker.tar.bz2
+    tar -xf ${DOCKER_TMP_DIRECTORY}/docker.tar.bz2
+    rm -f ${DOCKER_TMP_DIRECTORY}/docker.tar.bz2
   fi
 
   # build all dependencies of this project first if there are
