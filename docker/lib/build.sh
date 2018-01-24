@@ -10,10 +10,10 @@ fi
 
 repository="$1"
 
-# retag existing image
+# retag existing image, to keep history
 repository_id=$(docker image ls -q "$repository")
 if [ ! -z "$repository_id" ]; then
-  docker tag "$repository" "$repository"$(date +%Y%m%d%H%M%S)
+  docker tag "$repository" "$repository"'-'$(date +%Y%m%d%H%M%S)
   docker rmi "$repository"
 fi
 
@@ -31,27 +31,15 @@ extra_dockerfile_commands="$3"
 
 echo 'Building context...'
 
-# get the build tools directory
-CURRENT_DIRECTORY=$(pwd -P)
-cd $(dirname $0)
-BUILD_TOOLS_DIRECTORY=$(pwd -P)
-cd $CURRENT_DIRECTORY
-cp $BUILD_TOOLS_DIRECTORY/Dockerfile.build-image \
-   $BUILD_TOOLS_DIRECTORY/functions.sh \
-   $BUILD_TOOLS_DIRECTORY/exportPackageTo \
-   $BUILD_TOOLS_DIRECTORY/importPackageFrom \
-   $BUILD_TOOLS_DIRECTORY/build-image.sh \
-   ${project_directory}
-
-# build the builder, using a disposable untagged image
+# build the builder, using a disposable untagged image, relies on the specific
+# format output by the docker build command
 image=$(
   docker build --squash \
     -q \
     --build-arg REPOSITORY=$repository \
     -f ${project_directory}/Dockerfile.build-image \
     ${project_directory} | \
-  sed 's/sha256://'
-)
+  sed 's/sha256://')
 
 # launch the build
 docker run \
@@ -60,12 +48,5 @@ docker run \
   -e EXTRA_DOCKERFILE_COMMANDS="$extra_dockerfile_commands" \
   $image
 
-# cleanup the untagged images
+# cleanup the untagged images, amongst other potentially
 docker image prune -f
-
-# cleanup common build tools
-rm -f ${project_directory}/Dockerfile.build-image \
-      ${project_directory}/build-image.sh \
-      ${project_directory}/exportPackageTo \
-      ${project_directory}/importPackageFrom \
-      ${project_directory}/functions.sh

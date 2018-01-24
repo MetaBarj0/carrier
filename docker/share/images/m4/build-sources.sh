@@ -1,6 +1,8 @@
 #!/bin/sh
 
-# this is the build script of the project. Most of its content is up to you but # the are a couple of rules to observe in order your project build properly.
+# this is the build script of the project. Most of its content is up to you but
+# there are a couple of rules to observe in order for your project to build
+# properly.
 # This script is really not intended to be run directly by hand but to be used
 # by the build system. Therefore, the build system allows you to use some
 # internals dynamically added in this script while the project is being built.
@@ -12,8 +14,10 @@
 #                     function but allowing the user to specify any file or any
 #                     dependecy image to be included in THIS image. Actually
 #                     packageIncluding is package on steroids.
+# Note that using you cannot use 'package' and 'packageIncluding' in the same
+# build script.
 # To build a correct build script, follow these guidelines:
-# 1- Not mandatory but advise, guard your script with this check:
+# 1- Not mandatory but advised, guard your script with this check:
 #    if [ -z $REPOSITORY ]; then
 #      echo 'Missing repository name...exiting...'
 #      exit 1
@@ -53,7 +57,7 @@ PREFIX=/usr/local
   CXXFLAGS='-O3 -s'
 
 # Calculates the optimal job count
-JOBS=$(cat /proc/cpuinfo | grep processor | wc -l)
+JOBS=$(getThreadCount)
 
 # build and install
 make -j $JOBS && make install

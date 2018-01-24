@@ -14,4 +14,4 @@ if [ ! $? -eq 0 ]; then
 fi
 
 # extracting the package and cleanup
-tar --directory / -xf "$1" && rm -f "$1"
+EXTRACT_UNSAFE_SYMLINKS=1 tar --directory / -xf "$1" && rm -f "$1"

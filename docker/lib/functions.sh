@@ -1,3 +1,17 @@
+# return the thread count of the system. Can be used to speed uop build with
+# make for instance using the '-j' switch
+getThreadCount() {
+  echo $(cat /proc/cpuinfo | grep processor | wc -l)
+}
+
+# output the first argument on the stderr
+error() {
+  # output 'error' if there is no argument provided
+  local msg=$([ -z "$1" ] && echo 'error' || echo "$1")
+
+  echo "$msg" 1>&2
+}
+
 # wait an user input to put in a variable and echo this variable. If no
 # input is made by the user before an end-of-line character, the provided
 # default value is used. This function explicitely fails if no default value is

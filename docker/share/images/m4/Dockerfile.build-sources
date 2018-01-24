@@ -3,7 +3,7 @@
 # customize its content is by passing values in the EXTRA_DOCKERFILE_COMMANDS
 # variable in the manifest file of the project.
 # The way this dockerfile works is pretty simple:
-# 1- fetch the necessary stuff to build the appliance by fetching source code
+# 1- fetch the necessary stuff to build the image by fetching source code
 #    for instance:
 #    FROM fetching_image as fetcher
 #    RUN all_that_is_necessary_to_fetch_commands
@@ -25,7 +25,7 @@
 #    a ready-to-use image exists for that purpose: metabarj0/docker-cli.
 #    Finally, a specific entrypoint must be use, this entrypoint being this
 #    project's build script you've written.
-#    with examples above, we could have for instance:
+#    with examples above, one could have for instance:
 #    FROM metabarj0/docker-cli
 #    WORDIR /path/you/want/use/optional
 #    COPY --from=fetcher /path/to/fetched/resources ./
