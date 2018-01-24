@@ -97,6 +97,17 @@ docker run --rm -it \
   -e KERNEL_VERSION="$kernel_version" \
   -e MAKE_VERSION="$make_version" \
   metabarj0/bootstrap
+
+  cat << EOI
+Bootstrapping successfully done! Would you like to remove the
+metabarj0/bootstrap docker image? [Y/n]
+EOI
+
+ local remove_bootstrap="$(readValueWithDefault 'Y')"
+
+ if [ $remove_bootstrap = 'Y' ] || [ $remove_bootstrap = 'y' ]; then
+ docker rmi metabarj0/bootstrap
+ fi
 }
 
 cleanupStagingArea() {
