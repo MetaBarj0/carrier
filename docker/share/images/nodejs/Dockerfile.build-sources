@@ -6,7 +6,7 @@
 FROM metabarj0/wget as nodejs_fetch
 WORKDIR /tmp
 RUN wget --no-check-certificate \
-         https://nodejs.org/dist/v8.9.1/node-v8.9.1.tar.gz
+         https://nodejs.org/dist/v8.9.4/node-v8.9.4.tar.gz
 
 # intermediate stage to get toolchain files for the build. 
 # package them to keep symlinks and don't follow them
@@ -27,7 +27,7 @@ RUN exportPackageTo /tmp/pkgconfig
 FROM metabarj0/docker-cli as nodejs_build
 
 WORKDIR /tmp
-COPY --from=nodejs_fetch /tmp/node-v8.9.1.tar.gz .
+COPY --from=nodejs_fetch /tmp/node-v8.9.4.tar.gz .
 COPY build-sources.sh functions.sh ./
 COPY exportPackageTo importPackageFrom /usr/local/bin/
 
