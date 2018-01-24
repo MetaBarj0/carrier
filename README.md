@@ -40,7 +40,8 @@ repository inside the virtual machine either :
 - by using virtual box shared folder capabilities, copying the repository (or part of it) into the shared folder
 - by using any other method you like
 
-Then, go to the `docker` folder and build manually the bootstrap image (this is the `0-bootstrap` project).
+Then, go to the `docker` folder and bootstrap your docker host using the
+bootstrap script located in the docker/bin/ directory.
 This project will build the bare minimum to build other images, it will create 4 docker images containing :
 
 - a `manifest` image, internally used to build other ones
@@ -49,9 +50,7 @@ This project will build the bare minimum to build other images, it will create 4
 - a working make
 - a working docker client image `docker-cli` designed to work with your docker host. It is used as an internal tool to build your projects. It only contains the docker client program as well as an entrypoint to ensure you correctly bound the host socket with a running container of this image.
 
-To build the bootstrap image please, refer to the `README` file in its directory.
-
 Grab one or two (or more) cups of coffee/tea, it'll take some time to build all resultant images.
 
 Once it's done, verify you have your 4 docker images described above, then, you can proceed building the rest.
-Please read the README file in the `1-projects` directory to learn how to achieve that.
+Please read the README file in the `docker/share/images/` directory to learn how to achieve that.

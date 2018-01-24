@@ -10,13 +10,23 @@ HOW?
 
 Pretty simple. First and mandatory : bootstrap your environment. Then, do what
 you want (create your very own image or appliance, build existing image or
-appliance...) using scripts under the bin/ directory
+appliance...) using scripts under the bin/ directory.
 
 ## bootstrapping
 
 The bootstrap process consist in building the bare minimum to continue ti use
 carrier on your system. For more details, take a look at the README.md file
 located in share/bootstrap directory.
+
+## managing images
+
+Once you bootstrapped your system, you can manage each image that exist in the
+share/images/ directory using the script manage-image in the bin/ directory.
+
+For instance, to build the vim image, the only thing you need to do is :
+* `./manage-image vim`
+* Wait the image is built with each and every dependent images
+* Enjoy your self-contained vim docker image
 
 DETAILS:
 ========
@@ -28,9 +38,9 @@ This section describes some details about how things are organized.
 This directory contains all script directly executable by the user. You can
 bootstrap the environment, build images and build appliances using respective
 scripts :
-* bootstrap.sh
-* manage-image.sh
-* manage-appliance.sh
+* bootstrap
+* manage-image
+* manage-appliance
 
 ## lib/
 
