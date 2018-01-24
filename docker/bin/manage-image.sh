@@ -106,9 +106,6 @@ decreaseRecursiveLevel() {
 }
 
 buildDependencies() {
-  # any dependency build will increase the recursive level
-  increaseRecursiveLevel
-
   # browse all dependencies
   for dep in $REQUIRES; do
     # first, check on the host if the image exists; if so, continue without
@@ -128,12 +125,18 @@ buildDependencies() {
           | sed -r 's/^([^:]+):.+/\1/'
     )
 
+    # any dependency build will increase the recursive level
+    increaseRecursiveLevel
+
     # about to trigger a recursive build in a subshell
-    ( exec $0 "$dependency_manifest" )
+    local this_script_name=$(basename $0)
+    local this_script_path=${DOCKER_BIN_DIRECTORY}/$this_script_name
+    ( exec $this_script_path "$dependency_manifest" )
+
+    # dependencies build done, decrease the recursive level, unsetting it if 0
+    decreaseRecursiveLevel
   done
 
-  # dependencies build done, decrease the recursive level, unsetting it if 0
-  decreaseRecursiveLevel
 }
 
 fillStagingArea() {
