@@ -6,13 +6,6 @@
 
 set -e
 
-## get the directory architecture from the invoke point
-## populate the tmp directory with bootstrap stuff
-## populate the tmp directory with the necessary tooling
-## ask the user for necessary variable with valid defaults values
-## build and run the docker image responsible to bootstrap the system
-## cleanup staging area
-
 setupDirectories() {
   # could be anywhere
   USER_DIRECTORY="$(pwd -P)"
@@ -90,13 +83,13 @@ EOI
   local make_version="$(readValueWithDefault '4.2')"
 
   # run the bootstrap image
-docker run --rm -it \
-  -v /var/run/docker.sock:/var/run/docker.sock \
-  -e GCC_VERSION="$gcc_version" \
-  -e BINUTILS_VERSION="$binutils_version" \
-  -e KERNEL_VERSION="$kernel_version" \
-  -e MAKE_VERSION="$make_version" \
-  metabarj0/bootstrap
+  docker run --rm -it \
+    -v /var/run/docker.sock:/var/run/docker.sock \
+    -e GCC_VERSION="$gcc_version" \
+    -e BINUTILS_VERSION="$binutils_version" \
+    -e KERNEL_VERSION="$kernel_version" \
+    -e MAKE_VERSION="$make_version" \
+    metabarj0/bootstrap
 
   cat << EOI
 Bootstrapping successfully done! Would you like to remove the
@@ -116,11 +109,8 @@ cleanupStagingArea() {
 }
 
 setupDirectories
-
 fetchBootstrapInStagingArea
 fetchLibInStagingArea
-
 buildBootstrap
 runBootstrap
-
 cleanupStagingArea

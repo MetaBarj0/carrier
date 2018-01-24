@@ -4,6 +4,7 @@ WORKDIR /tmp
 COPY prepare.sh \
      build-gcc-7.2.0-musl.sh \
      exportPackageTo \
+     functions.sh \
      importPackageFrom \
      ./
 
