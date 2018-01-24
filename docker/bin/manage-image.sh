@@ -83,6 +83,7 @@ setupDockerDirectories() {
   cd ${DOCKER_BIN_DIRECTORY}/..
 
   DOCKER_ROOT_DIRECTORY=$(pwd -P)
+  DOCKER_BIN_DIRECTORY=${DOCKER_ROOT_DIRECTORY}/bin
   DOCKER_LIB_DIRECTORY=${DOCKER_ROOT_DIRECTORY}/lib
   DOCKER_TMP_DIRECTORY=${DOCKER_ROOT_DIRECTORY}/tmp
   DOCKER_SHARE_DIRECTORY=${DOCKER_ROOT_DIRECTORY}/share
@@ -124,6 +125,14 @@ buildDependencies() {
           grep -EH 'PROVIDES='$dep {} \; \
           | sed -r 's/^([^:]+):.+/\1/'
     )
+
+    # transform dependency_manifest to be an absolute path
+    local dependency_manifest_dir=$(dirname $dependency_manifest)
+    cd $dependency_manifest_dir
+
+    dependency_manifest=${dependency_manifest_dir}/manifest
+
+    cd -
 
     # any dependency build will increase the recursive level
     increaseRecursiveLevel
