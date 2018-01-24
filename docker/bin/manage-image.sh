@@ -117,9 +117,10 @@ buildDependencies() {
     fi
 
     # no existing image found on the host, building it, the current directory
-    # being the image staging directory, look into the staging area
+    # being the image staging directory, there must be a docker directory to
+    # look into
     local dependency_manifest=$(
-      find $DOCKER_TMP_DIRECTORY \
+      find docker \
         -name manifest \
         -exec \
           grep -EH 'PROVIDES='$dep {} \; \
@@ -185,13 +186,13 @@ buildProject() {
     # update the manifest
     docker exec $image_id update
   
-    # preparing manifest content to be copied on the host in the staging
-    # area, then kill the running container
-    docker cp $image_id:/docker.tar.bz2 $DOCKER_TMP_DIRECTORY
+    # preparing manifest content to be copied on the host in the image
+    # staging directory, then kill the running container
+    docker cp $image_id:/docker.tar.bz2 .
     docker kill $image_id
 
-    tar -xf ${DOCKER_TMP_DIRECTORY}/docker.tar.bz2
-    rm -f ${DOCKER_TMP_DIRECTORY}/docker.tar.bz2
+    tar -xf docker.tar.bz2
+    rm -f docker.tar.bz2
   fi
 
   # build all dependencies of this project first if there are
@@ -208,11 +209,6 @@ buildProject() {
       "$EXTRA_DOCKERFILE_COMMANDS"
   )
   
-  # cleanup if not in a recursive call
-  if [ -z ${RECURSIVE_LEVEL+0} ] || [ $RECURSIVE_LEVEL -eq 0 ]; then
-    rm -rf docker
-  fi
-
   # return to the user directory
   cd $USER_DIRECTORY
 }
@@ -220,17 +216,6 @@ buildProject() {
 cleanupStagingArea() {
   rm -rf $IMAGE_STAGING_DIRECTORY
 }
-
-# running the script, forwarding provided arguments
-# first check for foundation images (provided by bootstrap)
-# then, setup some important docker directories
-# then check the provided argument that must be either :
-#  - an absolute path to a manifest file
-#  - a relative path to a manifest file
-#  - the name of an image being present in the /share/images directory and being
-#    a directory containing a valid image project with a manifest file
-# then, fill the staging area for the current image build process
-# finally, build the project
 
 checkFoundationImages
 setupDockerDirectories
