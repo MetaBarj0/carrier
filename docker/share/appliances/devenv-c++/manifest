@@ -1,0 +1,20 @@
+# This is the manifest file of the appliance. It gathers all informations that
+# are necessary to build the appliance from scratch as soon as your system is
+# correctly bootstrapped.
+# It must respect the 'sh' syntax as it defines variables that are sourced at
+# runtime to build the appliance.
+# Mandatory variables are :
+# - IMAGES: declare all images that are necessary to build the appliance. If one
+#   image is not present on your docker host but defined in the share/images
+#   directory, the system will attempt to build it first.
+
+# These are image required to build the appliance. If these image are not built
+# on your docker host but defined in the share/images/ directory, the system
+# will first attempt to build them.
+IMAGES="metabarj0/cmake
+metabarj0/coreutils
+metabarj0/ctags
+metabarj0/gdb
+metabarj0/git
+metabarj0/ninja
+metabarj0/vim"

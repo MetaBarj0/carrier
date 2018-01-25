@@ -6,6 +6,3 @@
 
 set -e
 
-# step 1 : build necessary images
-# step 2 : construct valid docker-compose.yml from *.shyml file
-# step 3 : cleanup?
