@@ -158,6 +158,7 @@ fillStagingArea() {
   cd $DOCKER_LIB_DIRECTORY
 
   cp \
+    .dockerignore \
     build-image.sh \
     build.sh \
     Dockerfile.build-image \

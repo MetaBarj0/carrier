@@ -6,13 +6,10 @@ if [ -z $REPOSITORY ]; then
 fi
 
 # extract sources and prepare for build
-tar -xf boost_1_65_1.tar.bz2
-cd boost_1_65_1
+tar -xf boost_1_66_0.tar.bz2
+cd boost_1_66_0
 
 PREFIX=/usr/local
-
-# fixing build issue when using CPU_ZERO macro
-sed -i'' '75i\void *memset (void *, int, size_t);' ${PREFIX}/include/sched.h
 
 # Calculates the optimal job count
 JOBS=$(cat /proc/cpuinfo | grep processor | wc -l)

@@ -5,7 +5,7 @@
 # built later
 FROM metabarj0/wget as boost_fetch
 WORKDIR /tmp
-RUN wget --no-check-certificate https://dl.bintray.com/boostorg/release/1.65.1/source/boost_1_65_1.tar.bz2
+RUN wget --no-check-certificate https://dl.bintray.com/boostorg/release/1.66.0/source/boost_1_66_0.tar.bz2
 
 # intermediate stage to get toolchain files for the build. 
 # package them to keep symlinks and don't follow them
@@ -28,7 +28,7 @@ RUN exportPackageTo /tmp/zlib
 FROM metabarj0/docker-cli as boost_build
 
 WORKDIR /tmp
-COPY --from=boost_fetch /tmp/boost_1_65_1.tar.bz2 .
+COPY --from=boost_fetch /tmp/boost_1_66_0.tar.bz2 .
 COPY build-sources.sh functions.sh ./
 COPY exportPackageTo importPackageFrom /usr/local/bin/
 
