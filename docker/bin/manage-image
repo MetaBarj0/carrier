@@ -148,12 +148,17 @@ buildDependencies() {
 fillStagingArea() {
   local image_directory=$(dirname $MANIFEST_FILE_PATH)
 
+  # create the intermediate images directory in the staging area if it does not
+  # already exist
+  local staging_directory=${DOCKER_TMP_DIRECTORY}/images
+  mkdir -p $staging_directory
+
   # copy the project in the staging area
-  cp -a $image_directory $DOCKER_TMP_DIRECTORY
+  cp -a $image_directory $staging_directory
 
   # copy necessary lib files in the project directory in the staging area
   local image_name=$(basename $image_directory)
-  IMAGE_STAGING_DIRECTORY=${DOCKER_TMP_DIRECTORY}/$image_name
+  IMAGE_STAGING_DIRECTORY=${staging_directory}/$image_name
 
   cd $DOCKER_LIB_DIRECTORY
 
@@ -216,6 +221,10 @@ buildProject() {
 
 cleanupStagingArea() {
   rm -rf $IMAGE_STAGING_DIRECTORY
+
+  if [ -z $(ls ${DOCKER_TMP_DIRECTORY}/images) ]; then
+    rm -r ${DOCKER_TMP_DIRECTORY}/images
+  fi
 }
 
 checkFoundationImages
