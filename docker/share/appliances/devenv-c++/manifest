@@ -4,6 +4,8 @@
 # It must respect the 'sh' syntax as it defines variables that are sourced at
 # runtime to build the appliance.
 # Mandatory variables are :
+# - NAME: the name of the appliance. Note that the name you give must be conform
+#   to the docker image naming standard
 # - BASE: specify the base image to use in order to build appliance. Note that
 #   busybox is perfectly sufficient. Moreover, you _SHOULD_ note use any image
 #   having a libc different than musl if you use metabarj0/* images as part of
@@ -22,6 +24,9 @@
 #   to be used as environment when running the appliance's service exposed to
 #   the user
 
+# name of the appliance
+NAME=devenv_cpp
+
 # this is the base image used to create the appliance docker image
 BASE=busybox
 
@@ -31,8 +36,10 @@ BASE=busybox
 IMAGES="metabarj0/cmake
 metabarj0/coreutils
 metabarj0/ctags
+metabarj0/gcc
 metabarj0/gdb
 metabarj0/git
+metabarj0/make
 metabarj0/ninja
 metabarj0/vim"
 

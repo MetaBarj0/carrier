@@ -10,6 +10,19 @@ version: '3'
 services:
   shell:
     image: metabarj0/devenv_cpp
+    volumes:
+      - type: volume
+        source: devenv_cpp_.vim
+        target: /home/devenv_cpp/.vim
+      - type: volume
+        source: devenv_cpp_.ssh
+        target: /home/devenv_cpp/.ssh
+      - type: volume
+        source: devenv_cpp_.git
+        target: /home/devenv_cpp/.git
+      - type: volume
+        source: devenv_cpp_src
+        target: /home/devenv_cpp/src
 
 volumes:
   devenv_cpp_.vim:
