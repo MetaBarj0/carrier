@@ -16,13 +16,22 @@ It is composed with following images :
 
 This appliance have its own set of volumes, respectively :
 
-* devenv-c++-.vim
-* devenv-c++-.ssh
+* devenv\_cpp\_.vim
+* devenv\_cpp\_.ssh
+* devenv\_cpp\_.git
 
-# devenv-c++-.vim
+# devenv\_cpp\_.vim
 
 Holds all data for the vim editor to run properly
 
-# devenv-c++-.ssh
+# devenv\_cpp\_.ssh
 
 Contains ssh informations necessary for git to work well
+
+# devenv\_cpp\_.git
+
+Contains git configuration
+
+# devenv\_cpp\_src
+
+Volume designed to contains code bases

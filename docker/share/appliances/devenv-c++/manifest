@@ -4,9 +4,26 @@
 # It must respect the 'sh' syntax as it defines variables that are sourced at
 # runtime to build the appliance.
 # Mandatory variables are :
+# - BASE: specify the base image to use in order to build appliance. Note that
+#   busybox is perfectly sufficient. Moreover, you _SHOULD_ note use any image
+#   having a libc different than musl if you use metabarj0/* images as part of
+#   your appliance
 # - IMAGES: declare all images that are necessary to build the appliance. If one
 #   image is not present on your docker host but defined in the share/images
 #   directory, the system will attempt to build it first.
+# - EXTRA_DOCKERFILE_COMMANDS: set of Dockerfile command that will be appended
+#   to the end of the generated appliance's Dockerfile. Though you could specify
+#   any command here as no checks are made, you will find this feature useful if
+#   you need to specify environment stuff (ENV command) or a specific entrypoint
+#   (ENTRYPOINT command)
+# - SERVICE: the name of the service that exists in the docker-compose.yml file
+#   that the user can run to work with the appliance.
+# - ENVIRONMENT: A variable containing a list of instructions that set variables
+#   to be used as environment when running the appliance's service exposed to
+#   the user
+
+# this is the base image used to create the appliance docker image
+BASE=busybox
 
 # These are image required to build the appliance. If these image are not built
 # on your docker host but defined in the share/images/ directory, the system
@@ -18,3 +35,42 @@ metabarj0/gdb
 metabarj0/git
 metabarj0/ninja
 metabarj0/vim"
+
+# the appliance's dockerfile is generated. Specify here all the commands you
+# need to find at the end of the Dockerfile
+EXTRA_DOCKERFILE_COMMANDS="$(cat << EOI
+RUN mkdir -p /home/devenv_cpp
+WORKDIR /home/devenv_cpp
+
+COPY entrypoint.sh /usr/local/bin/
+ENTRYPOINT [ "/usr/local/bin/entrypoint.sh" ]
+EOI
+)"
+
+# this is the service one could run. A service of this name must be defined in
+# the docker-compose.yml file
+SERVICE=shell
+
+# defines some environment necessary for the appliance to operate
+ENVIRONMENT="$(cat << EOI
+# linux user id and group to dynamically create each time one enter the dev
+# shell.
+LINUX_USER_ID=$(id -u)
+LINUX_USER_GROUP=$(id -g)
+
+# minimal git configuration for a user
+GIT_USER_NAME=\
+$([ ! -z $GIT_USER_NAME ] || echo 'John Doe' || $GIT_USER_NAME)
+
+GIT_USER_MAIL=\
+$([ ! -z $GIT_USER_MAIL ] || echo 'mail@example.org' || $GIT_USER_MAIL)
+
+# sensible ssh informations. Should be found on the docker host
+GIT_SSH_PUBLIC_KEY=\
+[ -f ~/.ssh/id_rsa.pub ] && "$(cat ~/.ssh/id_rsa.pub)" || ''
+
+GIT_SSH_SECRET_KEY=\
+[ -f ~/.ssh/id_rsa ] && "$(cat ~/.ssh/id_rsa)" || ''
+
+EOI
+)"
