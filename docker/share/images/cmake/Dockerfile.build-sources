@@ -6,7 +6,7 @@
 FROM metabarj0/wget as cmake_fetch
 WORKDIR /tmp
 RUN wget --no-check-certificate \
-         https://cmake.org/files/v3.10/cmake-3.10.0-rc1.tar.gz
+         https://cmake.org/files/v3.10/cmake-3.10.2.tar.gz
 
 # intermediate stage to get toolchain files for the build. 
 # package them to keep symlinks and don't follow them
@@ -21,7 +21,7 @@ RUN exportPackageTo /tmp/ncurses
 FROM metabarj0/docker-cli as cmake_build
 
 WORKDIR /tmp
-COPY --from=cmake_fetch /tmp/cmake-3.10.0-rc1.tar.gz .
+COPY --from=cmake_fetch /tmp/cmake-3.10.2.tar.gz .
 COPY build-sources.sh functions.sh ./
 COPY exportPackageTo importPackageFrom /usr/local/bin/
 

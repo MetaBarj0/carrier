@@ -6,8 +6,8 @@ if [ -z $REPOSITORY ]; then
 fi
 
 # extract sources and prepare for build
-tar -xf v2.15.0-rc1.tar.gz
-cd git-2.15.0-rc1
+tar -xf v2.16.1.tar.gz
+cd git-2.16.1
 
 make configure
 

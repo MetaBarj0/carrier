@@ -6,8 +6,8 @@ if [ -z $REPOSITORY ]; then
 fi
 
 # extract sources and prepare for build
-tar -xf cmake-3.10.0-rc1.tar.gz
-cd cmake-3.10.0-rc1
+tar -xf cmake-3.10.2.tar.gz
+cd cmake-3.10.2
 mkdir build && cd build
 
 PREFIX=/usr/local

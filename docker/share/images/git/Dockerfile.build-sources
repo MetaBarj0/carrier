@@ -3,7 +3,7 @@
 FROM metabarj0/wget as git_fetch
 WORKDIR /tmp
 RUN wget --no-check-certificate \
-         https://github.com/git/git/archive/v2.15.0-rc1.tar.gz
+         https://github.com/git/git/archive/v2.16.1.tar.gz
 
 # intermediate stage to get toolchain files for the build. 
 # package them to keep symlinks and don't follow them
@@ -36,7 +36,7 @@ RUN exportPackageTo /tmp/diffutils
 
 FROM metabarj0/docker-cli as git_build
 WORKDIR /tmp
-COPY --from=git_fetch /tmp/v2.15.0-rc1.tar.gz .
+COPY --from=git_fetch /tmp/v2.16.1.tar.gz .
 COPY build-sources.sh functions.sh ./
 COPY exportPackageTo importPackageFrom /usr/local/bin/
 COPY entrypoint.sh /usr/local/bin/
