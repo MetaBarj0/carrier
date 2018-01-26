@@ -32,6 +32,8 @@
 #   any command here as no checks are made, you will find this feature useful if
 #   you need to specify environment stuff (ENV command) or a specific entrypoint
 #   (ENTRYPOINT command)
+# - EXTRA_COMPOSE_ARGUMENTS: optionnal supplementary arguments to pass to the
+#   underlyingly called 'docker-compose run' command when starting the appliance
 
 # These are image required to build the appliance. If these image are not built
 # on your docker host but defined in the share/images/ directory, the system
@@ -75,7 +77,8 @@ ENTRYPOINT [ "/usr/local/bin/entrypoint.sh" ]
 EOI
 )"
 
-# defines some environment necessary for the appliance to operate
+# defines some environment necessary for the appliance to operate. be careful
+# about spaces and new lines here
 ENVIRONMENT="$(cat << EOI
 # linux user id and group to dynamically create each time one enter the dev
 # shell.
@@ -98,3 +101,6 @@ GIT_SSH_SECRET_KEY=\
 
 EOI
 )"
+
+# extra aeguments to pass to the docker-compose run...
+EXTRA_COMPOSE_ARGUMENTS="--service-ports"

@@ -31,6 +31,45 @@ readValueWithDefault() {
   echo "$value"
 }
 
+# creates a pair of the form arg1=arg2
+makePair() {
+  if [ -z "$1" ] || [ -z "$2" ]; then
+    error 'Two arguments are necessary to make a pair...exiting...'
+    return 1
+  fi
+
+  echo "$1"'='"$2"
+}
+
+# extract KEY of a pair having the following form : KEY=VALUE
+keyOf() {
+  if [ -z "$1" ]; then
+    error 'No value specified...exiting...'
+    return 1
+  fi
+
+  echo "$1" | sed -E 's/(.*)=.*$/\1/'
+}
+
+# extract VALUE of a pair having the following form : KEY=VALUE
+valueOf() {
+  if [ -z "$1" ]; then
+    error 'No value specified...exiting...'
+    return 1
+  fi
+
+  echo "$1" | sed -E 's/[^*]*=(.*)$/\1/'
+}
+
+# generate a random modified base64 string ready to be used in a docker build
+# stage alias. Replaced all '-' and '+' by '0'
+generateRandomBuildStageAlias() {
+  local random="$(generateRandomString "$1")"
+
+  # replace annoying special char with 0
+  echo "$random" | sed -E 's/\+|-/0/g'
+}
+
 # generate a random modified base64 string from a number specified as argument.
 # The number is a factor multiplied by 6 thus, the output string has a length
 # multiple of 8 characters. The base 64 is modified as the '/' will be replaced
