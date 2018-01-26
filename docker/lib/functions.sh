@@ -1,4 +1,4 @@
-# return the thread count of the system. Can be used to speed uop build with
+# return the thread count of the system. Can be used to speed up build with
 # make for instance using the '-j' switch
 getThreadCount() {
   echo $(cat /proc/cpuinfo | grep processor | wc -l)

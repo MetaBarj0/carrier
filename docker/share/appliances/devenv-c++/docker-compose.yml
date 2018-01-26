@@ -1,16 +1,30 @@
 # This file describes how to compose various required images intot the final
 # appliance.
-# It is not a _pure_ yaml file as you mabe have noticed the *.shyml extension.
-# Indeed, this file is intended to _produce_ a *.yml file after have been
-# sourced by sh. Therefore, you can use inside this file the power of the shell
-# and resources of your environment to compose your appliance.
+# You have all freedom to compose your file as you like BUT you must pay
+# attention of the image and the container name of the main service of your
+# appliance.
+# The main service is the one reference in the SERVICE variable within the
+# manifest file of the appliance.
 
 version: '3'
 
 services:
+  # the only service of this appliance. This is the one that is referenced in
+  # the SERVICE variable in the manifest file.
   shell:
+    # the image name is defined in the environment and more deeply into the
+    # manifest file. Do not set a different image name here from the name
+    # specified in the manifest file as it will break some feature of the
+    # docker/bin/manage-appliance script.
     image: ${IMAGE_NAME}
+
+    # the container name is defined in the environment and more deeply into the
+    # manifest file. Do not set a different container name here from the name
+    # specified in the manifest file as it will break some feature of the
+    # docker/bin/manage-appliance script.
     container_name: ${CONTAINER_NAME}
+
+    # mount point of volume in the running appliance
     volumes:
       - type: volume
         source: devenv_cpp_.vim
@@ -25,6 +39,7 @@ services:
         source: devenv_cpp_src
         target: /home/devenv_cpp/src
 
+# appliance volumes
 volumes:
   devenv_cpp_.vim:
   devenv_cpp_.ssh:

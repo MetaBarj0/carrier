@@ -172,6 +172,7 @@ fillStagingArea() {
 
   cp \
     .dockerignore \
+    exportPackageTo \
     functions.sh \
     importPackageFrom \
     $APPLIANCE_STAGING_DIRECTORY
@@ -293,7 +294,68 @@ checkRequiredImages() {
 }
 
 compileDockerfile() {
-  # TODO
+  # create a Dockerfile in the appliance staging directory. Using required image
+  # specified in the manifest as well as other variables : 
+  local dependencies_build_stages=
+  local build_stage=
+  for image in $REQUIRED_IMAGES; do
+    # instruction to export the dependency image package
+    build_stage="$(cat << EOI
+FROM "$image"
+RUN exportPackageTo /tmp/package
+EOI
+    )"
+
+    # group these instructions together
+    dependencies_build_stages="$(
+      append $dependencies_build_stages \
+             $'\n'\
+             "$build_stage"
+    )"
+  done
+
+  # now, create the image of the appliance, relying on BASE_IMAGE variable if
+  # set, otherwise, default it to busybox
+  if [ -z $BASE_IMAGE ]; then
+    BASE_IMAGE=busybox
+  fi
+
+  # copy tooling to extract dependencies' packages
+  local appliance_build_stage="$(cat << EOI
+FROM $BASE_IMAGE as $APPLIANCE_NAME
+COPY importPackageFrom /usr/local/bin
+EOI
+  )"
+
+  # import each dependency image package
+  local appliance_image_imports=
+  local dependency_import=
+  for image in $REQUIRED_IMAGES; do
+    # create import instruction for each dependency
+    dependency_import="$(cat << EOI
+COPY --from=$image /tmp/package /tmp/
+RUN importPackageFrom /tmp/package
+EOI
+    )"
+
+    # aggregate them
+    appliance_image_imports="$(
+      append "$appliance_image_imports" \
+             $'\n' \
+             "$dependency_import"
+    )"
+  done
+
+  # final step, create the Dockerfile and appending the
+  # EXTRA_DOCKERFILE_COMMANDS
+  cat << EOI > ${APPLIANCE_STAGING_DIRECTORY}/Dockerfile
+"$dependencies_build_stages"
+"$appliance_build_stage"
+"$EXTRA_DOCKERFILE_COMMANDS"
+EOI
+}
+
+buildApplianceImage() {
   :
 }
 
