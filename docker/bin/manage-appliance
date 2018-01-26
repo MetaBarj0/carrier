@@ -26,6 +26,7 @@ setupDockerDirectories() {
   DOCKER_TMP_DIRECTORY=${DOCKER_ROOT_DIRECTORY}/tmp
   DOCKER_SHARE_DIRECTORY=${DOCKER_ROOT_DIRECTORY}/share
   DOCKER_APPLIANCES_DIRECTORY=${DOCKER_SHARE_DIRECTORY}/appliances
+  DOCKER_IMAGES_DIRECTORY=${DOCKER_SHARE_DIRECTORY}/images
 
   # back to current directory
   cd $USER_DIRECTORY
@@ -40,7 +41,7 @@ validateManifestFile() {
      || [ -z "$CONTAINER_NAME" ]
      || [ -z "$REQUIRED_IMAGES" ]
      || [ -z "$SERVICE" ]; then
-    error $(
+    error "$(
     cat << EOI
 The appliance's manifest file is ill formed as it lacks one or several mandatory
 variable values.
@@ -71,13 +72,13 @@ You can also set these optional variables :
                               command that run a built appliance.
 
 EOI
-    )
+    )"
     exit 1
   fi
 }
 
 usage() {
-  error $(
+  error "$(
   cat << EOI
 Invalid arguments specified. Usage :
 
@@ -105,7 +106,7 @@ Notes :
   will attempt to build it first automatically.
 - Attempting to stop an appliance that is not started does nothing.
 EOI
-  )
+  )"
 }
 
 checkArgument() {
@@ -146,7 +147,11 @@ applianceExists() {
   # name is known
   local result="$(docker image ls --format='{{.Repository}}' $IMAGE_NAME)"
 
-  echo $([ ! -z "$result" ] && echo 0 || echo 1)
+  if [ ! -z "$result" ]; then
+    echo 0
+  else
+    echo 1
+  fi
 }
 
 fillStagingArea() {
@@ -174,9 +179,102 @@ fillStagingArea() {
   cd $USER_DIRECTORY
 }
 
+fetchManifest() {
+  # check if the manifest has already been fetched
+  if [ ! -z ${MANIFEST_FETCHED+0} ]; then
+    return 0
+  fi
+
+  # use the metabarj0/manifest docker image that MUST exist
+  local manifest_image=$(
+    docker image ls --format='{{.Repository}}' metabarj0/manifest)
+
+  if [ -z $manifest_image ]; then
+    error "$(cat << EOI
+Error: cannot find the metabarj0/manifest docker image on your docker host. This
+image is built by the bootstrap process.
+Possible causes are :
+
+  - you did not bootstrap your system. See bootstrap documentation.
+  - you accidentally(or not) removed or untagged the metabarj0/bootstrap docker
+    image.
+
+Taking these remarks into account should help you to resolve your
+problem...exiting...
+EOI
+)"
+    exit 1
+  fi
+
+  # fetching a copy of the docker directory of the carrier repository. master
+  # branch is targeted
+  local container_id=$(docker run --rm -d metabarj0/manifest)
+
+  # update the manifest
+  docker exec $container_id update
+
+  # preparing manifest content to be copied on the host in the appliance staging
+  # directory, then kill the running container
+  cd $APPLIANCE_STAGING_DIRECTORY
+
+  docker cp $container_id:/docker.tar.bz2 .
+  docker kill $container_id
+
+  tar -xf docker.tar.bz2
+  rm -f docker.tar.bz2
+
+  cd $USER_DIRECTORY
+
+  MANIFEST_FETCHED=1
+}
+
 buildDependentImage() {
-  # TODO
-  local image_name="$1"
+  # uses the metabarj0/manifest container to build required images. It'll result
+  # in the creation of a docker directory inside the appliance staging directory
+  fetchManifest
+
+  local docker_in_appliance_staging=${APPLIANCE_STAGING_DIRECTORY}/docker
+
+  local required_image_name="$1"
+
+  # look for the manifest file providing this image
+  local image_manifest_path=$(
+    find $docker_in_appliance_staging \
+      -type f \
+      -name manifest \
+      -exec grep -EH 'PROVIDES='"$required_image_name" {} \; \
+      | sed -E 's/(.+):.*$/\1/')
+
+  if [ -z "$image_manifest_path" ]; then
+    error "$( cat << EOI
+Error: cannot find a suitable project to build the "$required_image_name".
+Possible causes are :
+
+  - mis-spelled required image name
+  - project does not exist in the docker/share/images directory
+  - project exists in your local copy of the docker/share/images directory but
+    not on the distant repository
+  - "$required_image_name" is an image provided by the bootstrap process and
+    your system is not bootstrapped. Such images are metabarj0/gcc,
+    metabarj0/make... See bootstrap documentation for more details
+  - The project exists on the distant repository and has all the necessary to be
+    built BUT the 'PROVIDES' variable in the manifest file is not defined on an
+    unique line (use the '\\' character after '=' for instance).
+
+Taking these remarks into account should help you to solve you
+problem...exiting
+EOI
+    )"
+
+    exit 1
+  fi
+
+  # I've the absolute path of the required image's manifest file, let's build it
+  # in a new sub-shell
+  (
+    exec ${docker_in_appliance_staging}/bin/build-image \
+      "$image_manifest_path"
+  )
 }
 
 checkRequiredImages() {
@@ -194,10 +292,12 @@ checkRequiredImages() {
   done
 }
 
-buildAppliance() {
-  # make sure the manifest file is well formed and contains mandatory stuff
-  validateManifestFile
+compileDockerfile() {
+  # TODO
+  :
+}
 
+buildAppliance() {
   if [ $(applianceExists) ]; then
     cat << EOI
 Appliance '$APPLIANCE_NAME' already exists.
@@ -242,8 +342,8 @@ executeRequestedCommand() {
   # build the function name according to the provided command
   local function_name=${COMMAND}Appliance
 
-  # source the manifest file
-  . $MANIFEST_FILE_PATH
+  # make sure the manifest file is well formed and contains mandatory stuff
+  validateManifestFile
 
   # simply call the function
   $function_name
