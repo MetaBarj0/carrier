@@ -8,9 +8,6 @@
 set -e
 
 checkArgument() {
-  # need some functions...
-  . ${DOCKER_LIB_DIRECTORY}/functions.sh
-
   local argument_error_message="$(
   cat << EOI
 OK, you gave me some baadf00d. I only expect one argument, and this argument
@@ -229,6 +226,9 @@ cleanupStagingArea() {
 
 checkFoundationImages
 setupDockerDirectories
+
+. ${DOCKER_LIB_DIRECTORY}/functions.sh
+
 checkArgument "$1"
 fillStagingArea
 buildProject "$@"

@@ -4,15 +4,19 @@
 # It must respect the 'sh' syntax as it defines variables that are sourced at
 # runtime to build the appliance.
 # Mandatory variables are :
-# - NAME: the name of the appliance. Note that the name you give must be conform
-#   to the docker image naming standard
-# - BASE: specify the base image to use in order to build appliance. Note that
-#   busybox is perfectly sufficient. Moreover, you _SHOULD_ note use any image
-#   having a libc different than musl if you use metabarj0/* images as part of
-#   your appliance
-# - IMAGES: declare all images that are necessary to build the appliance. If one
-#   image is not present on your docker host but defined in the share/images
-#   directory, the system will attempt to build it first.
+# - IMAGE_NAME: the name of the appliance. Note that the name you give must be
+#   conform to the docker image naming standard
+# - CONTAINER_NAME: the name of the container of the running appliance. Note
+#   that the name you give must be conform to the docker container naming
+#   standard
+# - EXTENDS: list of appliances this one will extend. Sort of inheritance. NYI.
+# - BASE_IMAGE: specify the base image to use in order to build appliance. Note
+#   that busybox is perfectly sufficient. Moreover, you _SHOULD_ note use any
+#   image having a libc different than musl if you use metabarj0/* images as
+#   part of your appliance
+# - REQUIRED_IMAGES: declare all images that are necessary to build the
+#   appliance. If one image is not present on your docker host but defined in
+#   the share/images directory, the system will attempt to build it first.
 # - EXTRA_DOCKERFILE_COMMANDS: set of Dockerfile command that will be appended
 #   to the end of the generated appliance's Dockerfile. Though you could specify
 #   any command here as no checks are made, you will find this feature useful if
@@ -24,16 +28,20 @@
 #   to be used as environment when running the appliance's service exposed to
 #   the user
 
-# name of the appliance
-NAME=devenv_cpp
+# name of the appliance docker image
+IMAGE_NAME=metabarj0/devenv_cpp
+CONTAINER_NAME=$IMAGE_NAME
+
+# The base appliance this appliance will extend. NYI
+EXTENDS=
 
 # this is the base image used to create the appliance docker image
-BASE=busybox
+BASE_IMAGE=busybox
 
 # These are image required to build the appliance. If these image are not built
 # on your docker host but defined in the share/images/ directory, the system
 # will first attempt to build them.
-IMAGES="metabarj0/cmake
+REQUIRED_IMAGES="metabarj0/cmake
 metabarj0/coreutils
 metabarj0/ctags
 metabarj0/gcc

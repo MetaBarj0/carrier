@@ -9,7 +9,8 @@ version: '3'
 
 services:
   shell:
-    image: metabarj0/devenv_cpp
+    image: ${IMAGE_NAME}
+    container_name: ${CONTAINER_NAME}
     volumes:
       - type: volume
         source: devenv_cpp_.vim

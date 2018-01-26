@@ -6,3 +6,252 @@
 
 set -e
 
+# managing appliance :
+# - build: build appliance docker image, build all dependencies before
+# - start: build + start the appliance according to its configuration
+# - stop: if running, stop the appliance
+# Hence, stop implies start implies build
+
+setupDockerDirectories() {
+  # current directory
+  USER_DIRECTORY=$(pwd -P)
+
+  # resolving important docker directories
+  DOCKER_BIN_DIRECTORY=$(dirname $0)
+  cd ${DOCKER_BIN_DIRECTORY}/..
+
+  DOCKER_ROOT_DIRECTORY=$(pwd -P)
+  DOCKER_BIN_DIRECTORY=${DOCKER_ROOT_DIRECTORY}/bin
+  DOCKER_LIB_DIRECTORY=${DOCKER_ROOT_DIRECTORY}/lib
+  DOCKER_TMP_DIRECTORY=${DOCKER_ROOT_DIRECTORY}/tmp
+  DOCKER_SHARE_DIRECTORY=${DOCKER_ROOT_DIRECTORY}/share
+  DOCKER_APPLIANCES_DIRECTORY=${DOCKER_SHARE_DIRECTORY}/appliances
+
+  # back to current directory
+  cd $USER_DIRECTORY
+}
+
+validateManifestFile() {
+  # first, source the manifest file
+  . ${APPLIANCE_STAGING_DIRECTORY}/manifest
+
+  # then, testing mandatory variables existence
+  if [ -z "$IMAGE_NAME" ] \
+     || [ -z "$CONTAINER_NAME" ]
+     || [ -z "$REQUIRED_IMAGES" ]
+     || [ -z "$SERVICE" ]; then
+    error $(
+    cat << EOI
+The appliance's manifest file is ill formed as it lacks one or several mandatory
+variable values.
+In order to build an appliance, you must provide a value for the following
+mandatory variables :
+
+  IMAGE_NAME      : the built appliance docker image name
+  CONTAINER_NAME  : the container name of the running appliance
+  REQUIRED_IMAGES : necessary docker images used to build the appliance
+  SERVICE         : name of the service to interact with the appliance
+
+You can also set these optional variables :
+
+  EXTENDS                   : Specify that this appliance will extend aplliances
+                              specified in this variable value (NYI)
+  BASE_IMAGE                : the docker base image to use to create this
+                              appliance. Not that you specifying an image having
+                              its own libc (no matter its flavor is strongly
+                              discouraged and could break your appliance)
+  EXTRA_DOCKERFILE_COMMANDS : A set of Dockerfile command to append to the
+                              generated Dockerfile used to build your appliance.
+                              Usually, ENTRYPOINT command goes here but you're
+                              not limited to this specific command. For instance,
+                              you can use this variable to create supplementary
+                              building stage using the last generated building
+                              stage aliased with your appliance image name
+  ENVIRONMENT               : a set of key=value pairs that is passed to the
+                              command that run a built appliance.
+
+EOI
+    )
+    exit 1
+  fi
+}
+
+usage() {
+  error $(
+  cat << EOI
+Invalid arguments specified. Usage :
+
+  manage-appliance <command> <appliance> where
+
+<command> is either :
+
+  build
+  start
+  stop
+
+and <appliance> is either :
+- an absolute path to a manifest file of an appliance
+- a relative path of a manifest file of an appliance
+- an appliance name
+
+Example :
+
+  manage-appliance start devenv_cpp
+
+will attempt to start the devenv_cpp appliance.
+
+Notes :
+- If an appliance is asked for starting and is not built beforehand, the system
+  will attempt to build it first automatically.
+- Attempting to stop an appliance that is not started does nothing.
+EOI
+  )
+}
+
+checkArgument() {
+  COMMAND="$1"
+
+  # verify the command specified, if invalid, usage then exit 1
+  if [ "$COMMAND" != 'build' ] \
+     && [ "$COMMAND" != 'start' ] \
+     && [ "$COMMAND" != 'stop' ]; then
+    usage
+    exit 1
+  fi
+
+  # try to resolve the manifest file path by:
+  #  - appending it to the current user directory, useful if relative path is
+  #    provided
+  #  - testing directly the file path, useful if absolute path is provided
+  local assumed_manifest_file_path="$2"
+  if [ ! -f ${USER_DIRECTORY}/"$assumed_manifest_file_path" ] \
+     && [ ! -f "$assumed_manifest_file_path" ]; then
+    # not a file path, testing the appliance name
+    assumed_manifest_file_path=${DOCKER_APPLIANCES_DIRECTORY}/"$2"/manifest
+    if [ ! -f ${assumed_manifest_file_path} ]; then
+      usage
+      exit 1
+    fi
+  fi
+
+  # OK, valid argument, exposing the manifest file absolute path
+  MANIFEST_FILE_PATH=${assumed_manifest_file_path}
+
+  # BTW, get the appliance name
+  APPLIANCE_NAME=$(basename $(dirname $MANIFEST_FILE_PATH))
+}
+
+applianceExists() {
+  # at this stage, the manifest file has been sourced and the appliance image
+  # name is known
+  local result="$(docker image ls --format='{{.Repository}}' $IMAGE_NAME)"
+
+  echo $([ ! -z "$result" ] && echo 0 || echo 1)
+}
+
+fillStagingArea() {
+  local appliance_directory=$(dirname $MANIFEST_FILE_PATH)
+
+  # create the intermediate appliance directory in the staging area if it does
+  # not already exist
+  local staging_directory=${DOCKER_TMP_DIRECTORY}/appliances
+  mkdir -p $staging_directory
+
+  # copy the project in the staging area
+  cp -a $appliance_directory $staging_directory
+
+  # copy necessary lib files in the project directory in the staging area
+  APPLIANCE_STAGING_DIRECTORY=${staging_directory}/$APPLIANCE_NAME
+
+  cd $DOCKER_LIB_DIRECTORY
+
+  cp \
+    .dockerignore \
+    functions.sh \
+    importPackageFrom \
+    $APPLIANCE_STAGING_DIRECTORY
+
+  cd $USER_DIRECTORY
+}
+
+buildDependentImage() {
+  # TODO
+  local image_name="$1"
+}
+
+checkRequiredImages() {
+  # manifest file read and validated, check existing images and attempt build
+  # them if necessary
+  local image=
+  for image in $REQUIRED_IMAGES; do
+    local image_name=$(
+      docker image ls --format='{{.Repository}}' $image)
+
+    # image does not exist on the docker host
+    if [ -z $image_name ]; then
+      buildDependentImage "$image_name"
+    fi
+  done
+}
+
+buildAppliance() {
+  # make sure the manifest file is well formed and contains mandatory stuff
+  validateManifestFile
+
+  if [ $(applianceExists) ]; then
+    cat << EOI
+Appliance '$APPLIANCE_NAME' already exists.
+If you want to rebuild this appliance, consider either to retag the $IMAGE_NAME
+docker repository or delete it...exiting...
+EOI
+    exit 0
+  fi
+
+  # prepare the staging area to build the appliance
+  fillStagingArea
+
+  # check if requested docker images are built. If not, the system will attempt
+  # to build them.
+  checkRequiredImages
+
+  # then, generate the dockerfile to build the appliance docker image
+  compileDockerfile
+
+  # then, build the image
+  buildApplianceImage
+
+  # fnally, make some cleanup in the staging area
+  cleanupStagingArea
+}
+
+startAppliance() {
+  if [ ! $(applianceExists) ]; then
+    buildAppliance
+  else
+    :
+  fi
+}
+
+stopAppliance() {
+  if [ $(applianceIsRunning) ]; then
+    :
+  fi
+}
+
+executeRequestedCommand() {
+  # build the function name according to the provided command
+  local function_name=${COMMAND}Appliance
+
+  # source the manifest file
+  . $MANIFEST_FILE_PATH
+
+  # simply call the function
+  $function_name
+}
+
+setupDockerDirectories
+
+. ${DOCKER_LIB_DIRECTORY}/functions.sh
+
+checkArgument "$1" "$2"
+executeRequestedCommand
