@@ -41,8 +41,8 @@ validateManifestFile() {
 
   # then, testing mandatory variables existence
   if [ -z "$IMAGE_NAME" ] \
-     || [ -z "$CONTAINER_NAME" ]
-     || [ -z "$REQUIRED_IMAGES" ]
+     || [ -z "$CONTAINER_NAME" ] \
+     || [ -z "$REQUIRED_IMAGES" ] \
      || [ -z "$SERVICE" ]; then
     error "$(
     cat << EOI
