@@ -7,7 +7,12 @@ getThreadCount() {
 # output the first argument on the stderr
 error() {
   # output 'error' if there is no argument provided
-  local msg=$([ -z "$1" ] && echo 'error' || echo "$1")
+  local msg=
+  if [ -z "$1" ]; then
+    msg='error'
+  else
+    msg="$1"
+  fi
 
   echo "$msg" 1>&2
 }
@@ -18,7 +23,7 @@ error() {
 # provided.
 readValueWithDefault() {
   if [ -z "$1" ]; then
-    echo 'No default value specified...exiting...'
+    error 'No default value specified...exiting...'
     return 1
   fi
 
@@ -44,21 +49,21 @@ makePair() {
 # extract KEY of a pair having the following form : KEY=VALUE
 keyOf() {
   if [ -z "$1" ]; then
-    error 'No value specified...exiting...'
+    error 'No pair specified...exiting...'
     return 1
   fi
 
-  echo "$1" | sed -E 's/(.*)=.*$/\1/'
+  echo "$1" | sed -E 's/([^=]*)=.*$/\1/'
 }
 
 # extract VALUE of a pair having the following form : KEY=VALUE
 valueOf() {
   if [ -z "$1" ]; then
-    error 'No value specified...exiting...'
+    error 'No pair specified...exiting...'
     return 1
   fi
 
-  echo "$1" | sed -E 's/[^*]*=(.*)$/\1/'
+  echo "$1" | sed -E 's/[^=]*=(.*)$/\1/'
 }
 
 # generate a random modified base64 string ready to be used in a docker build
@@ -66,7 +71,7 @@ valueOf() {
 generateRandomBuildStageAlias() {
   local random="$(generateRandomString "$1")"
 
-  # replace annoying special char with 0
+  # replace annoying special chars (+ and -) with 0
   echo "$random" | sed -E 's/\+|-/0/g'
 }
 
@@ -93,7 +98,7 @@ generateRandomString() {
 # pausing function waiting for a return hit. Useful for debugging, pausing stuff
 # running in the container to allow the user to attach to it
 pause() {
-  echo 'Press return to continue...' 1>&2
+  error 'Press return to continue...' 1>&2
   read
 }
 
@@ -133,20 +138,21 @@ packageIncluding() {
 getPackageFiles() {
   # need an image name as input
   if [ -z "$1" ]; then
-    echo 'No docker image specified...exiting...'
+    error 'No docker image specified...exiting...'
+    return 1
   fi
 
   # ask docker for images...
   local image=$(docker image ls -q "$1")
 
   if [ -z "$image" ]; then
-    echo 'Inexisting docker image: '"$image"'...exiting...'
+    error 'Inexisting docker image: '"$image"'...exiting...'
     return 1
   fi
 
   # output must be one and only one image
   if [ $(echo "$image" | wc -l) -gt 1 ]; then
-    echo 'Ambiguous image name specified: '"$image"'...exiting...'
+    error 'Ambiguous image name specified: '"$image"'...exiting...'
     return 1
   fi
 
@@ -157,7 +163,7 @@ getPackageFiles() {
 
   # error while querying image.dist file content
   if [ ! $? -eq 0 ]; then
-    echo 'Could not get '"$image"' package content...exiting...'
+    error 'Could not get '"$image"' package content...exiting...'
     return 1
   fi
 
@@ -169,9 +175,11 @@ getPackageFiles() {
     if [ ! -e "$x" ]; then
       # a non dependency package has not its file copied in the image being
       # built
-      echo 'Cannot find '"$x"' in the current image.'
-      echo 'Make sure the package you are requesting is a dependency of the'
-      echo 'one you are building...exiting'
+      error "$(cat << EOI
+Cannot find "$x" in the current image.  Make sure the package you are requesting
+is a dependency of the one you are building...exiting
+EOI
+      )"
       return 1
     fi
 
@@ -220,7 +228,7 @@ include() {
 
       # item is neither a file, a directory nor a packaged docker image
       if [ ! $? -eq 0 ]; then
-        echo 'Invalid argument '"$item"' specified...exiting...'
+        error 'Invalid argument '"$item"' specified...exiting...'
         return 1
       fi
 
@@ -240,7 +248,7 @@ include() {
 # write all built files in /image.dist file of the image
 registerBuiltFilesForPackaging() {
   if [ -z "$PREFIX" ]; then
-    echo 'No prefix specified, $PREFIX must be defined...exiting...'
+    error 'No prefix specified, $PREFIX must be defined...exiting...'
     return 1
   fi
 
@@ -270,7 +278,7 @@ finalizePackage() {
 append() {
   # even if empty, an argument surrounded by "" is detected
   if [ ! $# -eq 3 ]; then
-    echo 'append expects 3 arguments, no more, no less...exiting...'
+    error 'append expects 3 arguments, no more, no less...exiting...'
     return 1
   fi
 
@@ -291,7 +299,7 @@ append() {
 extractNeededSharedObjectsOf() {
   # I need a file as input
   if [ -z "$1" ]; then
-    echo 'Nothing specified as argument...exiting...'
+    error 'Nothing specified as argument...exiting...'
     return 1
   fi
 

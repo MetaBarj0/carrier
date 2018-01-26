@@ -8,13 +8,6 @@
 
 set -ex
 
-# managing appliance :
-# - build: build appliance docker image, build all dependencies before
-# - start: build (if necessary) + start the appliance according to its
-#          configuration
-# - stop: if running, stop the appliance
-# Hence, stop implies start implies build
-
 setupDockerDirectories() {
   # current directory
   USER_DIRECTORY=$(pwd -P)
@@ -37,7 +30,7 @@ setupDockerDirectories() {
 
 validateManifestFile() {
   # first, source the manifest file
-  . ${APPLIANCE_STAGING_DIRECTORY}/manifest
+  . $MANIFEST_FILE_PATH
 
   # then, testing mandatory variables existence
   if [ -z "$IMAGE_NAME" ] \
@@ -74,7 +67,12 @@ You can also set these optional variables :
                               stage aliased with your appliance image name
   ENVIRONMENT               : a set of key=value pairs that is passed to the
                               command that run a built appliance.
+  EXTRA_COMPOSE_ARGUMENTS   : Supplementary argument to provide to the
+                              docker-compose run command executed when starting
+                              the appliance.
 
+Taking into account these remarks should help you to resolve your
+problems...exiting...
 EOI
     )"
     exit 1
@@ -128,25 +126,19 @@ checkArgument() {
   #  - appending it to the current user directory, useful if relative path is
   #    provided
   #  - testing directly the file path, useful if absolute path is provided
-  local assumed_manifest_file_path="$2"
-  if [ ! -f ${USER_DIRECTORY}/"$assumed_manifest_file_path" ] \
-     && [ ! -f "$assumed_manifest_file_path" ]; then
+  local manifest_arg="$2"
+  if [ ! -f ${USER_DIRECTORY}/"$manifest_arg" ] \
+     && [ ! -f "$manifest_arg" ]; then
     # not a file path, testing the appliance name
-    assumed_manifest_file_path=${DOCKER_APPLIANCES_DIRECTORY}/"$2"/manifest
-    if [ ! -f ${assumed_manifest_file_path} ]; then
+    manifest_arg=${DOCKER_APPLIANCES_DIRECTORY}/"$2"/manifest
+    if [ ! -f ${manifest_arg} ]; then
       usage
       exit 1
     fi
   fi
 
   # OK, valid argument, exposing the manifest file absolute path
-  MANIFEST_FILE_PATH=${assumed_manifest_file_path}
-
-  # BTW, get the appliance name and staging directory
-  APPLIANCE_NAME=$(basename $(dirname $MANIFEST_FILE_PATH))
-
-  local staging_directory=${DOCKER_TMP_DIRECTORY}/appliances
-  APPLIANCE_STAGING_DIRECTORY=${staging_directory}/$APPLIANCE_NAME
+  MANIFEST_FILE_PATH=${manifest_arg}
 }
 
 applianceExists() {
@@ -155,9 +147,9 @@ applianceExists() {
   local result="$(docker image ls --format='{{.Repository}}' $IMAGE_NAME)"
 
   if [ ! -z "$result" ]; then
-    echo 0
+    echo 0 # image does exist
   else
-    echo 1
+    echo 1 # image does not exist
   fi
 }
 
@@ -171,6 +163,11 @@ fillStagingArea() {
 
   # copy the project in the staging area
   cp -a $appliance_directory $staging_directory
+
+  APPLIANCE_NAME=$(basename $(dirname $MANIFEST_FILE_PATH))
+
+  local staging_directory=${DOCKER_TMP_DIRECTORY}/appliances
+  APPLIANCE_STAGING_DIRECTORY=${staging_directory}/$APPLIANCE_NAME
 
   # copy necessary lib files in the project directory in the staging area
   cd $DOCKER_LIB_DIRECTORY
@@ -187,7 +184,7 @@ fillStagingArea() {
 
 fetchManifest() {
   # check if the manifest has already been fetched
-  if [ ! -z ${MANIFEST_FETCHED+0} ]; then
+  if [ ! -z $FETCHED_MANIFEST ]; then
     return 0
   fi
 
@@ -208,7 +205,7 @@ Possible causes are :
 Taking these remarks into account should help you to resolve your
 problem...exiting...
 EOI
-)"
+    )"
     exit 1
   fi
 
@@ -230,9 +227,11 @@ EOI
   tar -xf docker.tar.bz2
   rm -f docker.tar.bz2
 
-  cd $USER_DIRECTORY
+  # indicates that the manifest image content has been fetched, used in
+  # subsequent sub shell invocation if dependency images must be built
+  export FETCHED_MANIFEST=${APPLIANCE_STAGING_DIRECTORY}/docker
 
-  MANIFEST_FETCHED=1
+  cd $USER_DIRECTORY
 }
 
 buildDependentImage() {
@@ -240,14 +239,12 @@ buildDependentImage() {
   # in the creation of a docker directory inside the appliance staging directory
   fetchManifest
 
-  local docker_in_appliance_staging=${APPLIANCE_STAGING_DIRECTORY}/docker
-
   local required_image_name="$1"
 
   # look for the manifest file providing this image, in genuine location, the
   # fetched manifest
   local image_manifest_path=$(
-    find $docker_in_appliance_staging \
+    find $FETCHED_MANIFEST \
       -type f \
       -name manifest \
       -exec grep -EH 'PROVIDES='"$required_image_name" {} \; \
@@ -280,7 +277,7 @@ EOI
   # I've the absolute path of the required image's manifest file, let's build it
   # in a new sub-shell
   (
-    exec ${docker_in_appliance_staging}/bin/build-image \
+    exec ${FETCHED_MANIFEST}/bin/build-image \
       "$image_manifest_path"
   )
 }
@@ -305,7 +302,12 @@ mapImageNameAndBuildStages() {
   local pair=
   local image=
   for image in $REQUIRED_IMAGES; do
-    pair="$(makePair "$image" "$(generateRandomBuildStageAlias)")"
+    pair="$(
+      makePair \
+        "$image" \
+        "$(basename $image)"'_'"$(generateRandomBuildStageAlias)"
+    )"
+
     map="$(append "$map" ' ' "$pair")"
   done
 
@@ -385,6 +387,7 @@ EOI
 "$dependencies_build_stages"
 "$appliance_build_stage"
 "$appliance_image_imports"
+RUN rm /usr/local/bin/importPackageFrom
 "$EXTRA_DOCKERFILE_COMMANDS"
 EOI
 }
@@ -459,9 +462,8 @@ startAppliance() {
       "$environment" \
       "$SERVICE"
 
-    (
-      exec "$command"
-    )
+    # execute the docker-compose command
+    "$command"
   fi
 }
 
@@ -469,7 +471,7 @@ applianceIsRunning() {
   # manifest file has been read and validated, we know the appliance container
   # name
   local result=$(
-    docker ps --format='{{.Names}} --filter='name='$CONTAINER_NAME')
+    docker ps --format='{{.Names}}' --filter='name='$CONTAINER_NAME)
 
   if [ -z "$result" ]; then
     echo 1 # is not running
