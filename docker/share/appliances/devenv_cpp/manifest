@@ -69,7 +69,17 @@ BASE_IMAGE=busybox
 # the appliance's dockerfile is generated. Specify here all the commands you
 # need to find at the end of the Dockerfile
 EXTRA_DOCKERFILE_COMMANDS="$(cat << EOI
-RUN mkdir -p /home/devenv_cpp
+RUN adduser -H -D devenv_cpp
+
+RUN mkdir -p /home/devenv_cpp/.ssh \
+             /home/devenv_cpp/.git \
+             /home/devenv_cpp/.vim \
+             /home/devenv_cpp/src
+
+RUN chown -R devenv_cpp:devenv_cpp /home/devenv_cpp
+
+USER devenv_cpp:devenv_cpp
+
 WORKDIR /home/devenv_cpp
 
 COPY entrypoint.sh /usr/local/bin/
@@ -85,7 +95,7 @@ ENVIRONMENT="$(cat << EOI
 LINUX_USER_ID=$(id -u)
 LINUX_USER_GROUP=$(id -g)
 GIT_USER_NAME=\
-"$([ ! -z $GIT_USER_NAME ] && $GIT_USER_NAME || echo 'John Doe')"
+"$([ ! -z $GIT_USER_NAME ] && $GIT_USER_NAME || echo 'John_Doe')"
 GIT_USER_MAIL=\
 "$([ ! -z $GIT_USER_MAIL ] && $GIT_USER_MAIL || echo 'mail@example.org')"
 GIT_SSH_PUBLIC_KEY=\
