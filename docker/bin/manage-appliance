@@ -6,7 +6,7 @@
 # that is the manifest file, the docker-compose file, any supplementary file of
 # your appliance
 
-set -ex
+set -e
 
 setupDockerDirectories() {
   # current directory
@@ -77,6 +77,8 @@ EOI
     )"
     exit 1
   fi
+
+  APPLIANCE_NAME=$(basename $(dirname $MANIFEST_FILE_PATH))
 }
 
 usage() {
@@ -163,8 +165,6 @@ fillStagingArea() {
 
   # copy the project in the staging area
   cp -a $appliance_directory $staging_directory
-
-  APPLIANCE_NAME=$(basename $(dirname $MANIFEST_FILE_PATH))
 
   local staging_directory=${DOCKER_TMP_DIRECTORY}/appliances
   APPLIANCE_STAGING_DIRECTORY=${staging_directory}/$APPLIANCE_NAME
@@ -308,7 +308,7 @@ mapImageNameAndBuildStages() {
         "$(basename $image)"'_'"$(generateRandomBuildStageAlias)"
     )"
 
-    map="$(append "$map" ' ' "$pair")"
+    map="$(append "$map" "$pair" ' ')"
   done
 
   echo "$map"
@@ -317,10 +317,10 @@ mapImageNameAndBuildStages() {
 compileDockerfile() {
   # create a map between image used in build stages and their alias that will be
   # used later
-  local name_alias_map="$mapImageNameAndBuildStages"
+  local name_alias_map="$(mapImageNameAndBuildStages)"
 
   # create a Dockerfile in the appliance staging directory. Using required image
-  # specified in the manifest as well as other variables : 
+  # specified in the manifest as well as other variables :
   local dependencies_build_stages=
   local build_stage=
   local pair=
@@ -333,7 +333,7 @@ compileDockerfile() {
 
     # instruction to export the dependency image package
     build_stage="$(cat << EOI
-FROM "$name" as "$alias"
+FROM $name as $alias
 RUN exportPackageTo /tmp/package
 EOI
     )"
@@ -341,8 +341,8 @@ EOI
     # group these instructions together
     dependencies_build_stages="$(
       append "$dependencies_build_stages" \
-             $'\n'\
-             "$build_stage"
+             "$build_stage" \
+             $'\n'
     )"
   done
 
@@ -355,6 +355,7 @@ EOI
   # copy tooling to extract dependencies' packages
   local appliance_build_stage="$(cat << EOI
 FROM $BASE_IMAGE as $APPLIANCE_NAME
+RUN mkdir -p /usr/local/bin/
 COPY importPackageFrom /usr/local/bin
 EOI
   )"
@@ -376,19 +377,19 @@ EOI
     # aggregate them
     appliance_image_imports="$(
       append "$appliance_image_imports" \
-             $'\n' \
-             "$dependency_import"
+             "$dependency_import" \
+             $'\n'
     )"
   done
 
   # final step, create the Dockerfile and appending the
   # EXTRA_DOCKERFILE_COMMANDS
   cat << EOI > ${APPLIANCE_STAGING_DIRECTORY}/Dockerfile
-"$dependencies_build_stages"
-"$appliance_build_stage"
-"$appliance_image_imports"
+$dependencies_build_stages
+$appliance_build_stage
+$appliance_image_imports
 RUN rm /usr/local/bin/importPackageFrom
-"$EXTRA_DOCKERFILE_COMMANDS"
+$EXTRA_DOCKERFILE_COMMANDS
 EOI
 }
 
@@ -415,7 +416,7 @@ cleanupStagingArea() {
 }
 
 buildAppliance() {
-  if [ $(applianceExists) ]; then
+  if [ $(applianceExists) -eq 0 ]; then
     cat << EOI
 Appliance '$APPLIANCE_NAME' already exists.
 If you want to rebuild this appliance, consider either to retag the $IMAGE_NAME
@@ -442,7 +443,7 @@ EOI
 }
 
 startAppliance() {
-  if [ ! $(applianceExists) ]; then
+  if [ ! $(applianceExists) -eq 0 ]; then
     buildAppliance
   else
     # manifest file has been read and validated. Creates the command to run the
@@ -453,7 +454,7 @@ startAppliance() {
       local environment_option=
       for env in $ENVIRONMENT; do
         environment_option='-e '$env
-        environment="$(append "$environment" ' ' "$environment_option")"
+        environment="$(append "$environment" "$environment_option" ' ')"
       done
     fi
 
@@ -481,8 +482,16 @@ applianceIsRunning() {
 }
 
 stopAppliance() {
-  if [ $(applianceIsRunning) ]; then
+  if [ $(applianceIsRunning) -eq 0 ]; then
     docker-compose stop $SERVICE
+
+    cat << EOI
+Appliance '$APPLIANCE_NAME' successfully stopped.
+EOI
+  else
+    cat << EOI
+Appliance '$APPLIANCE_NAME' is not running. Nothing to do.
+EOI
   fi
 }
 
