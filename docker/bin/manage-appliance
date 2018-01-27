@@ -8,6 +8,7 @@
 
 set -e
 
+# setup important docker directories in global variables that will be used later
 setupDockerDirectories() {
   # current directory
   USER_DIRECTORY=$(pwd -P)
@@ -28,6 +29,8 @@ setupDockerDirectories() {
   cd $USER_DIRECTORY
 }
 
+# source and validate (or invalidate) the appliance's manifest file. Ensure all
+# mandatory variables are set.
 validateManifestFile() {
   # first, source the manifest file
   . $MANIFEST_FILE_PATH
@@ -81,6 +84,7 @@ EOI
   APPLIANCE_NAME=$(basename $(dirname $MANIFEST_FILE_PATH))
 }
 
+# help message on how to use the appliance management system.
 usage() {
   error "$(
   cat << EOI
@@ -113,6 +117,8 @@ EOI
   )"
 }
 
+# check the argument provided by the user to this script. Ensure that arguments
+# are correct before going any further
 checkArgument() {
   COMMAND="$1"
 
@@ -143,6 +149,8 @@ checkArgument() {
   MANIFEST_FILE_PATH=${manifest_arg}
 }
 
+# simple utility telling if the targeted appliance already exists on your docker
+# host
 applianceExists() {
   # at this stage, the manifest file has been sourced and the appliance image
   # name is known
@@ -155,6 +163,7 @@ applianceExists() {
   fi
 }
 
+# put all necessary files intor the being built appliance staging directory.
 fillStagingArea() {
   local appliance_directory=$(dirname $MANIFEST_FILE_PATH)
 
@@ -182,6 +191,9 @@ fillStagingArea() {
   cd $USER_DIRECTORY
 }
 
+# fetch a copy of the master branch of the carrier directory then, copy the
+# entire docker directory into the staging directory. This manifest is used to
+# build various dependencies and serve as a genuine repository.
 fetchManifest() {
   # check if the manifest has already been fetched
   if [ ! -z $FETCHED_MANIFEST ]; then
@@ -234,6 +246,8 @@ EOI
   cd $USER_DIRECTORY
 }
 
+# build an image that is required for the appliance and that was not found on
+# the docker host. Relies on the image build system.
 buildDependentImage() {
   # uses the metabarj0/manifest container to build required images. It'll result
   # in the creation of a docker directory inside the appliance staging directory
@@ -282,6 +296,8 @@ EOI
   )
 }
 
+# enumerates all required images needed by the appliance and build them if
+# they are not on the docker host
 checkRequiredImages() {
   # manifest file read and validated, check existing images and attempt build
   # them if necessary
@@ -297,6 +313,8 @@ checkRequiredImages() {
   done
 }
 
+# utility function mapping image names with a build stage alias partially
+# randomly generated. used in appliance's Dockerfile generation.
 mapImageNameAndBuildStages() {
   local map=
   local pair=
@@ -314,6 +332,8 @@ mapImageNameAndBuildStages() {
   echo "$map"
 }
 
+# Generate the entire Dockerfile of the appliance, relying on the content of the
+# manifest file and values computed by the process of appliance building.
 compileDockerfile() {
   # create a map between image used in build stages and their alias that will be
   # used later
@@ -393,6 +413,8 @@ $EXTRA_DOCKERFILE_COMMANDS
 EOI
 }
 
+# create the appliance's docker image on the docker host using the generated
+# Dockerfile
 buildApplianceImage() {
   # now we have a dockerfile, we just have to use it to build the appliance
   # image, go to the build context
@@ -407,6 +429,7 @@ buildApplianceImage() {
   cd $USER_DIRECTORY
 }
 
+# cleanup the appliance staging area when the build is complete
 cleanupStagingArea() {
   rm -rf $APPLIANCE_STAGING_DIRECTORY
 
@@ -415,6 +438,8 @@ cleanupStagingArea() {
   fi
 }
 
+# entrypoint of the build command. In finality, create the appliance's docker
+# image on the docker host.
 buildAppliance() {
   if [ $(applianceExists) -eq 0 ]; then
     cat << EOI
@@ -442,6 +467,8 @@ EOI
   cleanupStagingArea
 }
 
+# entrypoint of the start command. If the appliance requested to start has not
+# been built yet, the system will attempt to build it first.
 startAppliance() {
   if [ ! $(applianceExists) -eq 0 ]; then
     buildAppliance
@@ -468,6 +495,7 @@ startAppliance() {
   fi
 }
 
+# utility function indicating of the appliance is running or not
 applianceIsRunning() {
   # manifest file has been read and validated, we know the appliance container
   # name
@@ -481,6 +509,7 @@ applianceIsRunning() {
   fi
 }
 
+# entrypoint for the stop command. If the appliance is running, stops it.
 stopAppliance() {
   if [ $(applianceIsRunning) -eq 0 ]; then
     docker-compose stop $SERVICE
@@ -495,6 +524,9 @@ EOI
   fi
 }
 
+# generic function executing the right function depending on the command
+# provided. The name of the function to call is built appending the command name
+# and 'Appliance'
 executeRequestedCommand() {
   # build the function name according to the provided command
   local function_name=${COMMAND}Appliance
@@ -506,6 +538,7 @@ executeRequestedCommand() {
   $function_name
 }
 
+# the execution begins right here
 setupDockerDirectories
 
 . ${DOCKER_LIB_DIRECTORY}/functions.sh

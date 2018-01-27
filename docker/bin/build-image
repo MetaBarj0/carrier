@@ -7,6 +7,7 @@
 
 set -e
 
+# encure that the argument passed to the script is good enough to build an image
 checkArgument() {
   local argument_error_message="$(
   cat << EOI
@@ -52,6 +53,8 @@ EOI
   MANIFEST_FILE_PATH=${manifest_arg}
 }
 
+# look for the existence of foundation images on the docker host. If this check
+# fails, no build is possible.
 checkFoundationImages() {
   # first, verify if bootstrap has built all necessary foundation images, that
   # is metabarj0/manifest, metabarj0/gcc, metabarj0/make and
@@ -79,6 +82,8 @@ EOI
   done
 }
 
+# setup important docker directories in global variables that will be used
+# later.
 setupDockerDirectories() {
   # current directory
   USER_DIRECTORY=$(pwd -P)
@@ -98,6 +103,8 @@ setupDockerDirectories() {
   cd $USER_DIRECTORY
 }
 
+# check for the existence of zll dependencies of the image requested to be built
+# and attempt to build them if they are not present on the docker host.
 buildDependencies() {
   # browse all dependencies
   for dep in $REQUIRES; do
@@ -131,6 +138,7 @@ buildDependencies() {
 
 }
 
+# fill the staging area with file necessary to build the project.
 fillStagingArea() {
   local image_directory=$(dirname $MANIFEST_FILE_PATH)
 
@@ -161,6 +169,7 @@ fillStagingArea() {
   cd $USER_DIRECTORY
 }
 
+# TODO refacto
 fetchManifestImageContent() {
   # check if a manifest has been set before
   if [ ! -z $FETCHED_MANIFEST ]; then
@@ -192,6 +201,7 @@ fetchManifestImageContent() {
   cd $USER_DIRECTORY
 }
 
+# attempt to build the image
 buildProject() {
   # source the content of the manifest file, that will initialize some useful 
   # variables
@@ -213,6 +223,7 @@ buildProject() {
   )
 }
 
+# when the build is complete, cleanup the staging area
 cleanupStagingArea() {
   rm -rf $IMAGE_STAGING_DIRECTORY
 
@@ -221,6 +232,7 @@ cleanupStagingArea() {
   fi
 }
 
+# the execution begins right here
 checkFoundationImages
 setupDockerDirectories
 
