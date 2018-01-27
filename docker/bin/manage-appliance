@@ -292,7 +292,7 @@ checkRequiredImages() {
 
     # image does not exist on the docker host
     if [ -z $image_name ]; then
-      buildDependentImage "$image_name"
+      buildDependentImage "$image"
     fi
   done
 }
