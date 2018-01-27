@@ -6,7 +6,7 @@
 # The main service is the one reference in the SERVICE variable within the
 # manifest file of the appliance.
 
-version: '3'
+version: '3.2'
 
 services:
   # the only service of this appliance. This is the one that is referenced in

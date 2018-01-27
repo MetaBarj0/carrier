@@ -54,7 +54,7 @@ metabarj0/vim"
 IMAGE_NAME=metabarj0/devenv_cpp
 
 # name of the container of the running appliance
-CONTAINER_NAME=$IMAGE_NAME
+CONTAINER_NAME=devenv_cpp
 
 # this is the main service of the appliance. This is the service one can
 # interact with through the usage of the docker/bin/manage-appliance script.
@@ -78,29 +78,23 @@ EOI
 )"
 
 # defines some environment necessary for the appliance to operate. be careful
-# about spaces and new lines here
+# about spaces and new lines here. Don't put anything else than pure variable
+# definition. You can use variable and expression substitution here as the
+# manifest file will be sourced by the appliance management system.
 ENVIRONMENT="$(cat << EOI
-# linux user id and group to dynamically create each time one enter the dev
-# shell.
 LINUX_USER_ID=$(id -u)
 LINUX_USER_GROUP=$(id -g)
-
-# minimal git configuration for a user
 GIT_USER_NAME=\
-$([ ! -z $GIT_USER_NAME ] || echo 'John Doe' || $GIT_USER_NAME)
-
+"$([ ! -z $GIT_USER_NAME ] && $GIT_USER_NAME || echo 'John Doe')"
 GIT_USER_MAIL=\
-$([ ! -z $GIT_USER_MAIL ] || echo 'mail@example.org' || $GIT_USER_MAIL)
-
-# sensible ssh informations. Should be found on the docker host
+"$([ ! -z $GIT_USER_MAIL ] && $GIT_USER_MAIL || echo 'mail@example.org')"
 GIT_SSH_PUBLIC_KEY=\
-[ -f ~/.ssh/id_rsa.pub ] && "$(cat ~/.ssh/id_rsa.pub)" || ''
-
+"$([ -f ~/.ssh/id_rsa.pub ] && "$(cat ~/.ssh/id_rsa.pub)" || echo '')"
 GIT_SSH_SECRET_KEY=\
-[ -f ~/.ssh/id_rsa ] && "$(cat ~/.ssh/id_rsa)" || ''
-
+"$([ -f ~/.ssh/id_rsa ] && "$(cat ~/.ssh/id_rsa)" || echo '')"
 EOI
 )"
 
-# extra aeguments to pass to the docker-compose run...
-EXTRA_COMPOSE_ARGUMENTS="--service-ports"
+# extra arguments to pass to the docker-compose run... command invoked by the
+# start command of the manage-appliance script.
+EXTRA_COMPOSE_ARGUMENTS=

@@ -404,9 +404,11 @@ buildApplianceImage() {
 
 # cleanup the appliance staging area when the build is complete
 cleanupStagingArea() {
-  rm -rf $APPLIANCE_STAGING_DIRECTORY
+  if [ -d $APPLIANCE_STAGING_DIRECTORY ]; then
+    rm -rf $APPLIANCE_STAGING_DIRECTORY
+  fi
 
-  if [ -z $(ls ${DOCKER_TMP_DIRECTORY}/appliances) ]; then
+  if [ -z "$(ls ${DOCKER_TMP_DIRECTORY}/appliances)" ]; then
     rm -r ${DOCKER_TMP_DIRECTORY}/appliances
   fi
 }
@@ -445,27 +447,38 @@ EOI
 startAppliance() {
   if [ ! $(applianceExists) -eq 0 ]; then
     buildAppliance
-  else
-    # manifest file has been read and validated. Creates the command to run the
-    # service
-    local environment=
-    if [ ! -z $ENVIRONMENT ]; then
-      local env=
-      local environment_option=
-      for env in $ENVIRONMENT; do
-        environment_option='-e '$env
-        environment="$(append "$environment" "$environment_option" ' ')"
-      done
-    fi
-
-    local command='docker-compose run '\
-      "$EXTRA_COMPOSE_ARGUMENTS" \
-      "$environment" \
-      "$SERVICE"
-
-    # execute the docker-compose command
-    "$command"
   fi
+
+  fillStagingArea
+  cd $APPLIANCE_STAGING_DIRECTORY
+
+  # manifest file has been read and validated. Creates the command to run the
+  # service
+  local environment=
+  if [ ! -z "$ENVIRONMENT" ]; then
+    local env=
+    local environment_option=
+    for env in $ENVIRONMENT; do
+      environment_option='-e '$env
+      environment="$(append "$environment" "$environment_option" ' ')"
+    done
+  fi
+
+  # crafting the docker-compose run command...
+  local command=$(echo \
+    'CONTAINER_NAME='"$CONTAINER_NAME" \
+    'IMAGE_NAME='"$IMAGE_NAME" \
+    'docker-compose run --rm' \
+    '--name '"$CONTAINER_NAME" \
+    "$EXTRA_COMPOSE_ARGUMENTS" \
+    "$environment" \
+    "$SERVICE")
+
+  # execute the docker-compose command
+  eval "$command"
+
+  cd $USER_DIRECTORY
+  cleanupStagingArea
 }
 
 # utility function indicating of the appliance is running or not
@@ -485,7 +498,19 @@ applianceIsRunning() {
 # entrypoint for the stop command. If the appliance is running, stops it.
 stopAppliance() {
   if [ $(applianceIsRunning) -eq 0 ]; then
-    docker-compose stop $SERVICE
+    fillStagingArea
+    cd $APPLIANCE_STAGING_DIRECTORY
+
+    # crafting the docker-compose run command...
+    local command=$(echo \
+      'docker stop '"$CONTAINER_NAME"
+      )
+
+    # execute the docker-compose command
+    eval "$command"
+
+    cd $USER_DIRECTORY
+    cleanupStagingArea
 
     cat << EOI
 Appliance '$APPLIANCE_NAME' successfully stopped.
