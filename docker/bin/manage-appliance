@@ -195,11 +195,6 @@ fillStagingArea() {
 # entire docker directory into the staging directory. This manifest is used to
 # build various dependencies and serve as a genuine repository.
 fetchManifest() {
-  # check if the manifest has already been fetched
-  if [ ! -z $FETCHED_MANIFEST ]; then
-    return 0
-  fi
-
   # use the metabarj0/manifest docker image that MUST exist
   local manifest_image=$(
     docker image ls --format='{{.Repository}}' metabarj0/manifest)
@@ -221,29 +216,7 @@ EOI
     exit 1
   fi
 
-  # fetching a copy of the docker directory of the carrier repository. master
-  # branch is targeted by the update script inside the metabarj0/manifest docker
-  # image
-  local container_id=$(docker run --rm -d metabarj0/manifest)
-
-  # update the manifest
-  docker exec $container_id update
-
-  # preparing manifest content to be copied on the host in the appliance staging
-  # directory, then kill the running container
-  cd $APPLIANCE_STAGING_DIRECTORY
-
-  docker cp $container_id:/docker.tar.bz2 .
-  docker kill $container_id
-
-  tar -xf docker.tar.bz2
-  rm -f docker.tar.bz2
-
-  # indicates that the manifest image content has been fetched, used in
-  # subsequent sub shell invocation if dependency images must be built
-  export FETCHED_MANIFEST=${APPLIANCE_STAGING_DIRECTORY}/docker
-
-  cd $USER_DIRECTORY
+  fetchManifestImageContent $APPLIANCE_STAGING_DIRECTORY
 }
 
 # build an image that is required for the appliance and that was not found on

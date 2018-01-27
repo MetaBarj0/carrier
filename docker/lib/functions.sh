@@ -395,3 +395,54 @@ collectSharedObjectDependencies() {
 
   return 0
 }
+
+# fetches the metabarj0/manifest docker image content into a specified
+# destination directory.
+# The destination directory MUST exist, the metabarj0/manifest docker image is
+# assumed to exist on the docker host.
+# This function is intended to be called while image or appliance are being
+# built, therefore, it is consistent to check for variables FETCHED_MANIFEST and
+# USER_DIRECTORY
+fetchManifestImageContent() {
+
+  if [ -z "$1" ]; then
+    error "$(cat << EOI
+Error: need a destination directory to fetch the metabarj0/manifest docker image
+content...exiting...
+EOI
+    )"
+    return 1
+  fi
+
+  local destination_directory="$1"
+
+  # check if a manifest has been fetched before by either a parent process or a
+  # recursive call.
+  if [ ! -z $FETCHED_MANIFEST ]; then
+    return 0
+  fi
+
+  # change directory to the destination directory to work
+  cd $destination_directory
+
+  # background running of a manifest container
+  local container_id=$(docker run --rm -d metabarj0/manifest)
+
+  # update the manifest
+  docker exec $container_id update
+
+  # preparing manifest content to be copied on the host in the image
+  # staging directory, then kill the running container
+  docker cp $container_id:/docker.tar.bz2 .
+  docker kill $container_id
+
+  tar -xf docker.tar.bz2
+  rm -f docker.tar.bz2
+
+  # indicates that the manifest image content has been fetched, used in
+  # subsequent sub shell invocation if dependency images must be built
+  export FETCHED_MANIFEST=${destination_directory}/docker
+
+  # return to the user directory
+  cd $USER_DIRECTORY
+}

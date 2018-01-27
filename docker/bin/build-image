@@ -169,38 +169,6 @@ fillStagingArea() {
   cd $USER_DIRECTORY
 }
 
-# TODO refacto
-fetchManifestImageContent() {
-  # check if a manifest has been set before
-  if [ ! -z $FETCHED_MANIFEST ]; then
-    return 0
-  fi
-
-  # change directory to the image staging directory to work
-  cd $IMAGE_STAGING_DIRECTORY
-
-  # background running of a manifest container
-  local container_id=$(docker run --rm -d metabarj0/manifest)
-
-  # update the manifest
-  docker exec $container_id update
-
-  # preparing manifest content to be copied on the host in the image
-  # staging directory, then kill the running container
-  docker cp $container_id:/docker.tar.bz2 .
-  docker kill $container_id
-
-  tar -xf docker.tar.bz2
-  rm -f docker.tar.bz2
-
-  # indicates that the manifest image content has been fetched, used in
-  # subsequent sub shell invocation if dependency images must be built
-  export FETCHED_MANIFEST=${IMAGE_STAGING_DIRECTORY}/docker
-
-  # return to the user directory
-  cd $USER_DIRECTORY
-}
-
 # attempt to build the image
 buildProject() {
   # source the content of the manifest file, that will initialize some useful 
@@ -209,7 +177,7 @@ buildProject() {
 
   # build all dependencies of this project first if there are
   if [ ! -z "$REQUIRES" ]; then
-    fetchManifestImageContent
+    fetchManifestImageContent $IMAGE_STAGING_DIRECTORY
     buildDependencies "$@"
   fi
   
