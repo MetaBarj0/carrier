@@ -33,15 +33,16 @@ services:
         source: devenv_cpp_.ssh
         target: /home/devenv_cpp/.ssh
       - type: volume
-        source: devenv_cpp_.git
-        target: /home/devenv_cpp/.git
-      - type: volume
         source: devenv_cpp_src
         target: /home/devenv_cpp/src
+
+    entrypoint :
+      - sh
+      - -c
+      - /usr/local/bin/entrypoint.sh
 
 # appliance volumes
 volumes:
   devenv_cpp_.vim:
   devenv_cpp_.ssh:
-  devenv_cpp_.git:
   devenv_cpp_src:

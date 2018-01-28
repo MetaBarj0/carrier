@@ -70,20 +70,16 @@ BASE_IMAGE=busybox
 # need to find at the end of the Dockerfile
 EXTRA_DOCKERFILE_COMMANDS="$(cat << EOI
 RUN adduser -H -D devenv_cpp
-
 RUN mkdir -p /home/devenv_cpp/.ssh \
-             /home/devenv_cpp/.git \
              /home/devenv_cpp/.vim \
              /home/devenv_cpp/src
-
 RUN chown -R devenv_cpp:devenv_cpp /home/devenv_cpp
-
-USER devenv_cpp:devenv_cpp
-
-WORKDIR /home/devenv_cpp
 
 COPY entrypoint.sh /usr/local/bin/
 ENTRYPOINT [ "/usr/local/bin/entrypoint.sh" ]
+
+USER devenv_cpp:devenv_cpp
+WORKDIR /home/devenv_cpp
 EOI
 )"
 
@@ -91,19 +87,7 @@ EOI
 # about spaces and new lines here. Don't put anything else than pure variable
 # definition. You can use variable and expression substitution here as the
 # manifest file will be sourced by the appliance management system.
-ENVIRONMENT="$(cat << EOI
-LINUX_USER_ID=$(id -u)
-LINUX_USER_GROUP=$(id -g)
-GIT_USER_NAME=\
-"$([ ! -z $GIT_USER_NAME ] && $GIT_USER_NAME || echo 'John_Doe')"
-GIT_USER_MAIL=\
-"$([ ! -z $GIT_USER_MAIL ] && $GIT_USER_MAIL || echo 'mail@example.org')"
-GIT_SSH_PUBLIC_KEY=\
-"$([ -f ~/.ssh/id_rsa.pub ] && "$(cat ~/.ssh/id_rsa.pub)" || echo '')"
-GIT_SSH_SECRET_KEY=\
-"$([ -f ~/.ssh/id_rsa ] && "$(cat ~/.ssh/id_rsa)" || echo '')"
-EOI
-)"
+ENVIRONMENT=
 
 # extra arguments to pass to the docker-compose run... command invoked by the
 # start command of the manage-appliance script.
