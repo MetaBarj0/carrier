@@ -93,68 +93,38 @@ EOI
   exit 1
 fi
 
-# Two phases execution :
-# - first, the container runs with the root user : it creates a git user using
-#   the user and group id provided by the environment and create a sub-script
-#   to execute as 'git' instead as 'root'. The sub script creation is necessary
-#   because the 'su -c ...' command looks not able to parse arguments of the
-#   command it is supposed to execute.
-# - second, as the git user, execute this very same script and configure git,
-#   create ssh key files and forward the provided command
-if [ $(whoami) != git ]; then
-  addgroup -g $GIT_LINUX_GROUP git
-  adduser -D -u $GIT_LINUX_USER -G git git
+# configure git, create ssh key files and forward the provided command
+# some global configuration for git
+git config --global init.templatedir /usr/local/share/git-core/templates/
+git config --global core.editor vi
 
-  # the subscript is only a call to this one but it expand here the value of
-  # $@, avoiding to have to supply the 'su -c ...' command with arguments as
-  # it does not work as intended
-  cat << EOI > entrypoint-as-git.sh
-#!/bin/sh
-exec entrypoint.sh "$@"
-rm -f \$0
-EOI
-  chown git:git entrypoint-as-git.sh
-  chmod +x entrypoint-as-git.sh
-  
-  exec su git -c ./entrypoint-as-git.sh
-# Here, i am the 'git' user
-else
-  # some global configuration for git
-  git config --global init.templatedir /usr/local/share/git-core/templates/
-  git config --global core.editor vi
-  
-  git config --global user.name $GIT_USER_NAME
-  git config --global user.email $GIT_USER_MAIL
-  
-  cd $HOME
-  mkdir -p .ssh
-  cd .ssh
+git config --global user.name $GIT_USER_NAME
+git config --global user.email $GIT_USER_MAIL
 
-  # create ssh key pair
-  echo "$GIT_SSH_PUBLIC_KEY" > id_rsa.pub
-  echo "$GIT_SSH_SECRET_KEY" > id_rsa
+mkdir -p .ssh
+cd .ssh
 
-  # create a 'very' permissive ssh configuration, disabling host key checking
-  # this container is ephemeral and it is not a serious issue in this context
-  cat << EOI > config
+# create ssh key pair
+echo "$GIT_SSH_PUBLIC_KEY" > id_rsa.pub
+echo "$GIT_SSH_SECRET_KEY" > id_rsa
+
+# create a 'very' permissive ssh configuration, disabling host key checking
+# this container is ephemeral and it is not a serious issue in this context
+cat << EOI > config
 Host *
-  StrictHostKeyChecking no
-  UserKnownHostsFile /dev/null
-  LogLevel QUIET
+StrictHostKeyChecking no
+UserKnownHostsFile /dev/null
+LogLevel QUIET
 EOI
-  
-  # security
-  chmod 400 id_rsa
-  unset GIT_SSH_PUBLIC_KEY
-  unset GIT_SSH_SECRET_KEY
-  unset GIT_LINUX_USER
-  unset GIT_LINUX_GROUP
 
-  # lots of useful git stuff is located here
-  export GIT_EXEC_PATH=/usr/local/libexec/git-core
+# security
+chmod 400 id_rsa
 
-  # go to the bind directory from host
-  cd "$GIT_REPOSITORY_PATH"
-  
-  exec $(echo "$@")
-fi
+cd
+
+unset GIT_SSH_PUBLIC_KEY
+unset GIT_SSH_SECRET_KEY
+unset GIT_LINUX_USER
+unset GIT_LINUX_GROUP
+
+exec $(echo "$@")
