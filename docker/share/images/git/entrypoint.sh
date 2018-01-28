@@ -7,80 +7,89 @@ fi
 
 # checking necessary environment
 if [ -z "$GIT_USER_NAME" ]; then
-  echo 'Hello John Doe, you forgot to tell me your name. I need it to'
-  echo 'configure The Stupid Content Tracker properly!'
-  echo 'The next time you will run this container, please, provide your name'
-  echo 'using the -e switch like :'
-  echo 'docker run --rm -it metabarj0/git -e GIT_USER_NAME=Groot'
-  echo 'Bye!'
+  cat << EOI 1>&2
+Hello John Doe, you forgot to tell me your name. I need it to configure The
+Stupid Content Tracker properly!  The next time you will run this container,
+please, provide your name using the -e switch like :
+  docker run --rm -it metabarj0/git -e GIT_USER_NAME=Groot
+Bye!
+EOI
   exit 1
 fi
 
 if [ -z "$GIT_USER_MAIL" ]; then
-  echo 'Hello, you forgot to tell me your email. I need it to'
-  echo 'configure The Stupid Content Tracker properly!'
-  echo 'The next time you will run this container, please, provide your email'
-  echo 'address using the -e switch like :'
-  echo 'docker run --rm -it metabarj0/git -e GIT_USER_MAIL=groot@gog.com'
-  echo 'Bye!'
+  cat << EOI 1>&2
+Hello, you forgot to tell me your email. I need it to configure The Stupid
+Content Tracker properly!  The next time you will run this container, please,
+provide your email address using the -e switch like :
+  docker run --rm -it metabarj0/git -e GIT_USER_MAIL=groot@gog.com
+Bye!
+EOI
   exit 1
 fi
 
 if [ -z "$GIT_SSH_PUBLIC_KEY" ]; then
-  echo 'Hello, you forgot to tell me your ssh public key. I need it to'
-  echo 'configure The Stupid Content Tracker properly!'
-  echo 'The next time you will run this container, please, provide your ssh'
-  echo 'public using the -e switch like :'
-  echo 'docker run --rm -it metabarj0/git \
-            -e GIT_SSH_PUBLIC_KEY="$(cat ~/.ssh/id_rsa.pub)"'
-  echo 'for instance.'
-  echo 'Bye!'
+  cat << EOI 1>&2
+Hello, you forgot to tell me your ssh public key. I need it to configure The
+Stupid Content Tracker properly!  The next time you will run this container,
+please, provide your ssh public using the -e switch like :
+  docker run --rm -it \\
+    metabarj0/git -e GIT_SSH_PUBLIC_KEY="\$(cat ~/.ssh/id_rsa.pub)"
+for instance.
+Bye!
+EOI
   exit 1
 fi
 
 if [ -z "$GIT_SSH_SECRET_KEY" ]; then
-  echo 'Hello, you forgot to tell me your ssh secret key. I need it to'
-  echo 'configure The Stupid Content Tracker properly!'
-  echo 'The next time you will run this container, please, provide your ssh'
-  echo 'public using the -e switch like :'
-  echo 'docker run --rm -it metabarj0/git \
-	    -e GIT_SSH_SECRET_KEY="$(cat ~/.ssh/id_rsa)"'
-  echo 'for instance.'
-  echo 'Bye!'
+  cat << EOI 1>&2
+Hello, you forgot to tell me your ssh secret key. I need it to configure The
+Stupid Content Tracker properly!  The next time you will run this container,
+please, provide your ssh public using the -e switch like :
+  docker run --rm -it metabarj0/git \\
+    -e GIT_SSH_SECRET_KEY="\$(cat ~/.ssh/id_rsa)"
+for instance.
+Bye!
+EOI
   exit 1
 fi
 
 if [ -z "$GIT_REPOSITORY_PATH" -o ! -d "$GIT_REPOSITORY_PATH" ]; then
   echo 'Hey, to work well, you need to specify a path where git will work'
-  echo 'The next time you will run this container, please, provide a valid'
-  echo 'directory path using the -e switch like :'
-  echo 'docker run --rm -it metabarj0/git -e GIT_REPOSITORY_PATH=$(pwd)'
-  echo 'for instance.'
-  echo 'Bye!'
+  cat << EOI 1>&2
+The next time you will run this container, please, provide a valid directory
+path using the -e switch like :
+  docker run --rm -it metabarj0/git -e GIT_REPOSITORY_PATH=\$(pwd)
+Note that you would like to bind-mount a volume in this directory to work on a
+local copy of a git repository located on your docker host.
+Bye!
+EOI
   exit 1
 fi
 
 if [ -z "$GIT_LINUX_USER" ]; then
-  echo 'Hi there! I need a linux user id to execute my commands.'
-  echo 'Preferably, you should give me your current user id. Therefore, I can'
-  echo 'create your git repository files with the correct user, saving you a'
-  echo 'lot of pain in the a**.'
-  echo 'The next time you will run this container, please, provide a valid'
-  echo 'user id using the -e switch like :'
-  echo 'docker run --rm -it metabarj0/git -e GIT_LINUX_USER=$(id -u)'
-  echo 'Bye!'
+  cat << EOI 1>&2
+Hi there! I need a linux user id to execute my commands.  Preferably, you should
+give me your current user id. Therefore, I can create your git repository files
+with the correct user, saving you a lot of pain in the a**.  The next time you
+will run this container, please, provide a valid user id using the -e switch
+like :
+  docker run --rm -it metabarj0/git -e GIT_LINUX_USER=\$(id -u)
+Bye!
+EOI
   exit 1
 fi
 
 if [ -z "$GIT_LINUX_GROUP" ]; then
-  echo 'Hi there! I need a linux group id to execute my commands.'
-  echo 'Preferably, you should give me your current group id. Therefore, I can'
-  echo 'create your git repository files with the correct group, saving you a'
-  echo 'lot of pain in the a**.'
-  echo 'The next time you will run this container, please, provide a valid'
-  echo 'user id using the -e switch like :'
-  echo 'docker run --rm -it metabarj0/git -e GIT_LINUX_GROUP=$(id -g)'
-  echo 'Bye!'
+  cat << EOI 1>&2
+Hi there! I need a linux group id to execute my commands.  Preferably, you
+should give me your current group id. Therefore, I can create your git
+repository files with the correct group, saving you a lot of pain in the a**.
+The next time you will run this container, please, provide a valid user id using
+the -e switch like :
+  docker run --rm -it metabarj0/git -e GIT_LINUX_GROUP=\$(id -g)
+Bye!
+EOI
   exit 1
 fi
 
