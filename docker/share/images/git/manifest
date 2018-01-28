@@ -48,6 +48,11 @@ PROVIDES=metabarj0/git
 # The cat and here document are used because double quotes are used in the
 # variable definition
 EXTRA_DOCKERFILE_COMMANDS="$(cat << EOI
+ENV GIT_EXEC_PATH /usr/local/libexec/git-core/
+RUN addgroup -g $GIT_LINUX_GROUP git
+RUN adduser -H -D -u $GIT_LINUX_USER -G git git
+USER git:git
+WORKDIR $GIT_REPOSITORY_PATH
 ENTRYPOINT [ "entrypoint.sh" ]
 EOI
 )"
