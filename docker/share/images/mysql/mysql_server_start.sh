@@ -16,8 +16,8 @@ if [ $(whoami) != mysql ]; then
 
   # look for an existing configuration, normally, stored in a persistent volume
   if [ ! -f etc/my.cnf ]; then
-  # no conf found, deploying default one
-  tar -xf configuration.tar
+    # no conf found, deploying default one
+    tar -xf configuration.tar
   fi
 
   if [ ! -d mysql-files ]; then
@@ -26,8 +26,8 @@ if [ $(whoami) != mysql ]; then
 
   # existing data, especially system databases?
   if [ ! -d data -o $(ls data | wc -c) -eq 0 ]; then
-  # nope! Creating a brand new data load
-  tar -xf data.tar.xz
+    # nope! Creating a brand new data load
+    tar -xf data.tar.xz
   fi
 
   # change ownership of some directories
