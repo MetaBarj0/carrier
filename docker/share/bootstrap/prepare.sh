@@ -329,7 +329,7 @@ cd build
 
 cd /tmp/make-${MAKE_VERSION}/install
 tar -cf /tmp/make.tar .
-tar --list -f /tmp/make.tar | sed -r 's/^\./\/usr\/local/' > /tmp/image.dist
+tar --list -f /tmp/make.tar | sed -E 's/^\./\/usr\/local/' > /tmp/image.dist
 EOI
   chmod +x build-make.sh
 
