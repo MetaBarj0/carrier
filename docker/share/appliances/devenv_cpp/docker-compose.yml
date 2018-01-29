@@ -41,6 +41,7 @@ services:
 
     entrypoint :
       - sh
+      - --login
       - -c
       - /usr/local/bin/entrypoint.sh
 
