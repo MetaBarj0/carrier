@@ -140,6 +140,13 @@ fillStagingArea() {
   # create the intermediate images directory in the staging area if it does not
   # already exist
   local staging_directory=${DOCKER_TMP_DIRECTORY}/images
+
+  # sanitize the satging area if this is this execution is the first (no
+  # recursion)
+  if [ -z "$FETCHED_MANIFEST" ]; then
+    rm -rf $staging_directory
+  fi
+
   mkdir -p $staging_directory
 
   # copy the project in the staging area
