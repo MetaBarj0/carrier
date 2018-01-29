@@ -69,10 +69,11 @@ BASE_IMAGE=busybox
 # the appliance's dockerfile is generated. Specify here all the commands you
 # need to find at the end of the Dockerfile
 EXTRA_DOCKERFILE_COMMANDS="$(cat << EOI
-RUN adduser -H -D devenv_cpp
 RUN mkdir -p /home/devenv_cpp/.ssh \
              /home/devenv_cpp/.vim \
-             /home/devenv_cpp/src
+             /home/devenv_cpp/src \
+             /home/devenv_cpp/out
+RUN adduser -H -D devenv_cpp
 RUN chown -R devenv_cpp:devenv_cpp /home/devenv_cpp
 
 COPY entrypoint.sh /usr/local/bin/

@@ -27,6 +27,9 @@ services:
     # mount point of volume in the running appliance
     volumes:
       - type: volume
+        source: devenv_cpp_home
+        target: /home/devenv_cpp
+      - type: volume
         source: devenv_cpp_.vim
         target: /home/devenv_cpp/.vim
       - type: volume
@@ -43,6 +46,13 @@ services:
 
 # appliance volumes
 volumes:
+  # contains the home directory content for the devenv_cpp user
+  devenv_cpp_home:
+  # vim configuration
   devenv_cpp_.vim:
+  # ssh configuration
   devenv_cpp_.ssh:
+  # designed to contain code bases
   devenv_cpp_src:
+  # output directory, may contain built sources
+  devenv_cpp_out:
