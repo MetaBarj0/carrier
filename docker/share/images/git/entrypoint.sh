@@ -54,45 +54,6 @@ EOI
   exit 1
 fi
 
-if [ -z "$GIT_REPOSITORY_PATH" -o ! -d "$GIT_REPOSITORY_PATH" ]; then
-  echo 'Hey, to work well, you need to specify a path where git will work'
-  cat << EOI 1>&2
-The next time you will run this container, please, provide a valid directory
-path using the -e switch like :
-  docker run --rm -it metabarj0/git -e GIT_REPOSITORY_PATH=\$(pwd)
-Note that you would like to bind-mount a volume in this directory to work on a
-local copy of a git repository located on your docker host.
-Bye!
-EOI
-  exit 1
-fi
-
-if [ -z "$GIT_LINUX_USER" ]; then
-  cat << EOI 1>&2
-Hi there! I need a linux user id to execute my commands.  Preferably, you should
-give me your current user id. Therefore, I can create your git repository files
-with the correct user, saving you a lot of pain in the a**.  The next time you
-will run this container, please, provide a valid user id using the -e switch
-like :
-  docker run --rm -it metabarj0/git -e GIT_LINUX_USER=\$(id -u)
-Bye!
-EOI
-  exit 1
-fi
-
-if [ -z "$GIT_LINUX_GROUP" ]; then
-  cat << EOI 1>&2
-Hi there! I need a linux group id to execute my commands.  Preferably, you
-should give me your current group id. Therefore, I can create your git
-repository files with the correct group, saving you a lot of pain in the a**.
-The next time you will run this container, please, provide a valid user id using
-the -e switch like :
-  docker run --rm -it metabarj0/git -e GIT_LINUX_GROUP=\$(id -g)
-Bye!
-EOI
-  exit 1
-fi
-
 # configure git, create ssh key files and forward the provided command
 # some global configuration for git
 git config --global init.templatedir /usr/local/share/git-core/templates/
