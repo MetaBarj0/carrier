@@ -40,7 +40,8 @@
 # will first attempt to build them. In most case, it should succeed unless it is
 # an image built by the bootstrap process. in that case, you must bootstrap your
 # system first
-REQUIRED_IMAGES="metabarj0/cmake
+REQUIRED_IMAGES="metabarj0/bash
+metabarj0/cmake
 metabarj0/coreutils
 metabarj0/ctags
 metabarj0/gcc

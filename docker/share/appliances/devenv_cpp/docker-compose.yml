@@ -40,10 +40,14 @@ services:
         target: /home/devenv_cpp/src
 
     entrypoint :
-      - sh
+      - bash
       - --login
       - -c
       - /usr/local/bin/entrypoint.sh
+
+    environment:
+      - TERMINFO=/usr/local/share/terminfo
+      - TERM=xterm-256color
 
 # appliance volumes
 volumes:

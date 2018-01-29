@@ -1,7 +1,7 @@
-#!/bin/sh
+#!/bin/env bash
 
 if [ -z "$1" ]; then
-  set -- sh
+  set -- bash --login
 fi
 
 # check the appliance, warn the user if something is missing
@@ -15,4 +15,4 @@ if [ ! -f '.ssh/id_rsa' ] \
 EOI
 fi
 
-exec "$(echo "$@")"
+exec $(echo "$@")
