@@ -223,7 +223,7 @@ buildProject() {
 cleanupStagingArea() {
   rm -rf $IMAGE_STAGING_DIRECTORY
 
-  if [ -z $(ls ${DOCKER_TMP_DIRECTORY}/images) ]; then
+  if [ -z "$(ls ${DOCKER_TMP_DIRECTORY}/images)" ]; then
     rm -r ${DOCKER_TMP_DIRECTORY}/images
   fi
 }
