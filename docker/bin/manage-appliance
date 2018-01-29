@@ -332,6 +332,7 @@ compileDockerfile() {
     # instruction to export the dependency image package
     build_stage="$(cat << EOI
 FROM $name as $alias
+USER root:root
 RUN exportPackageTo /tmp/package
 EOI
     )"
