@@ -123,7 +123,7 @@ buildDependencies() {
         -name manifest \
         -exec \
           grep -EH 'PROVIDES='$dep {} \; \
-          | sed -r 's/^([^:]+):.+/\1/'
+          | sed -E 's/^([^:]+):.+/\1/'
     )
 
     # transform dependency_manifest to be just the image name

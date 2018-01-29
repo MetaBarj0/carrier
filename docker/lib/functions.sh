@@ -257,7 +257,7 @@ registerBuiltFilesForPackaging() {
   # installation
   docker diff $(hostname) \
   | grep -E '^A\s'$PREFIX \
-  | sed -r 's/^A\s//' > /image.dist
+  | sed -E 's/^A\s//' > /image.dist
 }
 
 # finalize the packaging process, fixing /image.dist file paths and commiting
@@ -320,7 +320,7 @@ extractNeededSharedObjectsOf() {
     local needed_so_files=$(
       readelf -d "$input_file" 2> /dev/null \
       | grep NEEDED \
-      | sed -r 's/.+\[(.+)\]$/\1/')
+      | sed -E 's/.+\[(.+)\]$/\1/')
 
     # shared objects found
     if [ ! -z "$needed_so_files" ]; then
