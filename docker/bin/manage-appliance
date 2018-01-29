@@ -170,15 +170,16 @@ fillStagingArea() {
   # create the intermediate appliance directory in the staging area if it does
   # not already exist
   local staging_directory=${DOCKER_TMP_DIRECTORY}/appliances
+
+  # sanitize the staging area
+  rm -rf $staging_directory
+
   mkdir -p $staging_directory
 
   # copy the project in the staging area
   cp -a $appliance_directory $staging_directory
 
   local staging_directory=${DOCKER_TMP_DIRECTORY}/appliances
-
-  # sanitize the staging area
-  rm -rf $staging_directory
 
   APPLIANCE_STAGING_DIRECTORY=${staging_directory}/$APPLIANCE_NAME
 
