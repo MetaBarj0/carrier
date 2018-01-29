@@ -176,6 +176,10 @@ fillStagingArea() {
   cp -a $appliance_directory $staging_directory
 
   local staging_directory=${DOCKER_TMP_DIRECTORY}/appliances
+
+  # sanitize the staging area
+  rm -rf $staging_directory
+
   APPLIANCE_STAGING_DIRECTORY=${staging_directory}/$APPLIANCE_NAME
 
   # copy necessary lib files in the project directory in the staging area
