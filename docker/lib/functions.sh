@@ -193,9 +193,10 @@ include() {
   # dedupe the file list before adding it to image.dist and touch each of its
   # file
   file_list="$(makeUnique "$file_list")"
-  for f in $file_list; do touch "$f"; done
 
   echo "$file_list" >> /image.dist
+
+  xargs -a /image.dist -P $(getThreadCount) touch
 }
 
 # write all built files in /image.dist file of the image
