@@ -341,7 +341,7 @@ EOI
 
   # now, create the image of the appliance, relying on BASE_IMAGE variable if
   # set, otherwise, default it to busybox
-  if [ -z $BASE_IMAGE ]; then
+  if [ -z "$BASE_IMAGE" ]; then
     BASE_IMAGE=busybox
   fi
 
