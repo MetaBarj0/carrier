@@ -1,0 +1,47 @@
+# This is the manifest of the project. This file MUST expose few variables for
+# project being built successfully. There are 3 variables: REQUIRES, PROVIDES
+# and EXTRA_DOCKERFILE_COMMANDS. See below on how to use them.
+
+# REQUIRES contains the dependencies required by this project; manifest, gcc, 
+# make and docker-cli are built by the bootstrap project and are implicitely
+# required for any project. This is a multi-lines variable that could be set as:
+# REQUIRES="dependency1
+# dependency2
+# dependency3
+# dependency4
+# ...
+# " as an example. Note that each value must be a conform docker image name.
+REQUIRES="metabarj0/wget
+metabarj0/make
+metabarj0/gcc
+metabarj0/cmake
+metabarj0/ninja
+metabarj0/zlib
+metabarj0/python2
+metabarj0/bzip2
+metabarj0/ncurses"
+
+# this section contains the docker image built by this project. only one image
+# can be built per project. Once this project is built, the value of this
+# variable can be used in REQUIRES variable of other project to specify that
+# this image is a dependency. This is a single value variable that could be set
+# as:
+# PROVIDES=new_image
+# Note that the value must be a conform docker image name
+PROVIDES=metabarj0/llvm
+
+# this section contains extra dockerfile commands to add at last just before the
+# final image is being built. Consider to add ENV, VOLUME, ENTRYPOINT, EXPOSE, 
+# LABEL or CMD commands here if necessary. This is a multi-lines variable that
+# could be set as:
+# EXTRA_DOCKERFILE_COMMANDS="$(cat << EOI
+# ENV PATH /usr/local/bin/foo:\${PATH}
+# VOLUME /volume
+# ENTRYPOINT [ "entrypoint.sh" ]
+# LABEL foo=bar
+# ...
+# EOI
+# )"
+# The cat and here document are used because double quotes are used in the
+# variable definition
+EXTRA_DOCKERFILE_COMMANDS=""

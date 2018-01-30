@@ -47,8 +47,12 @@ metabarj0/ctags
 metabarj0/gcc
 metabarj0/gdb
 metabarj0/git
+metabarj0/less
+metabarj0/llvm
 metabarj0/make
 metabarj0/ninja
+metabarj0/sed
+metabarj0/tar
 metabarj0/vim"
 
 # name of the appliance docker image
@@ -68,8 +72,11 @@ EXTENDS=
 BASE_IMAGE=busybox
 
 # the appliance's dockerfile is generated. Specify here all the commands you
-# need to find at the end of the Dockerfile
+# need to find at the end of the Dockerfile. Usually, it is a merge of all
+# EXTRA_DOCKERFILE_COMMANDS you find in require images plus all that is specific
+# to your appliance
 EXTRA_DOCKERFILE_COMMANDS="$(cat << EOI
+RUN rm /bin/tar /bin/less /bin/sed
 RUN mkdir -p /home/devenv_cpp/.ssh \
              /home/devenv_cpp/.vim \
              /home/devenv_cpp/src \

@@ -17,8 +17,12 @@ PREFIX=/usr/local
   --prefix=$PREFIX \
   --with-perl=/usr/local/perl/bin/perl \
   --without-tcltk \
+  --with-openssl \
+  --with-curl \
+  --with-expat \
+  --with-zlib \
   CFLAGS='-O3 -s' \
-  LDFLAGS='-Wl,-rpath,/usr/local/lib,-rpath-link,/usr/local/lib/'
+  LDFLAGS='-Wl,-rpath,/usr/local/lib,-rpath-link,/usr/local/lib/,-rpath,/usr/local/lib64,-rpath-link,/usr/local/lib64/'
 
 # Calculates the optimal job count
 JOBS=$(cat /proc/cpuinfo | grep processor | wc -l)
