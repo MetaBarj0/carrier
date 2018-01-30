@@ -54,21 +54,21 @@ runBootstrap() {
   . "$DOCKER_STAGING_AREA"/bootstrap/functions.sh
 
   cat << EOI
-Specify the version of GCC you want to build. Note that today, only 7.2.0 is
-supported : [7.2.0]
+Specify the version of GCC you want to build. Note that today, only 7.2.0
+and 7.3.0 are supported : [7.3.0]
 EOI
 
-  local gcc_version="$(readValueWithDefault '7.2.0')"
+  local gcc_version="$(readValueWithDefault '7.3.0')"
 
   cat << EOI
-Specify the binutils version you want to build. Note that for GCC 7.2.0, 2.29
+Specify the binutils version you want to build. Note that for GCC 7.3.0, 2.29
 is a working version : [2.29]
 EOI
 
   local binutils_version="$(readValueWithDefault '2.29')"
 
   cat << EOI
-Specify the version of Kernel headers you want to use. Note that for GCC 7.2.0
+Specify the version of Kernel headers you want to use. Note that for GCC 7.3.0
 the 4.14.3 version works perfectly well. Moreover, only version 4+ is
 supported : [4.14.14]
 EOI

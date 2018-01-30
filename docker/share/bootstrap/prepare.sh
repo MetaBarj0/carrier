@@ -22,8 +22,8 @@ EOI
 --------------------------------------------------------------------------------
 Hey! You didn't specify a version for GCC!
 Next time you'll start this container, specify the '-e' flag of the 'run'
-command for instance, 'docker run -e GCC_VERSION=7.2.0'. Note that version other
-than 7.2.0 are not supported yet.
+command for instance, 'docker run -e GCC_VERSION=7.2.0'. Note that versions
+7.2.0 and 7.3.0 are supported so far.
 Bye!
 --------------------------------------------------------------------------------
 EOI
