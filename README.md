@@ -45,8 +45,7 @@ bootstrap script located in the docker/bin/ directory.
 This project will build the bare minimum to build other images, it will create 4 docker images containing :
 
 - a `manifest` image, internally used to build other ones
-- a working gcc toolchain (only the 7.2.0 is supported for now) with c and c++ language activated linked against the
-  `musl-libc`
+- a working gcc toolchain (only the 7.2.0 and 7.3.0 are supported for now) with c and c++ language activated linked against the `musl-libc`
 - a working make
 - a working docker client image `docker-cli` designed to work with your docker host. It is used as an internal tool to build your projects. It only contains the docker client program as well as an entrypoint to ensure you correctly bound the host socket with a running container of this image.
 
