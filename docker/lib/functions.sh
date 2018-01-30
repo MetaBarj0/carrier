@@ -237,13 +237,10 @@ include() {
     fi
   done
 
-  # dedupe the file list before adding it to image.dist and touch each of its
-  # file
+  # dedupe the file list before adding it to image.dist
   file_list="$(makeUnique "$file_list")"
 
   echo "$file_list" >> /image.dist
-
-  xargs -a /image.dist -P $(getThreadCount) touch
 }
 
 # write all built files in /image.dist file of the image
@@ -266,6 +263,9 @@ registerBuiltFilesForPackaging() {
 finalizePackage() {
   # sorting and removing duplicates in image.dist
   echo "$(sort /image.dist | uniq)" > /image.dist
+
+  # finally, touch each file in image.dist to register them for the commit
+  xargs -a /image.dist -P $(getThreadCount) touch
 
   # commit changes
   docker commit $(hostname) $REPOSITORY
