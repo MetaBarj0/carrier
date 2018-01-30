@@ -8,6 +8,7 @@ It is composed with following images :
 * metabarj0/cmake
 * metabarj0/coreutils
 * metabarj0/ctags
+* metabarj0/gawk
 * metabarj0/gcc
 * metabarj0/gdb
 * metabarj0/git
