@@ -90,10 +90,10 @@ updateEnvironment() {
   pacman -Syu --noconfirm --needed \
     gcc make wget file lzip docker unzip bison
 
-  # # saving state to accelerate future uses
-  # docker commit \
-  #   $(hostname) \
-  #   $(docker ps --filter id=$(hostname) --format='{{.Image}}')
+  # saving state to accelerate future uses
+  docker commit \
+    $(hostname) \
+    $(docker ps --filter id=$(hostname) --format='{{.Image}}')
 }
 
 createManifestDockerImage() {
@@ -184,7 +184,7 @@ buildToolchain() {
     /tmp/$TARGET/build-gcc-${GCC_VERSION}-musl.sh
 
   # build the toolchain!
-  /tmp/$TARGET/build-gcc-${GCC_VERSION}-musl.sh
+  /tmp/$TARGET/build-gcc-${GCC_VERSION}-musl.sh 1> /dev/null
 }
 
 cleanupAndFixPaths() {

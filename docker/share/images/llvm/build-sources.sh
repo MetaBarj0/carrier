@@ -61,7 +61,5 @@ cmake \
 
 ninja && ninja install
 
-pause
-
 # 4- make this image a package using either package or packageIncluding
 package
