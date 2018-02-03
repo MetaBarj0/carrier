@@ -1,46 +1,64 @@
-# This is the manifest file of the appliance. It gathers all informations that
-# are necessary to build the appliance from scratch as soon as your system is
-# correctly bootstrapped.
-# It must respect the 'sh' syntax as it defines variables that are sourced at
-# runtime to build the appliance.
+# manifest file for the appliance.
+# 
+# It describes essetially how to build the image of each service.
+# Indeed, the appliance system does not rely on the docker-compose builtin image
+# build but implements its own for optimization purposes.
 #
-# Mandatory variables are :
+# Here is how it works
 #
-# - IMAGE_NAME: the name of the appliance. Note that the name you give must be
-#   conform to the docker image naming standard
-# - CONTAINER_NAME: the name of the container of the running appliance. Note
-#   that the name you give must be conform to the docker container naming
-#   standard
-# - REQUIRED_IMAGES: declare all images that are necessary to build the
-#   appliance. If one image is not present on your docker host but defined in
-#   the share/images directory, the system will attempt to build it first.
-# - SERVICE: the name of the service that exists in the docker-compose.yml file
-#   that the user can run to work with the appliance.
+# First, you must expose a global variable names
 #
-# Optional variable are :
+#   COMPOSE_BUILD_CONTEXT
 #
-# - ENVIRONMENT: A variable containing a list of instructions that set variables
-#   to be used as environment when running the appliance's service exposed to
-#   the user
-# - EXTENDS: list of appliances this one will extend. Sort of inheritance. NYI.
-# - BASE_IMAGE: specify the base image to use in order to build appliance. Note
-#   that busybox is perfectly sufficient. Moreover, you _SHOULD_ note use any
-#   image having a libc different than musl if you use metabarj0/* images as
-#   part of your appliance. If not specified, automatically set to busybox
-# - EXTRA_DOCKERFILE_COMMANDS: set of Dockerfile command that will be appended
-#   to the end of the generated appliance's Dockerfile. Though you could specify
-#   any command here as no checks are made, you will find this feature useful if
-#   you need to specify environment stuff (ENV command) or a specific entrypoint
-#   (ENTRYPOINT command)
-# - EXTRA_COMPOSE_ARGUMENTS: optionnal supplementary arguments to pass to the
-#   underlyingly called 'docker-compose run' command when starting the appliance
+# This variable will map a service's image name (in your docker-compose.yml
+# file) and a function name (defined in this manifest file). With theses
+# element, the appliance management system will be able to generate a Dockerfile
+# for each service of your appliance and build this image.
+#
+# Content of the COMPOSE_BUILD_CONTEXT variable
+#
+# It must contains a pair of value for each service defined in your
+# docker-compose file.
+# The first value of a pair must be the iamge name as specified in the
+# docker-compose.yml file (the `image` property).
+# The second value must be the name of a function defined in htis manifest file.
+# This function must expose at least one global variable giving the recipe to
+# build the image of the service
+#
+# The function providing the build context
+#
+# As mentioned above, at least one global variable has to be exposed :
+#
+#   BASE_IMAGE
+#
+# This is the base image used for your service image. Most of the time, busybox
+# is sufficient, but metabarj0/docker-cli is perfectly fine too is you need to
+# operate on your docker host from your appliance.
+# Other variables can also be specified. Though they are not mandatory, they can
+# provide you with flexibility to build your image is some specific ways :
+#
+#   REQUIRED_IMAGES
+#
+# Contains all images that are necessary to build the image of your service.
+# Though it is not mandatory, if this one is not specified, you'll end up with a
+# service image derived from the base image exposed by BASE_IMAGE variable.
+# Each image specified in this variable must be buildable using the build system
+# of `carrier`. When you set this variable, each specified image must be
+# separated by space or new lines.
+#
+#   EXTRA_DOCKERFILE_COMMANDS
+#
+# This variable allows one to customize how the image of the service is built by
+# appending specific docker commands in the generated Dockerfile. Usually, RUN,
+# USER and ENTRYPOINT commands are the most often specified but one could
+# aventually add build stages if necessary. Indeed, the last build stage that is
+# generated is sytematically aliased with `final`
+#
+# As conclusion, feel free to get some inspiration by looking at existing
+# appliance configuration to create your own.
 
-# These are image required to build the appliance. If these image are not built
-# on your docker host but defined in the share/images/ directory, the system
-# will first attempt to build them. In most case, it should succeed unless it is
-# an image built by the bootstrap process. in that case, you must bootstrap your
-# system first
-REQUIRED_IMAGES="metabarj0/bash
+shell_context() {
+  REQUIRED_IMAGES="metabarj0/bash
 metabarj0/cmake
 metabarj0/coreutils
 metabarj0/ctags
@@ -56,27 +74,9 @@ metabarj0/sed
 metabarj0/tar
 metabarj0/vim"
 
-# name of the appliance docker image
-IMAGE_NAME=metabarj0/devenv_cpp
+  BASE_IMAGE=busybox
 
-# name of the container of the running appliance
-CONTAINER_NAME=devenv_cpp
-
-# this is the main service of the appliance. This is the service one can
-# interact with through the usage of the docker/bin/manage-appliance script.
-SERVICE=shell
-
-# The base appliance this appliance will extend. NYI
-EXTENDS=
-
-# this is the base image used to create the appliance docker image
-BASE_IMAGE=busybox
-
-# the appliance's dockerfile is generated. Specify here all the commands you
-# need to find at the end of the Dockerfile. Usually, it is a merge of all
-# EXTRA_DOCKERFILE_COMMANDS you find in require images plus all that is specific
-# to your appliance
-EXTRA_DOCKERFILE_COMMANDS="$(cat << EOI
+  EXTRA_DOCKERFILE_COMMANDS="$(cat << EOI
 RUN rm /bin/tar /bin/less /bin/sed
 RUN mkdir -p /home/devenv_cpp/.ssh \
              /home/devenv_cpp/.vim \
@@ -91,14 +91,14 @@ ENTRYPOINT [ "/usr/local/bin/entrypoint.sh" ]
 USER devenv_cpp:devenv_cpp
 WORKDIR /home/devenv_cpp
 EOI
-)"
+  )"
+}
 
-# defines some environment necessary for the appliance to operate. be careful
-# about spaces and new lines here. Don't put anything else than pure variable
-# definition. You can use variable and expression substitution here as the
-# manifest file will be sourced by the appliance management system.
-ENVIRONMENT=
+dummy_context() {
+  BASE_IMAGE=busybox
 
-# extra arguments to pass to the docker-compose run... command invoked by the
-# start command of the manage-appliance script.
-EXTRA_COMPOSE_ARGUMENTS=
+  EXTRA_DOCKERFILE_COMMANDS="ENTRYPOINT while true; do sleep 10; done"
+}
+
+COMPOSE_BUILD_CONTEXT="metabarj0/devenv_cpp_shell shell_context
+metabarj0/devenv_cpp_dummy dummy_context"

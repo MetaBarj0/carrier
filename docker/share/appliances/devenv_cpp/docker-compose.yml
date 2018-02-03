@@ -9,20 +9,19 @@
 version: '3.2'
 
 services:
-  # the only service of this appliance. This is the one that is referenced in
-  # the SERVICE variable in the manifest file.
+  # this is the unique service of this very simple appliance. It is just a shell
+  # one can attach to to develop cpp stuff.
   shell:
-    # the image name is defined in the environment and more deeply into the
-    # manifest file. Do not set a different image name here from the name
-    # specified in the manifest file as it will break some feature of the
-    # docker/bin/manage-appliance script.
-    image: ${IMAGE_NAME}
+    depends_on:
+      - dummy1
 
-    # the container name is defined in the environment and more deeply into the
-    # manifest file. Do not set a different container name here from the name
-    # specified in the manifest file as it will break some feature of the
-    # docker/bin/manage-appliance script.
-    container_name: ${CONTAINER_NAME}
+    # The image name specified here is used in the manifest file. Actually,
+    # docker-compose does not have the role to build services' images as it does
+    # not give enough freedom to the user (squashing, pruning intermediate
+    # images in case of multi-stage build). Therefore, this is the
+    # manage-appliance script that will create all images using an
+    # auto-generated Dockerfile for each service
+    image: metabarj0/devenv_cpp_shell
 
     # mount point of volume in the running appliance
     volumes:
@@ -49,6 +48,17 @@ services:
       - TERMINFO=/usr/local/share/terminfo
       - TERM=xterm-256color
       - GIT_EXEC_PATH=/usr/local/libexec/git-core/
+
+  dummy1:
+    depends_on:
+      - dummy2
+    image: metabarj0/devenv_cpp_dummy
+  dummy2:
+    depends_on:
+      - dummy3
+    image: metabarj0/devenv_cpp_dummy
+  dummy3:
+    image: metabarj0/devenv_cpp_dummy
 
 # appliance volumes
 volumes:
