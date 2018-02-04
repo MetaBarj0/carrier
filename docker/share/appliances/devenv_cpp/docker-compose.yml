@@ -12,9 +12,6 @@ services:
   # this is the unique service of this very simple appliance. It is just a shell
   # one can attach to to develop cpp stuff.
   shell:
-    depends_on:
-      - dummy1
-
     # The image name specified here is used in the manifest file. Actually,
     # docker-compose does not have the role to build services' images as it does
     # not give enough freedom to the user (squashing, pruning intermediate
@@ -44,21 +41,17 @@ services:
       - -c
       - /usr/local/bin/entrypoint.sh
 
+    # this service is a shell, activate tty behavior and disable streamed
+    # logging
+    stdin_open: true
+    tty: true
+    logging:
+      driver: 'none'
+
     environment:
       - TERMINFO=/usr/local/share/terminfo
       - TERM=xterm-256color
       - GIT_EXEC_PATH=/usr/local/libexec/git-core/
-
-  dummy1:
-    depends_on:
-      - dummy2
-    image: metabarj0/devenv_cpp_dummy
-  dummy2:
-    depends_on:
-      - dummy3
-    image: metabarj0/devenv_cpp_dummy
-  dummy3:
-    image: metabarj0/devenv_cpp_dummy
 
 # appliance volumes
 volumes:

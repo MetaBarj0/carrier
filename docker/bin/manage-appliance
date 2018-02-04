@@ -6,82 +6,63 @@
 # that is the manifest file, the docker-compose file, any supplementary file of
 # your appliance
 
+# stop on first fail
 set -e
 
 # setup important docker directories in global variables that will be used later
 setupDockerDirectories() {
   # current directory
-  USER_DIRECTORY=$(pwd -P)
+  USER_DIRECTORY="$(pwd -P)"
 
   # resolving important docker directories
-  DOCKER_BIN_DIRECTORY=$(dirname $0)
-  cd ${DOCKER_BIN_DIRECTORY}/..
+  DOCKER_BIN_DIRECTORY="$(dirname "$0")"
+  cd "${DOCKER_BIN_DIRECTORY}/.."
 
-  DOCKER_ROOT_DIRECTORY=$(pwd -P)
-  DOCKER_BIN_DIRECTORY=${DOCKER_ROOT_DIRECTORY}/bin
-  DOCKER_LIB_DIRECTORY=${DOCKER_ROOT_DIRECTORY}/lib
-  DOCKER_TMP_DIRECTORY=${DOCKER_ROOT_DIRECTORY}/tmp
-  DOCKER_SHARE_DIRECTORY=${DOCKER_ROOT_DIRECTORY}/share
-  DOCKER_APPLIANCES_DIRECTORY=${DOCKER_SHARE_DIRECTORY}/appliances
-  DOCKER_IMAGES_DIRECTORY=${DOCKER_SHARE_DIRECTORY}/images
+  DOCKER_ROOT_DIRECTORY="$(pwd -P)"
+  DOCKER_BIN_DIRECTORY="${DOCKER_ROOT_DIRECTORY}/bin"
+  DOCKER_LIB_DIRECTORY="${DOCKER_ROOT_DIRECTORY}/lib"
+  DOCKER_TMP_DIRECTORY="${DOCKER_ROOT_DIRECTORY}/tmp"
+  DOCKER_SHARE_DIRECTORY="${DOCKER_ROOT_DIRECTORY}/share"
+  DOCKER_APPLIANCES_DIRECTORY="${DOCKER_SHARE_DIRECTORY}/appliances"
+  DOCKER_IMAGES_DIRECTORY="${DOCKER_SHARE_DIRECTORY}/images"
 
   # back to current directory
-  cd $USER_DIRECTORY
+  cd "$USER_DIRECTORY"
 }
 
 # source and validate (or invalidate) the appliance's manifest file. Ensure all
-# mandatory variables are set.
-validateManifestFile() {
+# mandatory variables are set. This is not a deep validation, this functions
+# only verify the exposition of a global variable.
+shallowValidateManifestFile() {
   # first, source the manifest file
-  . $MANIFEST_FILE_PATH
+  . "$MANIFEST_FILE_PATH"
 
   # then, testing mandatory variables existence
-  if [ -z "$IMAGE_NAME" ] \
-     || [ -z "$CONTAINER_NAME" ] \
-     || [ -z "$REQUIRED_IMAGES" ] \
-     || [ -z "$SERVICE" ]; then
+  if [ -z "$COMPOSE_BUILD_CONTEXT" ]; then
     error "$(
     cat << EOI
-The appliance's manifest file is ill formed as it lacks one or several mandatory
-variable values.
+The appliance's manifest file is ill formed as it lacks one mandatory variable
+values.
 In order to build an appliance, you must provide a value for the following
-mandatory variables :
+mandatory variable :
 
-  IMAGE_NAME      : the built appliance docker image name
-  CONTAINER_NAME  : the container name of the running appliance
-  REQUIRED_IMAGES : necessary docker images used to build the appliance
-  SERVICE         : name of the service to interact with the appliance when you
-                    start it
+  COMPOSE_BUILD_CONTEXT
 
-You can also set these optional variables :
+This variable maps a service's image name (in your docker-compose.yml file)
+and a function name (defined in the manifest file). With these elements, the
+appliance management system will be able to generate a Dockerfile for each
+service of your appliance and build this image.
 
-  EXTENDS                   : Specify that this appliance will extend aplliances
-                              specified in this variable value (NYI)
-  BASE_IMAGE                : the docker base image to use to create this
-                              appliance. Not that specifying an image having
-                              its own libc (no matter its flavor is strongly
-                              discouraged and could break your appliance)
-  EXTRA_DOCKERFILE_COMMANDS : A set of Dockerfile command to append to the
-                              generated Dockerfile used to build your appliance.
-                              Usually, ENTRYPOINT command goes here but you're
-                              not limited to this specific command. For instance,
-                              you can use this variable to create supplementary
-                              building stage using the last generated building
-                              stage aliased with your appliance image name
-  ENVIRONMENT               : a set of key=value pairs that is passed to the
-                              command that run a built appliance.
-  EXTRA_COMPOSE_ARGUMENTS   : Supplementary argument to provide to the
-                              docker-compose run command executed when starting
-                              the appliance.
-
-Taking into account these remarks should help you to resolve your
-problems...exiting...
+Taking into account this remark should help you to resolve your
+problem...exiting...
 EOI
     )"
-    exit 1
+    return 1
   fi
 
-  APPLIANCE_NAME=$(basename $(dirname $MANIFEST_FILE_PATH))
+  # shallow validation complete, the appliance name is get, assuming all is OK
+  # so far
+  APPLIANCE_NAME="$(basename "$(dirname "$MANIFEST_FILE_PATH")")"
 }
 
 # help message on how to use the appliance management system.
@@ -122,12 +103,12 @@ EOI
 checkArgument() {
   COMMAND="$1"
 
-  # verify the command specified, if invalid, usage then exit 1
+  # verify the command specified, if invalid, returns 1
   if [ "$COMMAND" != 'build' ] \
      && [ "$COMMAND" != 'start' ] \
      && [ "$COMMAND" != 'stop' ]; then
     usage
-    exit 1
+    return 1
   fi
 
   # try to resolve the manifest file path by:
@@ -135,65 +116,51 @@ checkArgument() {
   #    provided
   #  - testing directly the file path, useful if absolute path is provided
   local manifest_arg="$2"
-  if [ ! -f ${USER_DIRECTORY}/"$manifest_arg" ] \
+  if [ ! -f "${USER_DIRECTORY}"/"$manifest_arg" ] \
      && [ ! -f "$manifest_arg" ]; then
     # not a file path, testing the appliance name
-    manifest_arg=${DOCKER_APPLIANCES_DIRECTORY}/"$2"/manifest
-    if [ ! -f ${manifest_arg} ]; then
+    manifest_arg="${DOCKER_APPLIANCES_DIRECTORY}"/"$2"/manifest
+    if [ ! -f "${manifest_arg}" ]; then
       usage
-      exit 1
+      return 1
     fi
   fi
 
   # OK, valid argument, exposing the manifest file absolute path
-  MANIFEST_FILE_PATH=${manifest_arg}
-}
-
-# simple utility telling if the targeted appliance already exists on your docker
-# host
-applianceExists() {
-  # at this stage, the manifest file has been sourced and the appliance image
-  # name is known
-  local result="$(docker image ls --format='{{.Repository}}' $IMAGE_NAME)"
-
-  if [ ! -z "$result" ]; then
-    echo 0 # image does exist
-  else
-    echo 1 # image does not exist
-  fi
+  MANIFEST_FILE_PATH="${manifest_arg}"
 }
 
 # put all necessary files intor the being built appliance staging directory.
 fillStagingArea() {
-  local appliance_directory=$(dirname $MANIFEST_FILE_PATH)
+  local appliance_directory="$(dirname "$MANIFEST_FILE_PATH")"
 
   # create the intermediate appliance directory in the staging area if it does
   # not already exist
   local staging_directory=${DOCKER_TMP_DIRECTORY}/appliances
 
   # sanitize the staging area
-  rm -rf $staging_directory
+  rm -rf "$staging_directory"
 
-  mkdir -p $staging_directory
+  mkdir -p "$staging_directory"
 
   # copy the project in the staging area
-  cp -a $appliance_directory $staging_directory
+  cp -a "$appliance_directory" "$staging_directory"
 
-  local staging_directory=${DOCKER_TMP_DIRECTORY}/appliances
+  local staging_directory="${DOCKER_TMP_DIRECTORY}"/appliances
 
-  APPLIANCE_STAGING_DIRECTORY=${staging_directory}/$APPLIANCE_NAME
+  APPLIANCE_STAGING_DIRECTORY="${staging_directory}"/"$APPLIANCE_NAME"
 
   # copy necessary lib files in the project directory in the staging area
-  cd $DOCKER_LIB_DIRECTORY
+  cd "$DOCKER_LIB_DIRECTORY"
 
   cp \
     .dockerignore \
     exportPackageTo \
     functions.sh \
     importPackageFrom \
-    $APPLIANCE_STAGING_DIRECTORY
+    "$APPLIANCE_STAGING_DIRECTORY"
 
-  cd $USER_DIRECTORY
+  cd "$USER_DIRECTORY"
 }
 
 # fetch a copy of the master branch of the carrier directory then, copy the
@@ -201,10 +168,10 @@ fillStagingArea() {
 # build various dependencies and serve as a genuine repository.
 fetchManifest() {
   # use the metabarj0/manifest docker image that MUST exist
-  local manifest_image=$(
-    docker image ls --format='{{.Repository}}' metabarj0/manifest)
+  local manifest_image="$(
+    docker image ls --format='{{.Repository}}' metabarj0/manifest)"
 
-  if [ -z $manifest_image ]; then
+  if [ -z "$manifest_image" ]; then
     error "$(cat << EOI
 Error: cannot find the metabarj0/manifest docker image on your docker host. This
 image is built by the bootstrap process.
@@ -218,10 +185,11 @@ Taking these remarks into account should help you to resolve your
 problem...exiting...
 EOI
     )"
-    exit 1
+    return 1
   fi
 
-  fetchManifestImageContent $APPLIANCE_STAGING_DIRECTORY
+  # call to a functions.sh's utility
+  fetchManifestImageContent "$APPLIANCE_STAGING_DIRECTORY"
 }
 
 # build an image that is required for the appliance and that was not found on
@@ -235,12 +203,12 @@ buildDependentImage() {
 
   # look for the manifest file providing this image, in genuine location, the
   # fetched manifest
-  local image_manifest_path=$(
-    find $FETCHED_MANIFEST \
+  local image_manifest_path="$(
+    find "$FETCHED_MANIFEST" \
       -type f \
       -name manifest \
       -exec grep -EH 'PROVIDES='"$required_image_name" {} \; \
-      | sed -E 's/(.+):.*$/\1/')
+      | sed -E 's/(.+):.*$/\1/')"
 
   if [ -z "$image_manifest_path" ]; then
     error "$( cat << EOI
@@ -263,13 +231,13 @@ problem...exiting
 EOI
     )"
 
-    exit 1
+    return 1
   fi
 
   # I've the absolute path of the required image's manifest file, let's build it
   # in a new sub-shell
   (
-    exec ${FETCHED_MANIFEST}/bin/build-image \
+    exec "${FETCHED_MANIFEST}"/bin/build-image \
       "$image_manifest_path"
   )
 }
@@ -281,11 +249,11 @@ checkRequiredImages() {
   # them if necessary
   local image=
   for image in $REQUIRED_IMAGES; do
-    local image_name=$(
-      docker image ls --format='{{.Repository}}' $image)
+    local image_name="$(
+      docker image ls --format='{{.Repository}}' $image)"
 
     # image does not exist on the docker host
-    if [ -z $image_name ]; then
+    if [ -z "$image_name" ]; then
       buildDependentImage "$image"
     fi
   done
@@ -301,7 +269,7 @@ mapImageNameAndBuildStages() {
     pair="$(
       makePair \
         "$image" \
-        "$(basename $image)"'_'"$(generateRandomBuildStageAlias)"
+        "$(basename "$image")"'_'"$(generateRandomBuildStageAlias)"
     )"
 
     map="$(append "$map" "$pair" ' ')"
@@ -310,8 +278,9 @@ mapImageNameAndBuildStages() {
   echo "$map"
 }
 
-# Generate the entire Dockerfile of the appliance, relying on the content of the
-# manifest file and values computed by the process of appliance building.
+# Generate the entire Dockerfile of an image of the appliance, relying on the
+# content of the manifest file and values computed by the process of appliance
+# building.
 compileDockerfile() {
   # create a map between image used in build stages and their alias that will be
   # used later
@@ -345,12 +314,6 @@ EOI
     )"
   done
 
-  # now, create the image of the appliance, relying on BASE_IMAGE variable if
-  # set, otherwise, default it to busybox
-  if [ -z "$BASE_IMAGE" ]; then
-    BASE_IMAGE=busybox
-  fi
-
   # copy tooling to extract dependencies' packages
   local appliance_build_stage="$(cat << EOI
 FROM $BASE_IMAGE as $APPLIANCE_NAME
@@ -383,7 +346,7 @@ EOI
 
   # final step, create the Dockerfile and appending the
   # EXTRA_DOCKERFILE_COMMANDS
-  cat << EOI > ${APPLIANCE_STAGING_DIRECTORY}/Dockerfile
+  cat << EOI > "${APPLIANCE_STAGING_DIRECTORY}"/Dockerfile
 $dependencies_build_stages
 $appliance_build_stage
 $appliance_image_imports
@@ -392,57 +355,165 @@ $EXTRA_DOCKERFILE_COMMANDS
 EOI
 }
 
-# create the appliance's docker image on the docker host using the generated
+# create the service's docker image on the docker host using the generated
 # Dockerfile
-buildApplianceImage() {
+buildServiceImage() {
   # now we have a dockerfile, we just have to use it to build the appliance
   # image, go to the build context
-  cd $APPLIANCE_STAGING_DIRECTORY
+  cd "$APPLIANCE_STAGING_DIRECTORY"
 
-  # build a squashed image
-  docker build --squash -t $IMAGE_NAME .
+  # build a squashed image, docker compose can't do that yet
+  docker build --squash -t "$IMAGE_NAME" .
 
-  # cleanup intermediate images
+  # cleanup intermediate images, docker compose don't do that yet
   docker image prune -f
 
-  cd $USER_DIRECTORY
+  cd "$USER_DIRECTORY"
 }
 
 # cleanup the appliance staging area when the build is complete
 cleanupStagingArea() {
-  if [ -d $APPLIANCE_STAGING_DIRECTORY ]; then
-    rm -rf $APPLIANCE_STAGING_DIRECTORY
+  if [ -d "$APPLIANCE_STAGING_DIRECTORY" ]; then
+    rm -rf "$APPLIANCE_STAGING_DIRECTORY"
   fi
 
-  if [ -z "$(ls ${DOCKER_TMP_DIRECTORY}/appliances)" ]; then
-    rm -r ${DOCKER_TMP_DIRECTORY}/appliances
+  if [ -z "$(ls "${DOCKER_TMP_DIRECTORY}"/appliances)" ]; then
+    rm -r "${DOCKER_TMP_DIRECTORY}"/appliances
   fi
+}
+
+# source the specified function, exposing glabal variables useful to build a
+# service image.
+# $1 : function name
+callBuildContextFunction() {
+  # execute the function
+  $1
+
+  # verify the presence of a mandatory variable, that must be defined by the
+  # function execution
+  if [ -z "$BASE_IMAGE" ]; then
+    error "$(cat << EOI
+Error: the BASE_IMAGE variable is not set.
+This variable is mandatory to build your service image as it is the name of the
+base image.
+
+This variable must be exposed in the body of your build context function inside
+the manifest file of your appliance.
+
+Note that this variable must be global as a local variable has no definition
+outside its function scope.
+
+Taking this remark into account should help you to resolve your
+problem...exiting...
+EOI
+    )"
+    return 1
+  fi
+}
+
+# unset global variables exposed by one of the manfest's function call
+unsetBuildContextVariables() {
+  unset IMAGE_NAME
+  unset BASE_IMAGE
+  unset REQUIRED_IMAGES
+  unset EXTRA_DOCKERFILE_COMMANDS
+}
+
+# this function will build each and every image that are needed to build each
+# service of the appliance. It relies on the content of the manifest file that
+# has been source and roughly validated
+buildServiceImages() {
+  # a common part of an error message
+  local part_error_message="$(cat << EOI
+Make sure that the COMPOSE_BUILD_CONTEXT variable is defined like following :
+
+  COMPOSE_BUILD_CONTEXT="image_name1 function_name1
+image_name2 function_name2
+image_name3 function_name3" and so on...
+
+Taking this remark into account should help you to resolve your
+problem...exiting
+EOI
+)"
+
+  # iterate through each pair of image name/function to build
+  local pair_element=
+  local function_name=
+  for pair_element in $COMPOSE_BUILD_CONTEXT; do
+    # extract pair's elements
+    if [ -z "$IMAGE_NAME" ]; then
+      # first, verify current pair_element
+      if [ -z "$pair_element" ]; then
+        error "$(cat << EOI
+Error: Cannot read the image name in the definition of COMPOSE_BUILD_CONTEXT in
+your appliance manifest file.
+$part_error_message
+EOI
+        )"
+        return 1
+      fi
+
+      # extracting the image name
+      IMAGE_NAME="$pair_element"
+
+      # loop at once to get the function name
+      continue
+    else
+      # image name is set, assuming we are reading a function name but first,
+      # make a check
+      if [ -z "$pair_element" ]; then
+        error "$(cat << EOI
+Error: Cannot read the function name in the definition of COMPOSE_BUILD_CONTEXT
+in your appliance manifest file.
+$part_error_message
+EOI
+        )"
+        return 1
+      fi
+
+      # extracting the function name
+      function_name="$pair_element"
+    fi
+
+    # image already exists, nothing to do
+    local repository_id="$(docker image ls -q "$IMAGE_NAME")"
+    if [ ! -z "$repository_id" ]; then
+      # some global variable have been set, rollback context
+      IMAGE_NAME=
+      function_name=
+      continue
+    fi
+
+    # validate and run the function, exposing global variables to build the
+    # image
+    callBuildContextFunction "$function_name"
+
+    # check if requested docker images are built. If not, the system will attempt
+    # to build them.
+    checkRequiredImages
+
+    # then, generate the dockerfile to build the appliance docker image
+    compileDockerfile
+
+    # then, build the image
+    buildServiceImage
+
+    # unset all global variables set by the build context function call
+    unsetBuildContextVariables
+
+    # resetting the function name, for one more iteration
+    function_name=
+  done
 }
 
 # entrypoint of the build command. In finality, create the appliance's docker
 # image on the docker host.
 buildAppliance() {
-  if [ $(applianceExists) -eq 0 ]; then
-    cat << EOI
-Appliance '$APPLIANCE_NAME' already exists.
-If you want to rebuild this appliance, consider either to retag the $IMAGE_NAME
-docker repository or delete it...exiting...
-EOI
-    exit 0
-  fi
-
   # prepare the staging area to build the appliance
   fillStagingArea
 
-  # check if requested docker images are built. If not, the system will attempt
-  # to build them.
-  checkRequiredImages
-
-  # then, generate the dockerfile to build the appliance docker image
-  compileDockerfile
-
-  # then, build the image
-  buildApplianceImage
+  # build the image of each service
+  buildServiceImages
 
   # fnally, make some cleanup in the staging area
   cleanupStagingArea
@@ -451,81 +522,43 @@ EOI
 # entrypoint of the start command. If the appliance requested to start has not
 # been built yet, the system will attempt to build it first.
 startAppliance() {
-  if [ ! $(applianceExists) -eq 0 ]; then
-    buildAppliance
-  fi
+  # if some image are not yet built, build them
+  buildAppliance
 
   fillStagingArea
-  cd $APPLIANCE_STAGING_DIRECTORY
+  cd "$APPLIANCE_STAGING_DIRECTORY"
 
-  # manifest file has been read and validated. Creates the command to run the
-  # service
-  local environment=
-  if [ ! -z "$ENVIRONMENT" ]; then
-    local env=
-    local environment_option=
-    for env in $ENVIRONMENT; do
-      environment_option='-e '$env
-      environment="$(append "$environment" "$environment_option" ' ')"
-    done
-  fi
-
-  # crafting the docker-compose run command...
-  local command=$(echo \
-    'CONTAINER_NAME='"$CONTAINER_NAME" \
-    'IMAGE_NAME='"$IMAGE_NAME" \
-    'docker-compose run --rm' \
-    '--name '"$CONTAINER_NAME" \
-    "$EXTRA_COMPOSE_ARGUMENTS" \
-    "$environment" \
-    "$SERVICE")
+  # crafting the docker-compose command, inhibiting image creation that is
+  # handled by this script and forcing container recreation, containers being
+  # ephemeral
+  local command='docker-compose up --no-build -d'
 
   # execute the docker-compose command
   eval "$command"
 
-  cd $USER_DIRECTORY
+  cd "$USER_DIRECTORY"
+
   cleanupStagingArea
-}
-
-# utility function indicating of the appliance is running or not
-applianceIsRunning() {
-  # manifest file has been read and validated, we know the appliance container
-  # name
-  local result=$(
-    docker ps --format='{{.Names}}' --filter='name='$CONTAINER_NAME)
-
-  if [ -z "$result" ]; then
-    echo 1 # is not running
-  else
-    echo 0 # is running
-  fi
 }
 
 # entrypoint for the stop command. If the appliance is running, stops it.
 stopAppliance() {
-  if [ $(applianceIsRunning) -eq 0 ]; then
-    fillStagingArea
-    cd $APPLIANCE_STAGING_DIRECTORY
+  fillStagingArea
+  cd "$APPLIANCE_STAGING_DIRECTORY"
 
-    # crafting the docker-compose run command...
-    local command=$(echo \
-      'docker stop '"$CONTAINER_NAME"
-      )
+  # crafting the docker-compose command, removing ephemeral containers
+  local command='docker-compose rm -sf'
 
-    # execute the docker-compose command
-    eval "$command"
+  # execute the docker-compose command
+  eval "$command"
 
-    cd $USER_DIRECTORY
-    cleanupStagingArea
+  cd "$USER_DIRECTORY"
 
-    cat << EOI
+  cleanupStagingArea
+
+  cat << EOI
 Appliance '$APPLIANCE_NAME' successfully stopped.
 EOI
-  else
-    cat << EOI
-Appliance '$APPLIANCE_NAME' is not running. Nothing to do.
-EOI
-  fi
 }
 
 # generic function executing the right function depending on the command
@@ -536,7 +569,7 @@ executeRequestedCommand() {
   local function_name=${COMMAND}Appliance
 
   # make sure the manifest file is well formed and contains mandatory stuff
-  validateManifestFile
+  shallowValidateManifestFile
 
   # simply call the function
   $function_name

@@ -11,9 +11,9 @@
 #   COMPOSE_BUILD_CONTEXT
 #
 # This variable will map a service's image name (in your docker-compose.yml
-# file) and a function name (defined in this manifest file). With theses
-# element, the appliance management system will be able to generate a Dockerfile
-# for each service of your appliance and build this image.
+# file) and a function name (defined in this manifest file). With these
+# elements, the appliance management system will be able to generate a
+# Dockerfile for each service of your appliance and build this image.
 #
 # Content of the COMPOSE_BUILD_CONTEXT variable
 #
@@ -57,7 +57,11 @@
 # As conclusion, feel free to get some inspiration by looking at existing
 # appliance configuration to create your own.
 
+# exposes all necessary global variables to build the metabarj0/devenv_cpp_shell
+# image
 shell_context() {
+  BASE_IMAGE=busybox
+
   REQUIRED_IMAGES="metabarj0/bash
 metabarj0/cmake
 metabarj0/coreutils
@@ -74,16 +78,14 @@ metabarj0/sed
 metabarj0/tar
 metabarj0/vim"
 
-  BASE_IMAGE=busybox
-
   EXTRA_DOCKERFILE_COMMANDS="$(cat << EOI
-RUN rm /bin/tar /bin/less /bin/sed
-RUN mkdir -p /home/devenv_cpp/.ssh \
+RUN rm /bin/tar /bin/less /bin/sed && \
+    mkdir -p /home/devenv_cpp/.ssh \
              /home/devenv_cpp/.vim \
              /home/devenv_cpp/src \
-             /home/devenv_cpp/out
-RUN adduser -H -D devenv_cpp
-RUN chown -R devenv_cpp:devenv_cpp /home/devenv_cpp
+             /home/devenv_cpp/out && \
+    adduser -H -D devenv_cpp && \
+    chown -R devenv_cpp:devenv_cpp /home/devenv_cpp
 
 COPY entrypoint.sh /usr/local/bin/
 ENTRYPOINT [ "/usr/local/bin/entrypoint.sh" ]
@@ -94,11 +96,4 @@ EOI
   )"
 }
 
-dummy_context() {
-  BASE_IMAGE=busybox
-
-  EXTRA_DOCKERFILE_COMMANDS="ENTRYPOINT while true; do sleep 10; done"
-}
-
-COMPOSE_BUILD_CONTEXT="metabarj0/devenv_cpp_shell shell_context
-metabarj0/devenv_cpp_dummy dummy_context"
+COMPOSE_BUILD_CONTEXT="metabarj0/devenv_cpp_shell shell_context"

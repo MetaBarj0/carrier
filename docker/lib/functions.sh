@@ -406,10 +406,10 @@ collectSharedObjectDependencies() {
 # USER_DIRECTORY
 fetchManifestImageContent() {
 
-  if [ -z "$1" ]; then
+  if [ ! -d "$1" ]; then
     error "$(cat << EOI
-Error: need a destination directory to fetch the metabarj0/manifest docker image
-content...exiting...
+Error: need an existing destination directory to fetch the metabarj0/manifest
+docker image content...exiting...
 EOI
     )"
     return 1
