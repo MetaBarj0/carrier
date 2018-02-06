@@ -1,0 +1,62 @@
+shell_context() {
+  BASE_IMAGE=busybox
+
+  REQUIRED_IMAGES="metabarj0/bash
+metabarj0/boost
+metabarj0/bzip2
+metabarj0/cmake
+metabarj0/coreutils
+metabarj0/ctags
+metabarj0/gawk
+metabarj0/gcc
+metabarj0/gdb
+metabarj0/git
+metabarj0/less
+metabarj0/libclang
+metabarj0/make
+metabarj0/mysql_dev
+metabarj0/ninja
+metabarj0/openssl_dev
+metabarj0/readline
+metabarj0/sed
+metabarj0/tar
+metabarj0/vim
+metabarj0/zlib"
+
+  EXTRA_DOCKERFILE_COMMANDS="$(cat << EOI
+RUN rm /bin/tar /bin/less /bin/sed && \
+    mkdir -p /home/devenv_trinitycore/.ssh \
+             /home/devenv_trinitycore/.vim \
+             /home/devenv_trinitycore/src \
+             /home/devenv_trinitycore/build \
+             /home/devenv_trinitycore/debug \
+             /home/devenv_trinitycore/release \
+             /home/devenv_trinitycore/debug/data \
+             /home/devenv_trinitycore/release/data && \
+    adduser -H -D devenv_trinitycore && \
+    chown -R devenv_trinitycore:devenv_trinitycore /home/devenv_trinitycore
+
+COPY entrypoint.sh /usr/local/bin/
+ENTRYPOINT [ "/usr/local/bin/entrypoint.sh" ]
+
+USER devenv_trinitycore:devenv_trinitycore
+WORKDIR /home/devenv_trinitycore
+EOI
+  )"
+}
+
+mysql_context() {
+  BASE_IMAGE=busybox
+
+  REQUIRED_IMAGES="metabarj0/mysql
+metabarj0/less"
+
+  EXTRA_DOCKERFILE_COMMANDS="$(cat << EOI
+RUN rm /bin/less
+ENV PATH /usr/local/mysql/bin:\${PATH}
+EOI
+  )"
+}
+
+COMPOSE_BUILD_CONTEXT="metabarj0/devenv_trinitycore_shell shell_context
+metabarj0/devenv_trinitycore_mysql mysql_context"

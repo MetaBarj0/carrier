@@ -1,0 +1,110 @@
+version: '3.2'
+
+services:
+  # mysql server
+  mysql:
+    image: metabarj0/devenv_trinitycore_mysql
+
+    networks:
+      # common network between shell and mysql
+      - mysql-network
+
+    ports:
+      - "3306"
+
+    volumes:
+      - type: volume
+        source: mysql_data
+        target: /usr/local/mysql/data
+      - type: volume
+        source: mysql_conf
+        target: /usr/local/mysql/etc
+      - type: volume
+        source: mysql_mysql-files
+        target: /usr/local/mysql/mysql-files
+
+    entrypoint:
+      - sh
+      - -c
+      - /usr/local/mysql/mysql_server_start.sh
+
+    environment:
+      - TERMINFO=/usr/local/share/terminfo
+
+  shell:
+    depends_on:
+      - mysql
+
+    image: metabarj0/devenv_trinitycore_shell
+
+    networks:
+      - mysql-network
+
+    ports:
+      - "8085:8085"
+      - "3724:3724"
+
+    volumes:
+      - type: volume
+        source: devenv_trinitycore_home
+        target: /home/devenv_trinitycore
+      - type: volume
+        source: devenv_trinitycore_.vim
+        target: /home/devenv_trinitycore/.vim
+      - type: volume
+        source: devenv_trinitycore_.ssh
+        target: /home/devenv_trinitycore/.ssh
+      - type: volume
+        source: devenv_trinitycore_src
+        target: /home/devenv_trinitycore/src
+      - type: volume
+        source: devenv_trinitycore_build
+        target: /home/devenv_trinitycore/build
+      - type: volume
+        source: devenv_trinitycore_debug
+        target: /home/devenv_trinitycore/debug
+      - type: volume
+        source: devenv_trinitycore_release
+        target: /home/devenv_trinitycore/release
+      - type: volume
+        source: devenv_trinitycore_data
+        target: /home/devenv_trinitycore/debug/data
+      - type: volume
+        source: devenv_trinitycore_data
+        target: /home/devenv_trinitycore/release/data
+
+    entrypoint :
+      - bash
+      - --login
+      - -c
+      - /usr/local/bin/entrypoint.sh
+
+    stdin_open: true
+    tty: true
+    logging:
+      driver: 'none'
+
+    environment:
+      - TERMINFO=/usr/local/share/terminfo
+      - TERM=xterm-256color
+      - GIT_EXEC_PATH=/usr/local/libexec/git-core/
+
+volumes:
+  # shell related volumes
+  devenv_trinitycore_home:
+  devenv_trinitycore_.vim:
+  devenv_trinitycore_.ssh:
+  devenv_trinitycore_src:
+  devenv_trinitycore_build:
+  devenv_trinitycore_debug:
+  devenv_trinitycore_release:
+  devenv_trinitycore_data:
+
+  # mysql related volumes
+  mysql_data:
+  mysql_conf:
+  mysql_mysql-files:
+
+networks:
+  # a network shared between the shell and mysql
+  mysql-network:

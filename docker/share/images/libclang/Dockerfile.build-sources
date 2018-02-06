@@ -48,10 +48,6 @@ FROM metabarj0/gcc as gcc
 RUN exportPackageTo /tmp/gcc
 FROM metabarj0/llvm as llvm
 RUN exportPackageTo /tmp/llvm
-FROM metabarj0/zlib as zlib
-RUN exportPackageTo /tmp/zlib
-FROM metabarj0/ncurses as ncurses
-RUN exportPackageTo /tmp/ncurses
 
 # intermediate build stage
 FROM metabarj0/docker-cli as libclang_build
@@ -65,10 +61,6 @@ COPY --from=gcc /tmp/gcc ./
 RUN importPackageFrom gcc
 COPY --from=llvm /tmp/llvm ./
 RUN importPackageFrom llvm
-COPY --from=zlib /tmp/zlib ./
-RUN importPackageFrom zlib
-COPY --from=ncurses /tmp/ncurses ./
-RUN importPackageFrom ncurses
 
 # the image is ready to be run
 ENTRYPOINT [ "/tmp/build-sources.sh" ]
