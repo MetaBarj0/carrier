@@ -1,5 +1,5 @@
 shell_context() {
-  BASE_IMAGE=busybox
+  BASE_IMAGE=metabarj0/docker-cli
 
   REQUIRED_IMAGES="metabarj0/bash
 metabarj0/boost
