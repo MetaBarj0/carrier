@@ -48,6 +48,10 @@ services:
     logging:
       driver: 'none'
 
+    # allows gdb to be used
+    cap_add:
+      - SYS_PTRACE
+
     environment:
       - TERMINFO=/usr/local/share/terminfo
       - TERM=xterm-256color
