@@ -1,3 +1,5 @@
+# Function exposing the image build context for the devenv_trinitycore_shell
+# image used to create the shell service of the devenv_trinitycore appliance.
 shell_context() {
   BASE_IMAGE=metabarj0/docker-cli
 
@@ -23,36 +25,64 @@ metabarj0/tar
 metabarj0/vim
 metabarj0/zlib"
 
+  # aggregate stuff from required images
   EXTRA_DOCKERFILE_COMMANDS="$(cat << EOI
-RUN rm /bin/tar /bin/less /bin/sed && \
-    mkdir -p /home/devenv_trinitycore/.ssh \
+
+# grabbed from metabarj0/tar
+RUN rm /bin/tar
+# grabbed from metabarj0/less
+RUN rm /bin/less
+# grabbed from metabarj0/sed
+RUN rm /bin/sed
+
+# grabbed from metabarj0/coreutils
+RUN \
+  cd /usr/local/bin/ && \
+  for f in *; do \
+    if [ -f /bin/\${f} ]; then \
+      rm /bin/\${f}; \
+    fi; \
+  done && \
+  cd -
+
+# create a specific user belonging to the docker group, allowing him to use the
+# metabarj0/docker-cli image features
+RUN addgroup -g $(id -g) docker && \
+    adduser -H -D -G docker devenv_trinitycore
+
+# setup user environment
+RUN mkdir -p /home/devenv_trinitycore/.ssh \
              /home/devenv_trinitycore/.vim \
              /home/devenv_trinitycore/src \
              /home/devenv_trinitycore/build \
-             /home/devenv_trinitycore/debug \
-             /home/devenv_trinitycore/release \
-             /home/devenv_trinitycore/debug/data \
-             /home/devenv_trinitycore/release/data && \
-    adduser -H -D devenv_trinitycore && \
-    chown -R devenv_trinitycore:devenv_trinitycore /home/devenv_trinitycore
+             /home/devenv_trinitycore/debug/share/data \
+             /home/devenv_trinitycore/release/share/data && \
+    chown -R devenv_trinitycore:docker /home/devenv_trinitycore
 
-COPY entrypoint.sh /usr/local/bin/
-ENTRYPOINT [ "/usr/local/bin/entrypoint.sh" ]
+# a little entrypoint the quick-check
+COPY devenv_shell_entrypoint.sh /usr/local/bin/
 
-USER devenv_trinitycore:devenv_trinitycore
+# this dev environment is designed to be used by a non privileged user
+USER devenv_trinitycore:docker
 WORKDIR /home/devenv_trinitycore
 EOI
   )"
 }
 
+# Function exposing the image build context for the devenv_trinitycore_mysql
+# image used to create the mysql service of the devenv_trinitycore appliance.
 mysql_context() {
   BASE_IMAGE=busybox
 
   REQUIRED_IMAGES="metabarj0/mysql
 metabarj0/less"
 
+  # aggregate stuff from required images
   EXTRA_DOCKERFILE_COMMANDS="$(cat << EOI
+# grabbed from metabarj0/less
 RUN rm /bin/less
+
+# grabbed from metabarj0/mysql
 ENV PATH /usr/local/mysql/bin:\${PATH}
 EOI
   )"

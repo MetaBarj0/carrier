@@ -1,4 +1,4 @@
-#!/bin/env bash
+#!/usr/local/bin/bash
 
 if [ -z "$1" ]; then
   set -- bash --login

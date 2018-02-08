@@ -12,6 +12,7 @@ services:
     ports:
       - "3306"
 
+    # grabbed from the mysql image EXTRA_DOCKERFILE_COMMANDS in the manifest
     volumes:
       - type: volume
         source: mysql_data
@@ -23,11 +24,13 @@ services:
         source: mysql_mysql-files
         target: /usr/local/mysql/mysql-files
 
+    # grabbed from the mysql image EXTRA_DOCKERFILE_COMMANDS in the manifest
     entrypoint:
       - sh
       - -c
       - /usr/local/mysql/mysql_server_start.sh
 
+    # grabbed from the mysql image EXTRA_DOCKERFILE_COMMANDS in the manifest
     environment:
       - TERMINFO=/usr/local/share/terminfo
 
@@ -40,50 +43,71 @@ services:
     networks:
       - backend
 
+    # exposed to host
     ports:
       - "8085:8085"
       - "3724:3724"
 
     volumes:
+      # the metabarj0/docker-cli (base image of this service) need that bind
+      - type: bind
+        source: /var/run/docker.sock
+        target: /var/run/docker.sock
+      # home folder for devenv_trinitycore
       - type: volume
         source: devenv_trinitycore_home
         target: /home/devenv_trinitycore
+      # vim conf
       - type: volume
         source: devenv_trinitycore_.vim
         target: /home/devenv_trinitycore/.vim
+      # ssh keys and conf
       - type: volume
         source: devenv_trinitycore_.ssh
         target: /home/devenv_trinitycore/.ssh
+      # codebases
       - type: volume
         source: devenv_trinitycore_src
         target: /home/devenv_trinitycore/src
+      # built files staging area
       - type: volume
         source: devenv_trinitycore_build
         target: /home/devenv_trinitycore/build
+      # debug version of trinitycore binaries
       - type: volume
         source: devenv_trinitycore_debug
         target: /home/devenv_trinitycore/debug
+      # release version of trinitycore binaries
       - type: volume
         source: devenv_trinitycore_release
         target: /home/devenv_trinitycore/release
+      # same data volume shared amongst debug and release builds
       - type: volume
         source: devenv_trinitycore_data
-        target: /home/devenv_trinitycore/debug/data
+        target: /home/devenv_trinitycore/debug/share/data
       - type: volume
         source: devenv_trinitycore_data
-        target: /home/devenv_trinitycore/release/data
+        target: /home/devenv_trinitycore/release/share/data
 
+    # login entrypoint, parse .bash_profile
     entrypoint :
       - bash
       - --login
       - -c
       - /usr/local/bin/devenv_shell_entrypoint.sh
 
+    # the container still runs, even if launched in detached mode. to interact,
+    # one has to attach to it
     stdin_open: true
     tty: true
     logging:
       driver: 'none'
 
+    # allows gdb to be used
+    cap_add:
+      - SYS_PTRACE
+
+    # dev tools need this environment
     environment:
       - TERMINFO=/usr/local/share/terminfo
       - TERM=xterm-256color
