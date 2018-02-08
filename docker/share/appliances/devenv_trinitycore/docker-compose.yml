@@ -9,7 +9,7 @@ services:
       # common network between shell and mysql
       - backend
 
-    ports:
+    expose:
       - "3306"
 
     # grabbed from the mysql image EXTRA_DOCKERFILE_COMMANDS in the manifest
