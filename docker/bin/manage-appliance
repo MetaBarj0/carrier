@@ -316,7 +316,7 @@ EOI
 
   # copy tooling to extract dependencies' packages
   local appliance_build_stage="$(cat << EOI
-FROM $BASE_IMAGE as $APPLIANCE_NAME
+FROM $BASE_IMAGE as final
 RUN mkdir -p /usr/local/bin/
 COPY importPackageFrom /usr/local/bin
 EOI
