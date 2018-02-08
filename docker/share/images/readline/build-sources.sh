@@ -24,4 +24,4 @@ JOBS=$(cat /proc/cpuinfo | grep processor | wc -l)
 make -j $JOBS && make install
 
 # make this image a package
-packageIncluding metabarj0/ncurses
+packageIncluding /usr/local/share/terminfo
