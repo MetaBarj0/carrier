@@ -16,6 +16,8 @@ FROM metabarj0/make as make
 RUN exportPackageTo /tmp/make
 FROM metabarj0/gmp as gmp
 RUN exportPackageTo /tmp/gmp
+FROM metabarj0/perl as perl
+RUN exportPackageTo /tmp/perl
 
 # intermediate build stage
 FROM metabarj0/docker-cli as coreutils_build
@@ -32,6 +34,11 @@ COPY --from=make /tmp/make ./
 RUN importPackageFrom make
 COPY --from=gmp /tmp/gmp ./
 RUN importPackageFrom gmp
+COPY --from=perl /tmp/perl ./
+RUN importPackageFrom perl
+
+# perl used
+ENV PATH /usr/local/perl/bin:${PATH}
 
 # the image is ready to be run
 ENTRYPOINT [ "/tmp/build-sources.sh" ]
