@@ -6,17 +6,17 @@ if [ -z $REPOSITORY ]; then
 fi
 
 # extract sources and prepare for build
-tar -xf readline-7.0.tar.gz
-cd readline-7.0
-
+tar -xf libedit-20170329-3.1.tar.gz
+cd libedit-20170329-3.1
 mkdir build && cd build
 
 PREFIX=/usr/local
 
 ../configure \
   --prefix=$PREFIX \
-  --with-curses \
-  CFLAGS='-O3 -s'
+  CFLAGS='-O3 -s' \
+  LDFLAGS='-Wl,-rpath,/usr/local/lib/,-rpath-link,/usr/local/lib/,-lncurses' \
+  CPPFLAGS='-I /usr/local/include/ncurses'
 
 # Calculates the optimal job count
 JOBS=$(cat /proc/cpuinfo | grep processor | wc -l)
