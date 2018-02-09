@@ -17,6 +17,7 @@ metabarj0/less
 metabarj0/libclang
 metabarj0/make
 metabarj0/mysql_dev
+metabarj0/mysql_cli
 metabarj0/ninja
 metabarj0/openssl_dev
 metabarj0/readline
@@ -45,26 +46,17 @@ RUN \
   done && \
   cd -
 
+# grabbed from mysql_cli
+ENV TERMINFO /usr/local/share/terminfo
+ENV PATH /usr/local/mysql/bin:\${PATH}
+
 # create a specific user belonging to the docker group, allowing him to use the
 # metabarj0/docker-cli image features
 RUN addgroup -g $(id -g) docker && \
     adduser -H -D -G docker devenv_trinitycore
 
-# setup user environment
-RUN mkdir -p /home/devenv_trinitycore/.ssh \
-             /home/devenv_trinitycore/.vim \
-             /home/devenv_trinitycore/src \
-             /home/devenv_trinitycore/build \
-             /home/devenv_trinitycore/debug/share/data \
-             /home/devenv_trinitycore/release/share/data && \
-    chown -R devenv_trinitycore:docker /home/devenv_trinitycore
-
 # a little entrypoint the quick-check
 COPY devenv_shell_entrypoint.sh /usr/local/bin/
-
-# this dev environment is designed to be used by a non privileged user
-USER devenv_trinitycore:docker
-WORKDIR /home/devenv_trinitycore
 EOI
   )"
 }

@@ -88,6 +88,14 @@ services:
       - type: volume
         source: devenv_trinitycore_data
         target: /home/devenv_trinitycore/release/share/data
+      # debug log
+      - type: volume
+        source: devenv_trinitycore_debug_log
+        target: /home/devenv_trinitycore/debug/var/log
+      # release log
+      - type: volume
+        source: devenv_trinitycore_release_log
+        target: /home/devenv_trinitycore/release/var/log
 
     # login entrypoint, parse .bash_profile
     entrypoint :
@@ -95,6 +103,10 @@ services:
       - --login
       - -c
       - /usr/local/bin/devenv_shell_entrypoint.sh
+
+    # user that use this service
+    user: devenv_trinitycore:docker
+    working_dir: /home/devenv_trinitycore
 
     # the container still runs, even if launched in detached mode. to interact,
     # one has to attach to it
@@ -123,6 +135,8 @@ volumes:
   devenv_trinitycore_debug:
   devenv_trinitycore_release:
   devenv_trinitycore_data:
+  devenv_trinitycore_debug_log:
+  devenv_trinitycore_release_log:
 
   # mysql related volumes
   mysql_data:
