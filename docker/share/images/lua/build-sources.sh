@@ -14,7 +14,10 @@ PREFIX=/usr/local
 # Calculates the optimal job count
 JOBS=$(cat /proc/cpuinfo | grep processor | wc -l)
 
-make CFLAGS='-O3 -s' LDFLAGS='-lncurses' -j $JOBS linux
+make \
+  CFLAGS='-O3 -s' \
+  LDFLAGS='-Wl,-rpath=/usr/local/lib,-rpath-link=/usr/local/lib,-lncurses' \
+  -j $JOBS linux
 
 # move built files manually
 cd src

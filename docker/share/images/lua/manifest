@@ -12,6 +12,7 @@
 # ...
 # " as an example. Note that each value must be a conform docker image name.
 REQUIRES="metabarj0/readline
+metabarj0/ncurses
 metabarj0/wget"
 
 # this section contains the docker image built by this project. only one image

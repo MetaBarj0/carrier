@@ -24,6 +24,10 @@ if [ $(whoami) != mysql ]; then
     mkdir mysql-files
   fi
 
+  if [ ! -d data ]; then
+    mkdir data
+  fi
+
   # existing data, especially system databases?
   if [ ! -d data -o $(ls data | wc -c) -eq 0 ]; then
     # nope! Creating a brand new data load
@@ -34,7 +38,7 @@ if [ $(whoami) != mysql ]; then
   chown -R root:root etc
   chown -R mysql:mysql data
   chown -R mysql:mysql mysql-files
-  chmod 750 mysql-files
+  chmod 750 mysql-files data
 
   # the subscript is only a call to this one but it expand here the value of
   # $@, avoiding to have to supply the 'su -c ...' command with arguments as
