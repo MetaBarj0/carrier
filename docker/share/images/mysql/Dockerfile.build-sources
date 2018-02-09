@@ -15,6 +15,8 @@ FROM metabarj0/cmake as cmake
 RUN exportPackageTo /tmp/cmake
 FROM metabarj0/ncurses as ncurses
 RUN exportPackageTo /tmp/ncurses
+FROM metabarj0/editline as editline
+RUN exportPackageTo /tmp/editline
 FROM metabarj0/zlib as zlib
 RUN exportPackageTo /tmp/zlib
 FROM metabarj0/openssl as openssl
@@ -46,6 +48,8 @@ COPY --from=cmake /tmp/cmake ./
 RUN importPackageFrom cmake
 COPY --from=ncurses /tmp/ncurses ./
 RUN importPackageFrom ncurses
+COPY --from=editline /tmp/editline ./
+RUN importPackageFrom editline
 COPY --from=zlib /tmp/zlib ./
 RUN importPackageFrom zlib
 COPY --from=openssl /tmp/openssl ./
@@ -53,7 +57,7 @@ RUN importPackageFrom openssl
 COPY --from=perl /tmp/perl ./
 RUN importPackageFrom perl
 
-# perl and ncurses specific
+# perl and editline specific
 ENV PATH /usr/local/perl/bin:${PATH}
 ENV TERMINFO /usr/local/share/terminfo
 

@@ -15,6 +15,8 @@ FROM metabarj0/make as make
 RUN exportPackageTo /tmp/make
 FROM metabarj0/ncurses as ncurses
 RUN exportPackageTo /tmp/ncurses
+FROM metabarj0/readline as readline
+RUN exportPackageTo /tmp/readline
 
 # intermediate build stage
 FROM metabarj0/docker-cli as editline_build
@@ -31,6 +33,8 @@ COPY --from=make /tmp/make ./
 RUN importPackageFrom make
 COPY --from=ncurses /tmp/ncurses ./
 RUN importPackageFrom ncurses
+COPY --from=readline /tmp/readline ./
+RUN importPackageFrom readline
 
 # the image is ready to be run
 ENTRYPOINT [ "/tmp/build-sources.sh" ]

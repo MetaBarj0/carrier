@@ -15,7 +15,7 @@ PREFIX=/usr/local
 ../configure \
   --prefix=$PREFIX \
   CFLAGS='-O3 -s' \
-  LDFLAGS='-Wl,-rpath,/usr/local/lib/,-rpath-link,/usr/local/lib/,-lncurses' \
+  LDFLAGS='-Wl,-rpath,/usr/local/lib/,-rpath-link,/usr/local/lib/,-lreadline' \
   CPPFLAGS='-I /usr/local/include/ncurses'
 
 # Calculates the optimal job count

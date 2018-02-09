@@ -16,7 +16,8 @@ PREFIX=/usr/local
 ../configure \
   --prefix=$PREFIX \
   --with-curses \
-  CFLAGS='-O3 -s'
+  CFLAGS='-O3 -s' \
+  LDFLAGS='-Wl,-rpath,/usr/local/lib,-rpath-link,/usr/local/lib,-lncurses'
 
 # Calculates the optimal job count
 JOBS=$(cat /proc/cpuinfo | grep processor | wc -l)
