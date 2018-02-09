@@ -1,0 +1,22 @@
+# intermediate stage to get toolchain files for the build. 
+# package them to keep symlinks and don't follow them
+FROM metabarj0/gcc as gcc
+RUN exportPackageTo /tmp/gcc
+FROM metabarj0/mysql as mysql
+RUN exportPackageTo /tmp/mysql
+
+# intermediate build stage
+FROM metabarj0/docker-cli as mysql_cli_build
+
+WORKDIR /tmp
+COPY build-sources.sh functions.sh ./
+COPY exportPackageTo importPackageFrom /usr/local/bin/
+
+# copy and import packages of dependencies
+COPY --from=gcc /tmp/gcc ./
+RUN importPackageFrom gcc
+COPY --from=mysql /tmp/mysql ./
+RUN importPackageFrom mysql
+
+# the image is ready to be run
+ENTRYPOINT [ "/tmp/build-sources.sh" ]
