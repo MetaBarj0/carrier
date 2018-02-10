@@ -104,10 +104,6 @@ services:
       - -c
       - /usr/local/bin/devenv_shell_entrypoint.sh
 
-    # user that use this service
-    user: devenv_trinitycore:docker
-    working_dir: /home/devenv_trinitycore
-
     # the container still runs, even if launched in detached mode. to interact,
     # one has to attach to it
     stdin_open: true

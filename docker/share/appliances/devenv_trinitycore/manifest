@@ -51,12 +51,10 @@ RUN \
 ENV TERMINFO /usr/local/share/terminfo
 ENV PATH /usr/local/mysql/bin:\${PATH}
 
-# create a specific user belonging to the docker group, allowing him to use the
-# metabarj0/docker-cli image features
-RUN addgroup -g $(id -g) docker && \
-    adduser -H -D -G docker devenv_trinitycore
+# group id passed from docker host to allow usage of docker-cli API
+ENV DOCKER_GROUP_ID=$(id -g docker)
 
-# a little entrypoint the quick-check
+# an entrypoint to finalize the environment setup
 COPY devenv_shell_entrypoint.sh /usr/local/bin/
 EOI
   )"
