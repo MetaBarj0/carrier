@@ -16,7 +16,7 @@ echo '/usr/local/mysql/bin/mysql' >> /image.dist
 # resolve all dependencies of that symlink...
 collectSharedObjectDependencies
 
-include '/sur/share/terminfo'
+include '/usr/share/terminfo'
 
 # finalizing the package
 finalizePackage
