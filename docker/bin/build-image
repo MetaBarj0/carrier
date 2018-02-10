@@ -5,7 +5,7 @@
 # instructions in READMEs files. Moreover, you can get inspired by template
 # files located in the share/image directory
 
-set -e
+set -ex
 
 # encure that the argument passed to the script is good enough to build an image
 checkArgument() {
