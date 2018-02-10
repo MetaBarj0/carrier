@@ -207,7 +207,7 @@ buildDependentImage() {
     find "$FETCHED_MANIFEST" \
       -type f \
       -name manifest \
-      -exec grep -EH 'PROVIDES='"$required_image_name" {} \; \
+      -exec grep -EH 'PROVIDES='"$required_image_name"'$' {} \; \
       | sed -E 's/(.+):.*$/\1/')"
 
   if [ -z "$image_manifest_path" ]; then

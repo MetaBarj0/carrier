@@ -122,7 +122,7 @@ buildDependencies() {
       find ${FETCHED_MANIFEST} \
         -name manifest \
         -exec \
-          grep -EH 'PROVIDES='$dep {} \; \
+          grep -EH 'PROVIDES='$dep'$' {} \; \
           | sed -E 's/^([^:]+):.+/\1/'
     )
 
