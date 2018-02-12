@@ -36,7 +36,7 @@ Feel free to install additional programs in the box if you need, for instance, `
 Next, go into your vagrant virtual machine with `vagrant ssh` and find out a way to get this `carrier` git
 repository inside the virtual machine either :
 
-- by using `git` : `git clone git@github.com:MetaBarj0/scripts.git`.
+- by using `git` : `git clone git@github.com:MetaBarj0/carrier.git`.
 - by using virtual box shared folder capabilities, copying the repository (or part of it) into the shared folder
 - by using any other method you like
 
