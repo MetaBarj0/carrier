@@ -2,7 +2,7 @@
 # project being built successfully. There are 3 variables: REQUIRES, PROVIDES
 # and EXTRA_DOCKERFILE_COMMANDS. See below on how to use them.
 
-# REQUIRES contains the dependencies required by this project; manifest, gcc, 
+# REQUIRES contains the dependencies required by this project; manifest, gcc,
 # make and docker-cli are built by the bootstrap project and are implicitely
 # required for any project. This is a multi-lines variable that could be set as:
 # REQUIRES="dependency1
@@ -31,7 +31,7 @@ metabarj0/ncurses"
 PROVIDES=metabarj0/llvm
 
 # this section contains extra dockerfile commands to add at last just before the
-# final image is being built. Consider to add ENV, VOLUME, ENTRYPOINT, EXPOSE, 
+# final image is being built. Consider to add ENV, VOLUME, ENTRYPOINT, EXPOSE,
 # LABEL or CMD commands here if necessary. This is a multi-lines variable that
 # could be set as:
 # EXTRA_DOCKERFILE_COMMANDS="$(cat << EOI
