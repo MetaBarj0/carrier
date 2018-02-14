@@ -24,7 +24,7 @@ Taking theses remarks into account should help you to resolve your
 problem...exiting...
 EOI
   )"
-  
+
   # This script needs one argument: either
   #  - an absolute path to a manifest file
   #  - a relative path to a manifest file
@@ -33,7 +33,7 @@ EOI
     error "$argument_error_message"
     exit 1
   fi
-  
+
   # try to resolve the manifest file path by:
   #  - appending it to the current user directory, useful if relative path is
   #    provided
@@ -67,7 +67,7 @@ metabarj0/make
 metabarj0/docker-cli
 EOI
   )"
-  
+
   for i in $required_images; do
     id=$(docker image ls -q $i)
     if [ -z $id ]; then
@@ -178,7 +178,7 @@ fillStagingArea() {
 
 # attempt to build the image
 buildProject() {
-  # source the content of the manifest file, that will initialize some useful 
+  # source the content of the manifest file, that will initialize some useful
   # variables
   . $MANIFEST_FILE_PATH
 
@@ -187,13 +187,14 @@ buildProject() {
     fetchManifestImageContent $IMAGE_STAGING_DIRECTORY
     buildDependencies "$@"
   fi
-  
+
   # rely on some variables extracted from the manifest file that was parsed
   (
     exec \
       ${IMAGE_STAGING_DIRECTORY}/build.sh \
       $PROVIDES \
       $IMAGE_STAGING_DIRECTORY \
+      "$BASE_IMAGE" \
       "$EXTRA_DOCKERFILE_COMMANDS"
   )
 }

@@ -25,9 +25,16 @@ fi
 
 project_directory="$2"
 
-# the third argument may contain extra Dockerfile commands for the final image
+if [ -z "$3" ]; then
+  echo 'Missing base image name...exiting...'
+  exit 1
+fi
+
+base_image="$3"
+
+# the fourth argument may contain extra Dockerfile commands for the final image
 # it is not mandatory
-extra_dockerfile_commands="$3"
+extra_dockerfile_commands="$4"
 
 echo 'Building context...'
 
@@ -36,7 +43,6 @@ echo 'Building context...'
 image=$(
   docker build --squash \
     -q \
-    --build-arg REPOSITORY=$repository \
     -f ${project_directory}/Dockerfile.build-image \
     ${project_directory} | \
   sed 's/sha256://')
@@ -46,6 +52,8 @@ docker run \
   --rm -it \
   --mount type=bind,src=/var/run/docker.sock,dst=/var/run/docker.sock \
   -e EXTRA_DOCKERFILE_COMMANDS="$extra_dockerfile_commands" \
+  -e REPOSITORY="$repository" \
+  -e BASE_IMAGE="$base_image" \
   $image
 
 # cleanup the untagged images, amongst other potentially

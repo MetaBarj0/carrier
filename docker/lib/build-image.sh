@@ -7,6 +7,12 @@ if [ -z $REPOSITORY ]; then
   exit 1
 fi
 
+# the base image name must exist in the environment
+if [ -z "$BASE_IMAGE" ]; then
+  echo 'Missing base image name...exiting...'
+  exit 1
+fi
+
 # error handling
 sed -i'' '2i\set -e' build-sources.sh
 
@@ -27,24 +33,24 @@ docker image prune -f
 # run the image binding the docker socket and forwarding REPOSITORY environment
 # variable
 docker run --rm -it \
-	   -v /var/run/docker.sock:/var/run/docker.sock \
-	   -e REPOSITORY=$REPOSITORY \
+     -v /var/run/docker.sock:/var/run/docker.sock \
+     -e REPOSITORY=$REPOSITORY \
            $REPOSITORY
 
 # build the final image using the repository name. Relies on what has been
 # built and the file /image.dist containing all the files to final
 # repository name is dynamic. Extra dockerfile commands may be added
 cat << EOI | docker build --squash -t $REPOSITORY -
-FROM $REPOSITORY as final
-RUN exportPackageTo /tmp/final
+FROM $REPOSITORY as package
+RUN exportPackageTo /tmp/package
 
-FROM busybox
-COPY --from=final /usr/local/bin/exportPackageTo /usr/local/bin/
-COPY --from=final /usr/local/bin/importPackageFrom /usr/local/bin/
-COPY --from=final /tmp/final /tmp/
-COPY --from=final /image.dist /
-RUN importPackageFrom /tmp/final
-$(echo "$EXTRA_DOCKERFILE_COMMANDS")
+FROM $BASE_IMAGE as final
+COPY --from=package /usr/local/bin/exportPackageTo /usr/local/bin/
+COPY --from=package /usr/local/bin/importPackageFrom /usr/local/bin/
+COPY --from=package /tmp/package /tmp/
+COPY --from=package /image.dist /
+RUN importPackageFrom /tmp/package
+$EXTRA_DOCKERFILE_COMMANDS
 LABEL maintainer="metabarj0 <troctsch.cpp@gmail.com>"
 EOI
 
