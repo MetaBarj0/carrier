@@ -1,5 +1,5 @@
 # manifest file for the appliance.
-# 
+#
 # It describes essetially how to build the image of each service.
 # Indeed, the appliance system does not rely on the docker-compose builtin image
 # build but implements its own for optimization purposes.
@@ -63,6 +63,7 @@ shell_context() {
   BASE_IMAGE=busybox
 
   REQUIRED_IMAGES="metabarj0/bash
+metabarj0/clang
 metabarj0/cmake
 metabarj0/coreutils
 metabarj0/ctags
