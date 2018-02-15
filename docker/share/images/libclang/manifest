@@ -18,9 +18,7 @@ BASE_IMAGE=busybox
 # dependency4
 # ...
 # " as an example. Note that each value must be a conform docker image name.
-REQUIRES="metabarj0/llvm
-metabarj0/zlib
-metabarj0/ncurses"
+REQUIRES="metabarj0/llvm"
 
 # this section contains the docker image built by this project. only one image
 # can be built per project. Once this project is built, the value of this
