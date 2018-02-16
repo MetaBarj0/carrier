@@ -7,6 +7,8 @@ shell_context() {
 metabarj0/boost
 metabarj0/bzip2
 metabarj0/clang
+metabarj0/clang-check
+metabarj0/clang-format
 metabarj0/cmake
 metabarj0/coreutils
 metabarj0/ctags
