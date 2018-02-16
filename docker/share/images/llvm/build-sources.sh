@@ -61,5 +61,15 @@ cmake \
 
 ninja && ninja install
 
+# create symlinks due to bad design in LLVM about looking for these files
+ln -sf \
+  /usr/local/lib/gcc/amd64-linux-musl/7.3.0/crtbegin.o \
+  /usr/local/lib/crtbegin.o
+
+ln -sf \
+  /usr/local/lib/gcc/amd64-linux-musl/7.3.0/crtend.o \
+  /usr/local/lib/crtend.o
+
 # 4- make this image a package using either package or packageIncluding
-package
+# as llvm is built using gcc, including it too
+packageIncluding metabarj0/gcc

@@ -10,14 +10,18 @@ fi
 # Thus, I call some 'internal' functions not really intended to be used outside
 # the functions.sh script, but it does the job
 
-# manual inclusion of what I need, here, symlinks and binaries
-cat << EOI >> /image.dist
+# manual inclusion of what I need, here, symlinks and binaries and metabarj0/gcc
+include "$(cat << EOI
 /usr/local/bin/clang
 /usr/local/bin/clang++
 /usr/local/bin/clang-cl
 /usr/local/bin/clang-cpp
 /usr/local/bin/clang-5.0
+/usr/local/lib/crtbegin.o
+/usr/local/lib/crtend.o
+metabarj0/gcc
 EOI
+)"
 
 # follow up all symlinks if needed
 # resolve all dependencies of that symlink...
