@@ -31,16 +31,5 @@ PROVIDES=metabarj0/ucl
 
 # this section contains extra dockerfile commands to add at last just before the
 # final image is being built. Consider to add ENV, VOLUME, ENTRYPOINT, EXPOSE,
-# LABEL or CMD commands here if necessary. This is a multi-lines variable that
-# could be set as:
-# EXTRA_DOCKERFILE_COMMANDS="$(cat << EOI
-# ENV PATH /usr/local/bin/foo:\${PATH}
-# VOLUME /volume
-# ENTRYPOINT [ "entrypoint.sh" ]
-# LABEL foo=bar
-# ...
-# EOI
-# )"
-# The cat and here document are used because double quotes are used in the
-# variable definition
-EXTRA_DOCKERFILE_COMMANDS=""
+# LABEL or CMD commands here if necessary. This is a multi-lines variable.
+FINAL_EXTRA_DOCKERFILE_COMMANDS=""

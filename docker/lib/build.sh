@@ -34,7 +34,7 @@ base_image="$3"
 
 # the fourth argument may contain extra Dockerfile commands for the final image
 # it is not mandatory
-extra_dockerfile_commands="$4"
+final_extra_dockerfile_commands="$4"
 
 echo 'Building context...'
 
@@ -51,7 +51,7 @@ image=$(
 docker run \
   --rm -it \
   --mount type=bind,src=/var/run/docker.sock,dst=/var/run/docker.sock \
-  -e EXTRA_DOCKERFILE_COMMANDS="$extra_dockerfile_commands" \
+  -e FINAL_EXTRA_DOCKERFILE_COMMANDS="$final_extra_dockerfile_commands" \
   -e REPOSITORY="$repository" \
   -e BASE_IMAGE="$base_image" \
   $image

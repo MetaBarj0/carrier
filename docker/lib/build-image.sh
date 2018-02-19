@@ -50,7 +50,7 @@ COPY --from=package /usr/local/bin/importPackageFrom /usr/local/bin/
 COPY --from=package /tmp/package /tmp/
 COPY --from=package /image.dist /
 RUN importPackageFrom /tmp/package
-$EXTRA_DOCKERFILE_COMMANDS
+$FINAL_EXTRA_DOCKERFILE_COMMANDS
 LABEL maintainer="metabarj0 <troctsch.cpp@gmail.com>"
 EOI
 

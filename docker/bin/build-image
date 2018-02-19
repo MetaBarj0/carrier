@@ -195,7 +195,7 @@ buildProject() {
       $PROVIDES \
       $IMAGE_STAGING_DIRECTORY \
       "$BASE_IMAGE" \
-      "$EXTRA_DOCKERFILE_COMMANDS"
+      "$FINAL_EXTRA_DOCKERFILE_COMMANDS"
   )
 }
 
