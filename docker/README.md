@@ -14,7 +14,7 @@ appliance...) using scripts under the bin/ directory.
 
 ## bootstrapping
 
-The bootstrap process consist in building the bare minimum to continue ti use
+The bootstrap process consist in building the bare minimum to continue to use
 carrier on your system. For more details, take a look at the README.md file
 located in share/bootstrap directory.
 
@@ -39,7 +39,7 @@ This directory contains all script directly executable by the user. You can
 bootstrap the environment, build images and build appliances using respective
 scripts :
 * bootstrap
-* manage-image
+* build-image
 * manage-appliance
 
 ## lib/

@@ -13,12 +13,14 @@ C++ programs.
 * metabarj0/make: the make project
 * metabarj0/docker-cli: a minimalistic images intended to run container capable
 of interacting with your docker host socket
+* alpine/wget: The bootstrap fetcher image. This is the fallback fetcher image
+to use while the metabarj0/wget image is not built.
 
 HOW TO BUILD?
 =============
 
 Building the bootstrap is quite simple and must be done by hand.
-First, you need to construct the image using the provided Dockerfile: 
+First, you need to construct the image using the provided Dockerfile:
 
 `docker build --squash -t my_fancy_bootstrap .`
 

@@ -8,7 +8,7 @@ WORKDIR /tmp
 RUN wget --no-check-certificate \
          https://github.com/vim/vim/archive/master.tar.gz
 
-# intermediate stage to get toolchain files for the build. 
+# intermediate stage to get toolchain files for the build.
 # package them to keep symlinks and don't follow them
 FROM metabarj0/make as make
 RUN exportPackageTo /tmp/make

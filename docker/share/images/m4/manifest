@@ -1,10 +1,3 @@
-# the base image is a docker image to use as base for the image being built.
-# Note that it is strongly discouraged to use a base image embedding its own
-# libc (whichever its flavor) because the 'carrier' system creates images built
-# with musl-libc, created by carrier itself. That said, any carrier image can be
-# used as base image
-BASE_IMAGE=busybox
-
 # REQUIRES contains the dependencies required by this project; manifest, gcc,
 # make and docker-cli are built by the bootstrap project and are implicitely
 # required for any project. This is a multi-lines variable that could be set as:
@@ -24,6 +17,20 @@ REQUIRES=""
 # Note that the value must be a conform docker image name
 PROVIDES=metabarj0/m4
 
+# this is the docker image to use as fetcher. The fetch command will be executed
+# within this image. If you don't need to fetch anything, you can leave this
+# variable empty or undefined.
+SOURCES_FETCH_IMAGE=alpine/wget
+
+# This is the command to use to fetch sources. If your image does not require
+# any tarball, leave this variable empty or do not define it
+SOURCES_FETCH_COMMAND=\
+'wget --no-check-certificate https://ftp.gnu.org/gnu/m4/m4-1.4.18.tar.xz'
+
+# this is the name of the source tarball to decompress. If your image does not
+# require any tarball, leave this variable empty or do not define it.
+SOURCES_TARBALL_NAME='m4-1.4.18.tar.xz'
+
 # this variable groups extra dockerfile commands you can incorporate to the
 # generated Dockerfile used to build the image.
 # Commands that are specified here won't be incorporated in the Dockerfile used
@@ -31,6 +38,13 @@ PROVIDES=metabarj0/m4
 # the beast you're looking for.
 # This is a multi-line variable
 BUILD_EXTRA_DOCKERFILE_COMMAND=""
+
+# the base image is a docker image to use as base for the image being built.
+# Note that it is strongly discouraged to use a base image embedding its own
+# libc (whichever its flavor) because the 'carrier' system creates images built
+# with musl-libc, created by carrier itself. That said, any carrier image can be
+# used as base image
+BASE_IMAGE=busybox
 
 # this section contains extra dockerfile commands to add at last just before the
 # final image is being built. Consider to add ENV, VOLUME, ENTRYPOINT, EXPOSE,

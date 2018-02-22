@@ -259,32 +259,15 @@ checkRequiredImages() {
   done
 }
 
-# utility function mapping image names with a build stage alias partially
-# randomly generated. used in appliance's Dockerfile generation.
-mapImageNameAndBuildStages() {
-  local map=
-  local pair=
-  local image=
-  for image in $REQUIRED_IMAGES; do
-    pair="$(
-      makePair \
-        "$image" \
-        "$(basename "$image")"'_'"$(generateRandomBuildStageAlias)"
-    )"
-
-    map="$(append "$map" "$pair" ' ')"
-  done
-
-  echo "$map"
-}
-
 # Generate the entire Dockerfile of an image of the appliance, relying on the
 # content of the manifest file and values computed by the process of appliance
 # building.
 compileDockerfile() {
   # create a map between image used in build stages and their alias that will be
   # used later
-  local name_alias_map="$(mapImageNameAndBuildStages)"
+  local names_aliases_map="$(
+    mapImageNamesAndBuildStageAliases "$REQUIRED_IMAGES"
+    )"
 
   # create a Dockerfile in the appliance staging directory. Using required image
   # specified in the manifest as well as other variables :
@@ -293,7 +276,7 @@ compileDockerfile() {
   local pair=
   local name=
   local alias=
-  for pair in $name_alias_map; do
+  for pair in $names_aliases_map; do
     # extract image name and build stage alias
     name="$(keyOf "$pair")"
     alias="$(valueOf "$pair")"

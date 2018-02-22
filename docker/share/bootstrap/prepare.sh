@@ -355,6 +355,13 @@ EOI
   docker build --squash -t metabarj0/make -f Dockerfile.make .
 }
 
+createFetcherImage() {
+  cat << EOI | docker build -t alpine/wget -
+FROM alpine
+RUN apk add --no-cache wget
+EOI
+}
+
 createDockerCliImage() {
   cat << EOI > entrypoint.sh
 #!/bin/sh
@@ -431,4 +438,5 @@ packToolchain
 buildGccImage
 testGccImage
 createMakeImage
+createFetcherImage
 createDockerCliImage

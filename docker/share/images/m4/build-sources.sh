@@ -7,7 +7,7 @@
 # by the build system. Therefore, the build system allows you to use some
 # internals dynamically added in this script while the project is being built.
 # The most important internals added are:
-# - package: a function building necessary meta data of this image after it has 
+# - package: a function building necessary meta data of this image after it has
 #            been built and allowing it to be used as dependency in further
 #            projects
 # - packageIncluding: a function working in a similar way as the package
@@ -31,7 +31,7 @@
 #
 # 3- Issue all the command you need to build the project, you have a total
 #    control here.
-#    
+#
 # 4- use either 'package' or 'packageIncluding' depending what you want to
 #    include in your image. Such a call MUST be made at the end of the build
 #    and take some time, depending what you want to include in your image

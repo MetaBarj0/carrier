@@ -169,6 +169,7 @@ getPackageFiles() {
 
   # browse package content, keeping only files
   local files=
+  local x=
   for x in $dist_file_content; do
     # just in case the package specified exists but is not a direct dependency
     # the the one being built
@@ -197,6 +198,7 @@ EOI
 # character
 makeUnique() {
   local list=
+  local item=
   for item in $@; do
     list="$(append "$list" "$item" $'\n')"
   done
@@ -215,6 +217,7 @@ include() {
 
   # final file list to include, will be deduped
   local file_list=
+  local item=
   # browse items without dupes
   for item in $(makeUnique "$@"); do
     if [ -d "$item" ]; then # directory
@@ -446,4 +449,35 @@ EOI
 
   # return to the user directory
   cd $USER_DIRECTORY
+}
+
+# utility function mapping image names with a build stage alias partially
+# randomly generated. used in appliance's Dockerfile generation system as well
+# as in the image's Dockerfile generation build system
+mapImageNamesAndBuildStageAliases() {
+  # first argument are a sequence of docker images
+  if [ -z "$1" ]; then
+    error "$(cat << EOI
+Error: No image specified...exiting...
+EOI
+    )"
+
+    return 1
+  fi
+
+  local required_images="$1"
+  local map=
+  local pair=
+  local image=
+  for image in $required_images; do
+    pair="$(
+      makePair \
+        "$image" \
+        "$(basename "$image")"'_'"$(generateRandomBuildStageAlias)"
+    )"
+
+    map="$(append "$map" "$pair" ' ')"
+  done
+
+  echo "$map"
 }
