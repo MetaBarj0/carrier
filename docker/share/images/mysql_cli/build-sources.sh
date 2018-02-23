@@ -10,12 +10,13 @@ fi
 # the functions.sh script, but it does the job
 
 # manual inclusion of what I need, here, symlinks and libs
-echo '/usr/local/mysql/bin/mysql' >> /image.dist
+include '/usr/local/mysql/bin/mysql'
 
 # follow up all symlinks if needed
 # resolve all dependencies of that symlink...
 collectSharedObjectDependencies
 
+# ncurses used
 include '/usr/share/terminfo'
 
 # finalizing the package

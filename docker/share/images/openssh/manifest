@@ -1,37 +1,17 @@
-# This is the manifest of the project. This file MUST expose few variables for
-# project being built successfully. There are 4 variables: BASE_IMAGE, REQUIRES,
-# PROVIDES and EXTRA_DOCKERFILE_COMMANDS. See below on how to use them.
-
-# the base image is a docker image to use as base for the image being built.
-# Note that it is strongly discouraged to use a base image embedding its own
-# libc (whichever its flavor) because the 'carrier' system creates images built
-# with musl-libc, created by carrier itself. That said, any carrier image can be
-# used as base image
-BASE_IMAGE=busybox
-
-# REQUIRES contains the dependencies required by this project; manifest, gcc,
-# make and docker-cli are built by the bootstrap project and are implicitely
-# required for any project. This is a multi-lines variable that could be set as:
-# REQUIRES="dependency1
-# dependency2
-# dependency3
-# dependency4
-# ...
-# " as an example. Note that each value must be a conform docker image name.
 REQUIRES="metabarj0/zlib
 metabarj0/wget
 metabarj0/openssl"
 
-# this section contains the docker image built by this project. only one image
-# can be built per project. Once this project is built, the value of this
-# variable can be used in REQUIRES variable of other project to specify that
-# this image is a dependency. This is a single value variable that could be set
-# as:
-# PROVIDES=new_image
-# Note that the value must be a conform docker image name
 PROVIDES=metabarj0/openssh
 
-# this section contains extra dockerfile commands to add at last just before the
-# final image is being built. Consider to add ENV, VOLUME, ENTRYPOINT, EXPOSE,
-# LABEL or CMD commands here if necessary. This is a multi-lines variable.
-FINAL_EXTRA_DOCKERFILE_COMMANDS=""
+SOURCES_FETCH_IMAGE=metabarj0/wget
+SOURCES_FETCH_COMMAND=\
+'wget --no-check-certificate '\
+'https://ftp4.usa.openbsd.org/pub/OpenBSD/OpenSSH/portable/openssh-7.6p1.tar.gz'
+SOURCES_TARBALL_NAME='openssh-7.6p1.tar.gz'
+
+BUILD_EXTRA_DOCKERFILE_COMMAND=
+
+BASE_IMAGE=busybox
+
+FINAL_EXTRA_DOCKERFILE_COMMANDS=

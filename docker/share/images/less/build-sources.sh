@@ -16,6 +16,7 @@ CFLAGS='-O3 -s' \
   LDFLAGS='-Wl,-rpath,/usr/local/lib/,-rpath-link,/usr/local/lib/' \
   ../configure --prefix=$PREFIX
 
+# TODO use getThreadCount as here for all images
 # Calculates the optimal job count
 JOBS=$(getThreadCount)
 

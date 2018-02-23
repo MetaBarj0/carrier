@@ -33,7 +33,7 @@ make -j $JOBS && make install
 
 # make this image a package
 packageIncluding \
-  /usr/local/bin/entrypoint.sh \
+  /usr/local/bin/vim-entrypoint.sh \
   /usr/local/share/terminfo \
   metabarj0/python2 \
   metabarj0/lua
