@@ -12,7 +12,7 @@ cd lua-5.3.4
 PREFIX=/usr/local
 
 # Calculates the optimal job count
-JOBS=$(cat /proc/cpuinfo | grep processor | wc -l)
+JOBS=$(getThreadCount)
 
 make \
   CFLAGS='-O3 -s' \

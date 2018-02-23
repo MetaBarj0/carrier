@@ -35,7 +35,7 @@ PREFIX=/usr/local/perl
   -Dusenm
 
 # Calculates the optimal job count
-JOBS=$(cat /proc/cpuinfo | grep processor | wc -l)
+JOBS=$(getThreadCount)
 
 make depend && make -j $JOBS && make install
 

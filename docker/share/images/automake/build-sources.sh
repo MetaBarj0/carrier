@@ -53,7 +53,7 @@ mkdir build && cd build
   CXXFLAGS='-O3 -s'
 
 # Calculates the optimal job count
-JOBS=$(cat /proc/cpuinfo | grep processor | wc -l)
+JOBS=$(getThreadCount)
 
 make -j $JOBS && make install
 

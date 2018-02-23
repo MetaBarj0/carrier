@@ -18,7 +18,7 @@ PREFIX=/usr/local
   --prefix=$PREFIX
 
 # Calculates the optimal job count
-JOBS=$(cat /proc/cpuinfo | grep processor | wc -l)
+JOBS=$(getThreadCount)
 
 # explicitely add this directory to prevent an install error
 mkdir -p ${PREFIX}/lib

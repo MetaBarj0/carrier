@@ -18,7 +18,7 @@ PREFIX=/usr/local
   LDFLAGS='-Wl,-rpath,/usr/local/lib/,-rpath-link,/usr/local/lib/'
 
 # Calculates the optimal job count
-JOBS=$(cat /proc/cpuinfo | grep processor | wc -l)
+JOBS=$(getThreadCount)
 
 make -j $JOBS && make -j $JOBS so && make install && make soinstall
 

@@ -18,7 +18,7 @@ CFLAGS='-O3 -s -fPIC -Wl,-rpath,/usr/local/lib/,-rpath-link,/usr/local/lib/,-rpa
     --openssldir=${PREFIX}/ssl
 
 # Calculates the optimal job count
-JOBS=$(cat /proc/cpuinfo | grep processor | wc -l)
+JOBS=$(getThreadCount)
 
 make -j $JOBS && make test && make install
 

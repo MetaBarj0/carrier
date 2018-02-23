@@ -13,7 +13,7 @@ mkdir build && cd build
 PREFIX=/usr/local
 
 # Calculates the optimal job count
-JOBS=$(cat /proc/cpuinfo | grep processor | wc -l)
+JOBS=$(getThreadCount)
 
 # bootstrap script variables
 export CFLAGS='-O3 -s'

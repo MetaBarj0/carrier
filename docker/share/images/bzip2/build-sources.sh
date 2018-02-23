@@ -12,7 +12,7 @@ cd bzip2-1.0.6
 PREFIX=/usr/local
 
 # Calculates the optimal job count
-JOBS=$(cat /proc/cpuinfo | grep processor | wc -l)
+JOBS=$(getThreadCount)
 
 make \
   PREFIX=/usr/local \

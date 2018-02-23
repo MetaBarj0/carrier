@@ -13,7 +13,7 @@ cd upx-master
 sed -i'' 's/#!.*/#!\/bin\/sh/g' src/stub/scripts/check_whitespace.sh
 
 # Calculates the optimal job count
-JOBS=$(cat /proc/cpuinfo | grep processor | wc -l)
+JOBS=$(getThreadCount)
 
 CXXFLAGS='-O3 -s -Wl,-rpath,/usr/local/amd64-linux-musl/lib64/,-rpath-link,/usr/local/amd64-linux-musl/lib64/' \
   make -j $JOBS all CHECK_WHITESPACE=/bin/true

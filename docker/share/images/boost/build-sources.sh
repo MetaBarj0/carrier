@@ -12,7 +12,7 @@ cd boost_1_66_0
 PREFIX=/usr/local
 
 # Calculates the optimal job count
-JOBS=$(cat /proc/cpuinfo | grep processor | wc -l)
+JOBS=$(getThreadCount)
 
 ./bootstrap.sh \
   --prefix=$PREFIX
@@ -22,6 +22,5 @@ JOBS=$(cat /proc/cpuinfo | grep processor | wc -l)
 # remove pyc file from python invocation during build time
 rm -rf ${PREFIX}/lib/python2.7
 
-# TODO verify if this file is needed since musl-1.18 release
 # make this image a package
 packageIncluding ${PREFIX}/include/sched.h

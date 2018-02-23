@@ -27,7 +27,7 @@ CFLAGS='-O3 -s' \
     --with-compiledby='metabarj0'
 
 # Calculates the optimal job count
-JOBS=$(cat /proc/cpuinfo | grep processor | wc -l)
+JOBS=$(getThreadCount)
 
 make -j $JOBS && make install
 

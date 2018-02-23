@@ -19,7 +19,7 @@ PREFIX=/usr/local
   CXXFLAGS='-O3 -s'
 
 # Calculates the optimal job count
-JOBS=$(cat /proc/cpuinfo | grep processor | wc -l)
+JOBS=$(getThreadCount)
 
 # build and install
 make -j $JOBS && make install

@@ -20,7 +20,7 @@ PREFIX=/usr/local
   CXXFLAGS='-O3 -s -Wl,-rpath,/usr/local/amd64-linux-musl/lib64,-rpath-link,/usr/local/amd64-linux-musl/lib64'
 
 # Calculates the optimal job count
-JOBS=$(cat /proc/cpuinfo | grep processor | wc -l)
+JOBS=$(getThreadCount)
 
 # build and install
 make -j $JOBS && make -j $JOBS check && make install

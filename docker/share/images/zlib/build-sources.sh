@@ -17,7 +17,7 @@ CFLAGS='-O3 -s' \
   ../configure --prefix=$PREFIX
 
 # Calculates the optimal job count
-JOBS=$(cat /proc/cpuinfo | grep processor | wc -l)
+JOBS=$(getThreadCount)
 
 make -j $JOBS && make install
 

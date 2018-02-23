@@ -22,7 +22,7 @@ PREFIX=/usr/local
   FORCE_UNSAFE_CONFIGURE=1
 
 # Calculates the optimal job count
-JOBS=$(cat /proc/cpuinfo | grep processor | wc -l)
+JOBS=$(getThreadCount)
 
 make -j $JOBS && make install
 

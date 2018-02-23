@@ -18,7 +18,7 @@ PREFIX=/usr/local
   --with-intl=system-icu
 
 # Calculates the optimal job count
-JOBS=$(cat /proc/cpuinfo | grep processor | wc -l)
+JOBS=$(getThreadCount)
 
 export CC=gcc
 export CXX=g++
