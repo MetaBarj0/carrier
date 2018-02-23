@@ -16,7 +16,7 @@ SOURCES_FETCH_COMMAND=\
 'https://ftp.gnu.org/gnu/gdb/gdb-8.0.1.tar.xz'
 SOURCES_TARBALL_NAME='gdb-8.0.1.tar.xz'
 
-BUILD_EXTRA_DOCKERFILE_COMMAND=\
+BUILD_EXTRA_DOCKERFILE_COMMANDS=\
 'ENV PATH /usr/local/perl/bin:${PATH}'
 
 BASE_IMAGE=busybox

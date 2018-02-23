@@ -14,7 +14,7 @@ SOURCES_FETCH_COMMAND=\
 'https://dev.mysql.com/get/Downloads/MySQL-5.6/mysql-5.6.38.tar.gz'
 SOURCES_TARBALL_NAME='mysql-5.6.38.tar.gz'
 
-BUILD_EXTRA_DOCKERFILE_COMMAND="$(cat << EOI
+BUILD_EXTRA_DOCKERFILE_COMMANDS="$(cat << EOI
 COPY patch.tar ./
 COPY configuration.tar \\
      data.tar.xz \\

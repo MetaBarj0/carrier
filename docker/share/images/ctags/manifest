@@ -12,7 +12,7 @@ SOURCES_FETCH_COMMAND=\
 'https://github.com/universal-ctags/ctags/archive/master.tar.gz'
 SOURCES_TARBALL_NAME='master.tar.gz'
 
-BUILD_EXTRA_DOCKERFILE_COMMAND=\
+BUILD_EXTRA_DOCKERFILE_COMMANDS=\
 'ENV PATH /usr/local/perl/bin:${PATH}'
 
 BASE_IMAGE=busybox

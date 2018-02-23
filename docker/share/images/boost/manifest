@@ -13,7 +13,7 @@ SOURCES_FETCH_COMMAND=\
 'https://dl.bintray.com/boostorg/release/1.66.0/source/boost_1_66_0.tar.bz2'
 SOURCES_TARBALL_NAME='boost_1_66_0.tar.bz2'
 
-BUILD_EXTRA_DOCKERFILE_COMMAND=
+BUILD_EXTRA_DOCKERFILE_COMMANDS=
 
 BASE_IMAGE=busybox
 

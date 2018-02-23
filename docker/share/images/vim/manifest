@@ -13,7 +13,7 @@ SOURCES_FETCH_COMMAND=\
 SOURCES_TARBALL_NAME='master.tar.gz'
 
 # TODO : test this entrypoint
-BUILD_EXTRA_DOCKERFILE_COMMAND=\
+BUILD_EXTRA_DOCKERFILE_COMMANDS=\
 'COPY vim-entrypoint.sh /usr/local/bin/'
 
 BASE_IMAGE=busybox

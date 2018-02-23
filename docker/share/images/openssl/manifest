@@ -10,7 +10,7 @@ SOURCES_FETCH_COMMAND=\
 'https://ftp.openssl.org/source/openssl-1.0.2n.tar.gz'
 SOURCES_TARBALL_NAME='openssl-1.0.2n.tar.gz'
 
-BUILD_EXTRA_DOCKERFILE_COMMAND=\
+BUILD_EXTRA_DOCKERFILE_COMMANDS=\
 'ENV PATH /usr/local/perl/bin:${PATH}'
 
 BASE_IMAGE=busybox

@@ -8,7 +8,7 @@ SOURCES_FETCH_COMMAND=\
 'ftp://ftp.csx.cam.ac.uk/pub/software/programming/pcre/pcre2-10.30.tar.bz2'
 SOURCES_TARBALL_NAME='pcre2-10.30.tar.bz2'
 
-BUILD_EXTRA_DOCKERFILE_COMMAND=
+BUILD_EXTRA_DOCKERFILE_COMMANDS=
 
 BASE_IMAGE=busybox
 

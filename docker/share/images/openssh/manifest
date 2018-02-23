@@ -10,7 +10,7 @@ SOURCES_FETCH_COMMAND=\
 'https://ftp4.usa.openbsd.org/pub/OpenBSD/OpenSSH/portable/openssh-7.6p1.tar.gz'
 SOURCES_TARBALL_NAME='openssh-7.6p1.tar.gz'
 
-BUILD_EXTRA_DOCKERFILE_COMMAND=
+BUILD_EXTRA_DOCKERFILE_COMMANDS=
 
 BASE_IMAGE=busybox
 

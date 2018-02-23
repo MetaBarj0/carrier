@@ -8,7 +8,7 @@ SOURCES_FETCH_COMMAND=\
 'http://www.oberhumer.com/opensource/ucl/download/ucl-1.03.tar.gz'
 SOURCES_TARBALL_NAME='ucl-1.03.tar.gz'
 
-BUILD_EXTRA_DOCKERFILE_COMMAND=
+BUILD_EXTRA_DOCKERFILE_COMMANDS=
 
 BASE_IMAGE=busybox
 

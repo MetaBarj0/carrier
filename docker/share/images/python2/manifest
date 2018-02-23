@@ -10,7 +10,7 @@ SOURCES_FETCH_COMMAND=\
 'https://www.python.org/ftp/python/2.7.14/Python-2.7.14.tar.xz'
 SOURCES_TARBALL_NAME='Python-2.7.14.tar.xz'
 
-BUILD_EXTRA_DOCKERFILE_COMMAND='COPY Setup.dist ./'
+BUILD_EXTRA_DOCKERFILE_COMMANDS='COPY Setup.dist ./'
 
 BASE_IMAGE=busybox
 

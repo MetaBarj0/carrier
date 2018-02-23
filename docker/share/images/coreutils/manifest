@@ -10,7 +10,7 @@ SOURCES_FETCH_COMMAND=\
 'ftp://ftp.gnu.org/gnu/coreutils/coreutils-8.28.tar.xz'
 SOURCES_TARBALL_NAME='coreutils-8.28.tar.xz'
 
-BUILD_EXTRA_DOCKERFILE_COMMAND=\
+BUILD_EXTRA_DOCKERFILE_COMMANDS=\
 'ENV PATH /usr/local/perl/bin:${PATH}'
 
 BASE_IMAGE=busybox

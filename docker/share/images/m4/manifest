@@ -37,7 +37,7 @@ SOURCES_TARBALL_NAME='m4-1.4.18.tar.xz'
 # to build the final image. For that purpose, FINAL_EXTRA_DOCKERFILE_COMMANDS is
 # the beast you're looking for.
 # This is a multi-line variable
-BUILD_EXTRA_DOCKERFILE_COMMAND=""
+BUILD_EXTRA_DOCKERFILE_COMMANDS=""
 
 # the base image is a docker image to use as base for the image being built.
 # Note that it is strongly discouraged to use a base image embedding its own

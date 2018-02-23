@@ -9,7 +9,7 @@ SOURCES_FETCH_COMMAND=\
 'https://ftp.gnu.org/gnu/mpfr/mpfr-3.1.6.tar.xz'
 SOURCES_TARBALL_NAME='mpfr-3.1.6.tar.xz'
 
-BUILD_EXTRA_DOCKERFILE_COMMAND=
+BUILD_EXTRA_DOCKERFILE_COMMANDS=
 
 BASE_IMAGE=busybox
 

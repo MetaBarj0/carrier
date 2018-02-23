@@ -9,7 +9,7 @@ SOURCES_FETCH_COMMAND=\
 'https://github.com/ninja-build/ninja/archive/v1.8.2.tar.gz'
 SOURCES_TARBALL_NAME='v1.8.2.tar.gz'
 
-BUILD_EXTRA_DOCKERFILE_COMMAND=
+BUILD_EXTRA_DOCKERFILE_COMMANDS=
 
 BASE_IMAGE=busybox
 

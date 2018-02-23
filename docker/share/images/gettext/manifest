@@ -11,7 +11,7 @@ SOURCES_FETCH_COMMAND=\
 'https://ftp.gnu.org/gnu/gettext/gettext-0.19.8.1.tar.xz'
 SOURCES_TARBALL_NAME='gettext-0.19.8.1.tar.xz'
 
-BUILD_EXTRA_DOCKERFILE_COMMAND=
+BUILD_EXTRA_DOCKERFILE_COMMANDS=
 
 FINAL_EXTRA_DOCKERFILE_COMMANDS="$(cat << EOI
 ENV TERMINFO /usr/local/share/terminfo

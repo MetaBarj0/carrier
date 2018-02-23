@@ -10,7 +10,7 @@ SOURCES_FETCH_COMMAND=\
 'https://www.python.org/ftp/python/3.6.3/Python-3.6.3.tar.xz'
 SOURCES_TARBALL_NAME='Python-3.6.3.tar.xz'
 
-BUILD_EXTRA_DOCKERFILE_COMMAND='COPY Setup ./'
+BUILD_EXTRA_DOCKERFILE_COMMANDS='COPY Setup ./'
 
 BASE_IMAGE=busybox
 

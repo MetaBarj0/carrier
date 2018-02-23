@@ -10,7 +10,7 @@ SOURCES_FETCH_COMMAND=\
 'https://ftp.gnu.org/gnu/autoconf/autoconf-2.69.tar.xz'
 SOURCES_TARBALL_NAME='autoconf-2.69.tar.xz'
 
-BUILD_EXTRA_DOCKERFILE_COMMAND=\
+BUILD_EXTRA_DOCKERFILE_COMMANDS=\
 'ENV PATH /usr/local/perl/bin:${PATH}'
 
 BASE_IMAGE=busybox

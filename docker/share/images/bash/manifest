@@ -11,7 +11,7 @@ SOURCES_FETCH_COMMAND=\
 'https://ftp.gnu.org/gnu/bash/bash-4.4.12.tar.gz'
 SOURCES_TARBALL_NAME='bash-4.4.12.tar.gz'
 
-BUILD_EXTRA_DOCKERFILE_COMMAND=\
+BUILD_EXTRA_DOCKERFILE_COMMANDS=\
 'ENV PATH /usr/local/perl/bin:${PATH}'
 
 BASE_IMAGE=busybox

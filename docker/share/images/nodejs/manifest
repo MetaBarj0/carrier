@@ -12,7 +12,7 @@ SOURCES_FETCH_COMMAND=\
 'https://nodejs.org/dist/v8.9.4/node-v8.9.4.tar.gz'
 SOURCES_TARBALL_NAME='node-v8.9.4.tar.gz'
 
-BUILD_EXTRA_DOCKERFILE_COMMAND=\
+BUILD_EXTRA_DOCKERFILE_COMMANDS=\
 'ENV PKG_CONFIG_PATH=/usr/local/lib/pkgconfig/'
 
 BASE_IMAGE=busybox

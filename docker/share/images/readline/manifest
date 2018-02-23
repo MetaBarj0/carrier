@@ -9,7 +9,7 @@ SOURCES_FETCH_COMMAND=\
 'https://ftp.gnu.org/gnu/readline/readline-7.0.tar.gz'
 SOURCES_TARBALL_NAME='readline-7.0.tar.gz'
 
-BUILD_EXTRA_DOCKERFILE_COMMAND=
+BUILD_EXTRA_DOCKERFILE_COMMANDS=
 
 BASE_IMAGE=busybox
 

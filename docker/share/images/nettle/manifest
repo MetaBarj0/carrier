@@ -9,7 +9,7 @@ SOURCES_FETCH_COMMAND=\
 'https://ftp.gnu.org/gnu/nettle/nettle-2.5.tar.gz'
 SOURCES_TARBALL_NAME='nettle-2.5.tar.gz'
 
-BUILD_EXTRA_DOCKERFILE_COMMAND=
+BUILD_EXTRA_DOCKERFILE_COMMANDS=
 
 BASE_IMAGE=busybox
 

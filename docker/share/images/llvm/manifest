@@ -20,8 +20,7 @@ SOURCES_FETCH_COMMAND=\
 'tar -cf llvm.tar llvm-5.0.0.src.tar.xz cfe-5.0.0.src.tar.xz'
 SOURCES_TARBALL_NAME='llvm.tar'
 
-BUILD_EXTRA_DOCKERFILE_COMMAND=\
-'RUN tar -xf llvm.tar'
+BUILD_EXTRA_DOCKERFILE_COMMANDS='RUN tar -xf llvm.tar'
 
 BASE_IMAGE=busybox
 

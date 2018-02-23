@@ -21,7 +21,7 @@ SOURCES_FETCH_COMMAND=\
 'https://github.com/git/git/archive/v2.16.1.tar.gz'
 SOURCES_TARBALL_NAME='v2.16.1.tar.gz'
 
-BUILD_EXTRA_DOCKERFILE_COMMAND="$(cat << EOI
+BUILD_EXTRA_DOCKERFILE_COMMANDS="$(cat << EOI
 COPY git-entrypoint.sh /usr/local/bin/
 ENV PATH /usr/local/perl/bin:\${PATH}
 EOI

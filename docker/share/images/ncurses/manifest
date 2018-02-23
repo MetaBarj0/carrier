@@ -8,7 +8,7 @@ SOURCES_FETCH_COMMAND=\
 'https://ftp.gnu.org/gnu/ncurses/ncurses-6.0.tar.gz'
 SOURCES_TARBALL_NAME='ncurses-6.0.tar.gz'
 
-BUILD_EXTRA_DOCKERFILE_COMMAND=
+BUILD_EXTRA_DOCKERFILE_COMMANDS=
 
 BASE_IMAGE=busybox
 
