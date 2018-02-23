@@ -35,7 +35,7 @@ make -j $JOBS \
 
 # make this image a package, packaging the entrypoint as well
 packageIncluding \
-  /usr/local/bin/entrypoint.sh \
+  /usr/local/bin/git-entrypoint.sh \
   metabarj0/python2 \
   metabarj0/openssh \
   metabarj0/diffutils

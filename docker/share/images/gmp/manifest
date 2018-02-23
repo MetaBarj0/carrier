@@ -1,23 +1,17 @@
-# This is the manifest of the project. This file MUST expose few variables for
-# project being built successfully. There are 4 variables: BASE_IMAGE, REQUIRES,
-# PROVIDES and EXTRA_DOCKERFILE_COMMANDS. See below on how to use them.
-
-# the base image is a docker image to use as base for the image being built.
-# Note that it is strongly discouraged to use a base image embedding its own
-# libc (whichever its flavor) because the 'carrier' system creates images built
-# with musl-libc, created by carrier itself. That said, any carrier image can be
-# used as base image
-BASE_IMAGE=busybox
-
-# these are dependencies required by this project; manifest, gcc, make and
-# docker-cli are built by the bootstrap project and are implicitely required
 REQUIRES="metabarj0/m4"
 
-# this section contains the docker image built by this project. only one image
-# can be built per project
 PROVIDES=metabarj0/gmp
 
-# this section contains extra dockerfile commands to add at last just before the
-# final image is being built. Consider to add ENV, VOLUME, ENTRYPOINT, EXPOSE,
-# LABEL or CMD commands here if necessary. This is a multi-lines variable.
+SOURCES_FETCH_IMAGE=alpine/wget
+
+SOURCES_FETCH_COMMAND=\
+'wget --no-check-certificate '\
+'https://ftp.gnu.org/gnu/gmp/gmp-6.1.2.tar.xz'
+
+SOURCES_TARBALL_NAME='gmp-6.1.2.tar.xz'
+
+BUILD_EXTRA_DOCKERFILE_COMMAND=
+
+BASE_IMAGE=busybox
+
 FINAL_EXTRA_DOCKERFILE_COMMANDS=""

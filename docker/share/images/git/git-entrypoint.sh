@@ -83,9 +83,4 @@ chmod 400 id_rsa
 
 cd
 
-unset GIT_SSH_PUBLIC_KEY
-unset GIT_SSH_SECRET_KEY
-unset GIT_LINUX_USER
-unset GIT_LINUX_GROUP
-
 exec $(echo "$@")

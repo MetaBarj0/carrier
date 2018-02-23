@@ -22,5 +22,6 @@ JOBS=$(cat /proc/cpuinfo | grep processor | wc -l)
 # remove pyc file from python invocation during build time
 rm -rf ${PREFIX}/lib/python2.7
 
+# TODO verify if this file is needed since musl-1.18 release
 # make this image a package
 packageIncluding ${PREFIX}/include/sched.h
