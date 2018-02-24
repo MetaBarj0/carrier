@@ -308,7 +308,7 @@ EOI
   # import each dependency image package
   local appliance_image_imports=
   local dependency_import=
-  for pair in $name_alias_map; do
+  for pair in $names_aliases_map; do
     # extract build stage alias
     alias="$(valueOf "$pair")"
 
