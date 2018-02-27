@@ -22,23 +22,25 @@ provides a pre-configured docker host and docker-compose.
 
 To summarize :
 
-  +-----------------------------------------------------------+
-  | carrier                                                   |
-  +-----------------------------------------------------------+
-  |                                                           |
-  | +--------+ } related to image                             |
-  | | docker | } building, composition                        |
-  | +--------+ } and reusability                              |
-  | | images |                                                |
-  | | …      |                                                |
-  | |   +----+-----------+ } related to appliance build and   |
-  | |   | docker-compose | } management as well as containers |
-  | +---+----------------+ } persistent storages              |
-  |     | volumes        |                                    |
-  |     | …              |                                    |
-  |     +----------------+                                    |
-  |                                                           |
-  +-----------------------------------------------------------+
+```
++-----------------------------------------------------------+
+| carrier                                                   |
++-----------------------------------------------------------+
+|                                                           |
+| +--------+ } related to image                             |
+| | docker | } building, composition                        |
+| +--------+ } and reusability                              |
+| | images |                                                |
+| | …      |                                                |
+| |   +----+-----------+ } related to appliance build and   |
+| |   | docker-compose | } management as well as containers |
+| +---+----------------+ } persistent storages              |
+|     | volumes        |                                    |
+|     | …              |                                    |
+|     +----------------+                                    |
+|                                                           |
++-----------------------------------------------------------+
+```
 
 ## Note for users
 
