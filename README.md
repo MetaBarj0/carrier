@@ -1,55 +1,99 @@
 # carrier
 
-WHAT IS THAT
-============
+# WIP : 02-unique-script
 
-`carrier` is a repository containing build scripts. Small space used for a big intelligence output.
-More seriously, it allows the user to construct his own development environment using 2
-different technologies that are Docker and Vagrant.
+Overview
+========
 
-WHY DID YOU DO THAT?
-====================
+Is a sandbox environment and appliance fabricator. It mainly relies on the
+`docker` technology therefore, any environment that can natively use `docker`
+should be able to use `carrier`.
+However, `carrier` can also be used on environment that cannot use `docker`
+natively. To operate, `Vagrant` is used alongside `Virtualbox` (as a provider)
+to provide a valid docker environment (based on `archlinux`). This installation
+provides a pre-configured docker host and docker-compose.
+`carrier` can be seen as a solution to facilitate :
+- docker image building process
+- docker image composition
+- docker image reusability
+- docker appliance building
+- docker appliance execution
+- docker appliance persistant storage management
 
-Why not? I always wanted to have such a tooling to work on my projects and not be bound to any platform.
-Now I can.
+To summarize :
 
-`carrier` has the following philosophy: Autonomy, Composability, Usability and Simplicity.
++-----------------------------------------------------------+
+| carrier                                                   |
++-----------------------------------------------------------+
+|                                                           |
+| +--------+ } related to image                             |
+| | docker | } building, composition                        |
+| +--------+ } and reusability                              |
+| | images |                                                |
+| | …      |                                                |
+| |   +----+-----------+ } related to appliance build and   |
+| |   | docker-compose | } management as well as containers |
+| +---+----------------+ } persistent storages              |
+|     | volumes        |                                    |
+|     | …              |                                    |
+|     +----------------+                                    |
+|                                                           |
++-----------------------------------------------------------+
 
-HOW TO USE IT?
-==============
+## Note for users
 
-This is a repository of scripts for various programs. So far, `docker` and `vagrant` are concerned.
+`carrier` is under heavy development. It means that several drastic changes
+could occur in short period of time leading for instance to a whole
+re-architecture of folders, complete rewriting of scripts and spurious feature
+changes.
 
-First, you must have `vagrant 2.0`+ (https://www.vagrantup.com/downloads.html) and `virtual box 5.1`+ (https://www.virtualbox.org/wiki/Downloads) installed on you host machine.
-The constraint of Virtualbox exists because so far, I provide only a a Vagrant box with the virtual box provider
+A word on Vagrant and Virtualbox provider
+=========================================
 
-You can modify the virtual machine configuration as you like in the Vagrantfile, especially the part about
-processor and memory reservations.
+One can choose to use the provided `Vagrant` oriented facilities to use
+`carrier`. The provided vagrant box is a minimalist `Archlinux` installation
+with a particular partition layout. By the way, except for the `/boot` mount
+point, all partitions are `LVM2` based. Using `LVM2` ensure a good
+scaleability for each related partitions as it allows one to extend volume
+groups (system and docker-related) as well as resize up logical volumes (for
+instance, one can size up the logical volume used to store `docker` persistent
+volumes).
 
-You can even use any box of your choice as soon as the installed OS can run Docker.
+# Designed mount points
 
-Then, go to the vagrant/Box4Docker directory and type : `vagrant up`.
-It'll download the box and create a brand new virtual archlinux virtual machine in virtualbox ready to work with docker.
+- /boot : vfat type, EFI, really small, (64 MB)
+- / : LVM2, extendable, (2GB)
+- /var/lib/docker : LVM2, extendable, noexec, nodev, nosuid, (8GB)
+- /var/lib/docker/volumes : LVM2, extendable, nosuid, (8GB)
 
-Feel free to install additional programs in the box if you need, for instance, `git` could be useful but is provided as an appliance in docker as well.
+# Vagrant shared folders
 
-Next, go into your vagrant virtual machine with `vagrant ssh` and find out a way to get this `carrier` git
-repository inside the virtual machine either :
+- /vagrant : classical shared folder created by `Vagrant` itself
+- /docker : added mount point pointing on the docker directory of the `carrier`
+repository, to facilitate `carrier`'s scripts usage.
 
-- by using `git` : `git clone git@github.com:MetaBarj0/carrier.git`.
-- by using virtual box shared folder capabilities, copying the repository (or part of it) into the shared folder
-- by using any other method you like
+Usage
+=====
 
-Then, go to the `docker` folder and bootstrap your docker host using the
-bootstrap script located in the docker/bin/ directory.
-This project will build the bare minimum to build other images, it will create 4 docker images containing :
+# Creating the working environment using Vagrant facilities
 
-- a `manifest` image, internally used to build other ones
-- a working gcc toolchain (only the 7.2.0 and 7.3.0 are supported for now) with c and c++ language activated linked against the `musl-libc`
-- a working make
-- a working docker client image `docker-cli` designed to work with your docker host. It is used as an internal tool to build your projects. It only contains the docker client program as well as an entrypoint to ensure you correctly bound the host socket with a running container of this image.
+This section describes how to use the `Vagrant` environment provided with the
+`carrier` repository. It is not a mandatory step unless you're working on a
+platform that does not support `docker` and `docker-compose` natively.
+On the other hand, VirtualBox (5.2.6+) and Vagrant (2.0.2+) are needed.
 
-Grab one or two (or more) cups of coffee/tea, it'll take some time to build all resultant images.
+## Setup
 
-Once it's done, verify you have your 4 docker images described above, then, you can proceed building the rest.
-Please read the README file in the `docker/share/images/` directory to learn how to achieve that.
+Go to the `vagrant/Box4Docker` directory. You'll find a `Vagrantfile` describing
+the box.
+A simple `vagrant up` should does the job and create a viable environment to
+work with.
+`vagrant ssh` will allow you to enter the environment's shell and begin to work
+with `carrier`.
+As stated above, a `/docker` mount point is linked to the `docker/` directory of
+the `carrier` repository and ease the `carrier`'s scripts usage.
+
+# Working on existing docker host
+
+Preprequisite : be on an environment where `docker` and `docker-compose` are
+supported and installed.
