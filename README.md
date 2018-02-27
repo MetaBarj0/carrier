@@ -1,7 +1,5 @@
 # carrier
 
-# WIP : 02-unique-script
-
 Overview
 ========
 
