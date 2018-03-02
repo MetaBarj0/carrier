@@ -145,7 +145,144 @@ EOI
 
 ### Get a full help on usage
 usageFull() {
-  :
+  cat << EOI
+$(usage)
+
+Global options:
+$(echo "$GLOBAL_OPTIONS_REFERENTIAL" \
+  | sed -E '/^--$/d' \
+  | sed -E '/contextSet.+/d')
+
+Global commands:
+$(echo "$GLOBAL_COMMANDS_REFERENTIAL" \
+  | sed -E '/^--$/d' \
+  | sed -E '/contextSet.+/d')
+
+Help command options:
+$(echo "$GLOBAL_COMMAND_HELP_OPTIONS_REFERENTIAL" \
+  | sed -E '/^--$/d' \
+  | sed -E '/contextSet.+/d')
+
+Info command options:
+$(echo "$GLOBAL_COMMAND_HELP_OPTIONS_REFERENTIAL" \
+  | sed -E '/^--$/d' \
+  | sed -E '/contextSet.+/d')
+
+Install command options:
+$(echo "$GLOBAL_COMMAND_INSTALL_OPTIONS_REFERENTIAL" \
+  | sed -E '/^--$/d' \
+  | sed -E '/contextSet.+/d')
+
+Pack command options:
+$(echo "$GLOBAL_COMMAND_PACK_OPTIONS_REFERENTIAL" \
+  | sed -E '/^--$/d' \
+  | sed -E '/contextSet.+/d')
+
+Unpack command options:
+$(echo "$GLOBAL_COMMAND_UNPACK_OPTIONS_REFERENTIAL" \
+  | sed -E '/^--$/d' \
+  | sed -E '/contextSet.+/d')
+
+Vagrant command options:
+$(echo "$GLOBAL_COMMAND_VAGRANT_OPTIONS_REFERENTIAL" \
+  | sed -E '/^--$/d' \
+  | sed -E '/contextSet.+/d')
+
+Domains:
+$(echo "$DOMAINS_REFERENTIAL" \
+  | sed -E '/^--$/d' \
+  | sed -E '/contextSet.+/d')
+
+Bootstrap domain commands:
+$(echo "$DOMAIN_BOOTSTRAP_COMMANDS_REFERENTIAL" \
+  | sed -E '/^--$/d' \
+  | sed -E '/contextSet.+/d')
+
+Bootstrap run command options:
+$(echo "$DOMAIN_BOOTSTRAP_COMMAND_RUN_OPTIONS_REFERENTIAL" \
+  | sed -E '/^--$/d' \
+  | sed -E '/contextSet.+/d')
+
+Bootstrap check command options:
+$(echo "$DOMAIN_BOOTSTRAP_COMMAND_CHECK_OPTIONS_REFERENTIAL" \
+  | sed -E '/^--$/d' \
+  | sed -E '/contextSet.+/d')
+
+Image domain commands:
+$(echo "$DOMAIN_IMAGE_COMMANDS_REFERENTIAL" \
+  | sed -E '/^--$/d' \
+  | sed -E '/contextSet.+/d')
+
+Image build command options:
+$(echo "$DOMAIN_IMAGE_COMMAND_BUILD_OPTIONS_REFERENTIAL" \
+  | sed -E '/^--$/d' \
+  | sed -E '/contextSet.+/d')
+
+Image list command options:
+$(echo "$DOMAIN_IMAGE_COMMAND_LIST_OPTIONS_REFERENTIAL" \
+  | sed -E '/^--$/d' \
+  | sed -E '/contextSet.+/d')
+
+Image check command options:
+$(echo "$DOMAIN_IMAGE_COMMAND_CHECK_OPTIONS_REFERENTIAL" \
+  | sed -E '/^--$/d' \
+  | sed -E '/contextSet.+/d')
+
+Image info command options:
+$(echo "$DOMAIN_IMAGE_COMMAND_INFO_OPTIONS_REFERENTIAL" \
+  | sed -E '/^--$/d' \
+  | sed -E '/contextSet.+/d')
+
+Image upgrade command options:
+$(echo "$DOMAIN_IMAGE_COMMAND_UPGRADE_OPTIONS_REFERENTIAL" \
+  | sed -E '/^--$/d' \
+  | sed -E '/contextSet.+/d')
+
+Appliance domain commands:
+$(echo "$DOMAIN_APPLIANCE_COMMANDS_REFERENTIAL" \
+  | sed -E '/^--$/d' \
+  | sed -E '/contextSet.+/d')
+
+Appliance build command options:
+$(echo "$DOMAIN_APPLIANCE_COMMAND_BUILD_OPTIONS_REFERENTIAL" \
+  | sed -E '/^--$/d' \
+  | sed -E '/contextSet.+/d')
+
+Appliance list command options:
+$(echo "$DOMAIN_APPLIANCE_COMMAND_LIST_OPTIONS_REFERENTIAL" \
+  | sed -E '/^--$/d' \
+  | sed -E '/contextSet.+/d')
+
+Appliance check command options:
+$(echo "$DOMAIN_APPLIANCE_COMMAND_CHECK_OPTIONS_REFERENTIAL" \
+  | sed -E '/^--$/d' \
+  | sed -E '/contextSet.+/d')
+
+Appliance info command options:
+$(echo "$DOMAIN_APPLIANCE_COMMAND_INFO_OPTIONS_REFERENTIAL" \
+  | sed -E '/^--$/d' \
+  | sed -E '/contextSet.+/d')
+
+Appliance start command options:
+$(echo "$DOMAIN_APPLIANCE_COMMAND_START_OPTIONS_REFERENTIAL" \
+  | sed -E '/^--$/d' \
+  | sed -E '/contextSet.+/d')
+
+Appliance stop command options:
+$(echo "$DOMAIN_APPLIANCE_COMMAND_STOP_OPTIONS_REFERENTIAL" \
+  | sed -E '/^--$/d' \
+  | sed -E '/contextSet.+/d')
+
+Appliance volumes command options:
+$(echo "$DOMAIN_APPLIANCE_COMMAND_VOLUMES_OPTIONS_REFERENTIAL" \
+  | sed -E '/^--$/d' \
+  | sed -E '/contextSet.+/d')
+
+Appliance upgrade command options:
+$(echo "$DOMAIN_APPLIANCE_COMMAND_UPGRADE_OPTIONS_REFERENTIAL" \
+  | sed -E '/^--$/d' \
+  | sed -E '/contextSet.+/d')
+EOI
 }
 
 ### built the argument referential, sort of description and constraints about
@@ -325,6 +462,16 @@ contextSetDomain
 EOI
   )"
 
+  DOMAIN_BOOTSTRAP_COMMANDS_REFERENTIAL="$(cat << EOI
+# available commands in the bootstrap domain
+# - check verify the current environment is correctly bootstrap
+# - run bootstrap the system
+check|run
+--
+contextSetDomainCommand
+EOI
+  )"
+
   DOMAIN_BOOTSTRAP_COMMAND_CHECK_OPTIONS_REFERENTIAL="$(cat << EOI
 # no options yet
 EOI
@@ -338,6 +485,20 @@ EOI
 -t|--retag-existing-images
 --
 contextSetBootstrapRunRetag
+EOI
+  )"
+
+  DOMAIN_IMAGE_COMMANDS_REFERENTIAL="$(cat << EOI
+# available commands for the image domain.
+# - build can build one or more images
+# - list can list images on the system, reporting information about the
+#   availability of images
+# - check verifies one or more images are healthy and up to date
+# - info report about internal informations about an image
+# - upgrade can upgrade one or more image regarding their dependencies status
+build|list|check|info|upgrade
+--
+contextSetDomainCommand
 EOI
   )"
 
@@ -553,6 +714,24 @@ contextSetImageUpgradeIgnoreDependencyDefects
 (-l|--image-list)=?
 [^,]+(,[^,]+)*
 contextSetImageUpgradeImageSequence
+EOI
+  )"
+
+  DOMAIN_APPLIANCE_COMMANDS_REFERENTIAL="$(cat << EOI
+# available commands for the appliance domain.
+# - build can build one or more appliances.
+# - list can list appliances on the system, reporting information about the
+#   availability of appliances
+# - check verifies one or more appliances are healthy and up to date
+# - info report about internal informations about an appliance
+# - upgrade can upgrade one or more appliances regarding their service image and
+#   dependencies status
+# - start can start an appliance or several
+# - stop can stop one or more appliances
+# - volumes can help the user to manage columes used by an appliance
+build|list|check|info|upgrade|start|stop|volumes
+--
+contextSetDomainCommand
 EOI
   )"
 
@@ -988,3 +1167,4 @@ function parseArguments() {
 }
 
 parseArguments "$@"
+usageFull
