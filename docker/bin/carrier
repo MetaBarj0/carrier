@@ -320,7 +320,7 @@ EOI
 # images produced by a previous bootstrap run. Images will be tagged with the
 # current data and time using the '+%Y%m%d%H%M%S' format usable with the date
 # command.
--b|--retag-existing-images
+-t|--retag-existing-images
 --
 EOI
   )"
@@ -329,7 +329,7 @@ EOI
 # specifying this option while building an image prevent the system to tag a
 # previous version existing on the docker host. As a result, if a previous
 # version of the image being built were present; it is deleted instead of being
-# retagged. This is ot the default behavior.
+# retagged. This is not the default behavior.
 -r|--remove-existing-images
 --
 
@@ -424,7 +424,7 @@ EOI
   )"
 
   DOMAIN_IMAGE_COMMAND_INFO_OPTIONS_REFERENTIAL="$(cat << EOI
-# report all properties of requested image
+# report all properties of requested image (default behavior)
 -a|--report-all
 --
 
@@ -609,7 +609,7 @@ EOI
 --
 
 # execute a docker-compose config on the appliance docker-compose.yml file
--c|--config
+-c|--report-config
 --
 
 # reports only dependent images required for the service being observed
@@ -642,8 +642,13 @@ EOI
 
   DOMAIN_APPLIANCE_COMMAND_START_OPTIONS_REFERENTIAL="$(cat << EOI
 # if appliances requested to start does not exist, attempt to build it
-# beforehand using default options
+# beforehand using default options. Default behavior
 -b|--build
+--
+
+# do not attempt to build appliance service image if they are missing. If one
+# or more service images are missing this command will fail(not default behavior)
+-n|--dont-build
 --
 
 # list of appliance to start. List has the form:
@@ -659,6 +664,11 @@ EOI
 -d|--rm
 --
 
+# do not delete appliance container when stopping. This is not the default
+# behavior
+-k|--keep-containers
+--
+
 # list of appliance to stop. List has the form:
 # appliance1,appliance2...
 [^,]+(,[^,]+)*
@@ -667,9 +677,6 @@ EOI
   )"
 
   DOMAIN_APPLIANCE_COMMAND_VOLUMES_OPTIONS_REFERENTIAL="$(cat << EOI
--v|--volume-list
-[^,]+(,[^,]+)*
-
 # list the appliance volumes
 -l|--list
 --
@@ -678,9 +685,17 @@ EOI
 -r|--rm
 --
 
-# specify the dump file path
--d|--dump-file-path
+# dump specified volumes
+-d|--dump
+--
+
+# specify the dump file path (defaulted to current directory)
+-p|--dump-file-path
 .+
+
+# specific list of volume. used with --rm and --dump options
+-v|--volume-list
+[^,]+(,[^,]+)*
 
 # targeted appliance
 (-a|--appliance)=?
@@ -724,7 +739,147 @@ EOI
 ### initialize the execution context of carrier, dictating what to do with
 ### provided arguments
 initializeExecutionContext() {
-  :
+  # carrier --log-level=2 ...
+  GLOBAL_OPTION_LOG_LEVEL=2
+  GLOBAL_OPTION_LOG_OUTPUT='&2'
+
+  # carrier help
+  GLOBAL_COMMAND='help'
+
+  # carrier help -H
+  GLOBAL_COMMAND_HELP_OPTION_MODE=
+
+  # carrier info --format=shell
+  GLOBAL_COMMAND_INFO_OPTION_FORMAT='shell'
+
+  # carrier install --force -k
+  GLOBAL_COMMAND_INSTALL_OPTION_FORCE='no'
+  GLOBAL_COMMAND_INSTALL_OPTION_KEEP='no'
+
+  # carrier pack -s
+  GLOBAL_COMMAND_PACK_OPTION_FETCH_ALL_SOURCES='no'
+  GLOBAL_COMMAND_PACK_OPTION_ONLY_FETCH_SOURCES='no'
+  GLOBAL_COMMAND_PACK_OPTION_FETCH_SPECIFIC_IMAGE_SOURCES=
+
+  # carrier unpack -k
+  GLOBAL_COMMAND_UNPACK_OPTION_KEEP_SOURCES='no'
+
+  # carrier vagrant -p '/usr/local/bin/vagrant' up
+  GLOBAL_COMMAND_VAGRANT_OPTION_PATH='vagrant'
+  GLOBAL_COMMAND_VAGRANT_OPTION_ARGUMENTS=
+
+  # carrier bootstrap
+  DOMAIN=
+
+  DOMAIN_OPTIONS=
+
+  # carrier bootstrap run
+  DOMAIN_COMMAND=
+
+  DOMAIN_BOOTSTRAP_OPTIONS=
+  DOMAIN_IMAGE_OPTIONS=
+  DOMAIN_APPLIANCE_OPTIONS=
+
+  # carrier bootstrap check
+  DOMAIN_BOOTSTRAP_COMMAND_CHECK_OPTIONS=
+
+  # carrier bootstrap run --retag-existing-images
+  DOMAIN_BOOTSTRAP_COMMAND_RUN_OPTION_RETAG_EXISTING='no'
+
+  # carrier image build -r metabarj0/wget
+  DOMAIN_IMAGE_COMMAND_BUILD_OPTION_REMOVE_EXISTING='no'
+  DOMAIN_IMAGE_COMMAND_BUILD_OPTION_IMAGE_SEQUENCE=
+
+  # carrier image list -b --format json
+  DOMAIN_IMAGE_COMMAND_LIST_OPTION_LIST_ALL='yes'
+  DOMAIN_IMAGE_COMMAND_LIST_OPTION_LIST_ONLY_BUILT='no'
+  DOMAIN_IMAGE_COMMAND_LIST_OPTION_LIST_ONLY_NOT_BUILT='no'
+  DOMAIN_IMAGE_COMMAND_LIST_OPTION_LIST_ONLY_LOCAL='no'
+  DOMAIN_IMAGE_COMMAND_LIST_OPTION_LIST_ONLY_REMOTE='no'
+  DOMAIN_IMAGE_COMMAND_LIST_OPTION_FORMAT='pretty'
+
+  # carrier image check --all --ignore-missing
+  DOMAIN_IMAGE_COMMAND_CHECK_OPTION_ALL_IMAGES='yes'
+  DOMAIN_IMAGE_COMMAND_CHECK_OPTION_IGNORE_DATE='no'
+  DOMAIN_IMAGE_COMMAND_CHECK_OPTION_IGNORE_MISSING='no'
+  DOMAIN_IMAGE_COMMAND_CHECK_OPTION_IGNORE_DEPENDENCY_DEFECTS='no'
+  DOMAIN_IMAGE_COMMAND_CHECK_OPTION_FORMAT='pretty'
+  DOMAIN_IMAGE_COMMAND_CHECK_OPTION_IMAGE_SEQUENCE=
+
+  # carrier image info --report-base-image -f shell
+  DOMAIN_IMAGE_COMMAND_INFO_OPTION_REPORT_ALL='yes'
+  DOMAIN_IMAGE_COMMAND_INFO_OPTION_REPORT_ONLY_CONTENT='no'
+  DOMAIN_IMAGE_COMMAND_INFO_OPTION_REPORT_ONLY_PROVIDES='no'
+  DOMAIN_IMAGE_COMMAND_INFO_OPTION_REPORT_ONLY_REQUIRES='no'
+  DOMAIN_IMAGE_COMMAND_INFO_OPTION_REPORT_ONLY_BASE='no'
+  DOMAIN_IMAGE_COMMAND_INFO_OPTION_REPORT_ONLY_FETCH_IMAGE='no'
+  DOMAIN_IMAGE_COMMAND_INFO_OPTION_REPORT_ONLY_FETCH_COMMAND='no'
+  DOMAIN_IMAGE_COMMAND_INFO_OPTION_REPORT_ONLY_TARBALL_NAME='no'
+  DOMAIN_IMAGE_COMMAND_INFO_OPTION_REPORT_ONLY_X_BUILD_DOCKERFILE='no'
+  DOMAIN_IMAGE_COMMAND_INFO_OPTION_REPORT_ONLY_X_FINAL_DOCKERFILE='no'
+  DOMAIN_IMAGE_COMMAND_INFO_OPTION_FORMAT='shell'
+  DOMAIN_IMAGE_COMMAND_INFO_OPTION_IMAGE=
+
+  # docker carrier image upgrade metabarj0/git,metabarj0/gdb
+  DOMAIN_IMAGE_COMMAND_UPGRADE_OPTION_ALL='yes'
+  DOMAIN_IMAGE_COMMAND_UPGRADE_OPTION_IGNORE_DATE='no'
+  DOMAIN_IMAGE_COMMAND_UPGRADE_OPTION_IGNORE_MISSING='no'
+  DOMAIN_IMAGE_COMMAND_UPGRADE_OPTION_IGNORE_DEPENDENCY_DEFECTS='no'
+  DOMAIN_IMAGE_COMMAND_UPGRADE_OPTION_IMAGE_SEQUENCE=
+
+  # carrier appliance build devenv_cpp -r
+  DOMAIN_APPLIANCE_COMMAND_BUILD_OPTION_REMOVE_EXISTING='no'
+  DOMAIN_APPLIANCE_COMMAND_BUILD_OPTION_TAG_EXISTING='no'
+  DOMAIN_APPLIANCE_COMMAND_BUILD_OPTION_APPLIANCE_LIST=
+
+  # carrier appliance list --only-remote -f one-line
+  DOMAIN_APPLIANCE_COMMAND_LIST_OPTION_ALL='yes'
+  DOMAIN_APPLIANCE_COMMAND_LIST_OPTION_ONLY_BUILT='no'
+  DOMAIN_APPLIANCE_COMMAND_LIST_OPTION_ONLY_NOT_BUILT='no'
+  DOMAIN_APPLIANCE_COMMAND_LIST_OPTION_ONLY_LOCAL='no'
+  DOMAIN_APPLIANCE_COMMAND_LIST_OPTION_ONLY_REMOTE='no'
+  DOMAIN_APPLIANCE_COMMAND_LIST_OPTION_FORMAT='pretty'
+
+  # carrier appliance check devenv_cpp
+  DOMAIN_APPLIANCE_COMMAND_CHECK_OPTION_ALL='yes'
+  DOMAIN_APPLIANCE_COMMAND_CHECK_OPTION_IGNORE_DATE='no'
+  DOMAIN_APPLIANCE_COMMAND_CHECK_OPTION_IGNORE_MISSING='no'
+  DOMAIN_APPLIANCE_COMMAND_CHECK_OPTION_IGNORE_DEPENDENCY_DEFECTS='no'
+  DOMAIN_APPLIANCE_COMMAND_CHECK_OPTION_APPLIANCE_LIST='no'
+
+  # carrier appliance info --report-config
+  DOMAIN_APPLIANCE_COMMAND_INFO_OPTION_REPORT_ALL='yes'
+  DOMAIN_APPLIANCE_COMMAND_INFO_OPTION_ONLY_BASE='no'
+  DOMAIN_APPLIANCE_COMMAND_INFO_OPTION_ONLY_CONFIG='no'
+  DOMAIN_APPLIANCE_COMMAND_INFO_OPTION_ONLY_REQUIRES='no'
+  DOMAIN_APPLIANCE_COMMAND_INFO_OPTION_ONLY_EXTRA_DOCKERFILE='no'
+  DOMAIN_APPLIANCE_COMMAND_INFO_OPTION_INSPECT_ALL_SERVICES='yes'
+  DOMAIN_APPLIANCE_COMMAND_INFO_OPTION_INSPECT_SERVICE_LIST=
+  DOMAIN_APPLIANCE_COMMAND_INFO_OPTION_FORMAT='shell'
+  DOMAIN_APPLIANCE_COMMAND_INFO_OPTION_APPLIANCE=
+
+  # carrier appliance start devenv_cpp -n
+  DOMAIN_APPLIANCE_COMMAND_START_OPTION_BUILD='yes'
+  DOMAIN_APPLIANCE_COMMAND_START_OPTION_APPLIANCE_SEQUENCE=
+
+  # carrier appliance stop  --keep-containers devenv_cpp
+  DOMAIN_APPLIANCE_COMMAND_STOP_OPTION_REMOVE_CONTAINERS='yes'
+  DOMAIN_APPLIANCE_COMMAND_STOP_OPTION_APPLIANCE_SEQUENCE=
+
+  # carrier appliance volumes devenv_cpp
+  DOMAIN_APPLIANCE_COMMAND_VOLUMES_OPTION_LIST='yes'
+  DOMAIN_APPLIANCE_COMMAND_VOLUMES_OPTION_REMOVE='no'
+  DOMAIN_APPLIANCE_COMMAND_VOLUMES_OPTION_DUMP='no'
+  DOMAIN_APPLIANCE_COMMAND_VOLUMES_OPTION_DUMP_PATH='./'
+  DOMAIN_APPLIANCE_COMMAND_VOLUMES_OPTION_VOLUME_SEQUENCE=
+  DOMAIN_APPLIANCE_COMMAND_VOLUMES_OPTION_APPLIANCE=
+
+  # carrier appliance upgrade devev_cpp
+  DOMAIN_APPLIANCE_COMMAND_UPGRADE_OPTION_ALL='yes'
+  DOMAIN_APPLIANCE_COMMAND_UPGRADE_OPTION_IGNORE_DATE='no'
+  DOMAIN_APPLIANCE_COMMAND_UPGRADE_OPTION_IGNORE_MISSING='no'
+  DOMAIN_APPLIANCE_COMMAND_UPGRADE_OPTION_IGNORE_DEPENDENCY_DEFECTS='no'
+  DOMAIN_APPLIANCE_COMMAND_UPGRADE_OPTION_APPLIANCE_SEQUENCE=
 }
 
 ### parses all arguments
@@ -737,13 +892,6 @@ function parseArguments() {
 
   # first build the argument referential
   buildArgumentsReferential
-
-  # these globals are initialized by the argument parsing
-  GLOBAL_OPTIONS=
-  DOMAIN=
-  DOMAIN_OPTIONS=
-  COMMAND=
-  COMMAND_OPTIONS=
 
   # parse provided argument and use referentials to extract the execution
   # context. It will dictate how the carrier script will behave, which domain,
