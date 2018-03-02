@@ -541,10 +541,12 @@ contextSetImageListOnlyNotBuilt
 # list only local images that are not present on remote repository (new images
 # being created for instance)
 -l|--only-local
+--
 contextSetImageListOnlyLocal
 
 # list only supported images that are present on the remote repository.
 -r|--only-remote
+--
 contextSetImageListOnlyRemote
 
 # specify the output format:
@@ -777,10 +779,12 @@ contextSetApplianceListOnlyNotBuilt
 # list only local appliances that are not present on remote repository (new
 # appliances being created for instance)
 -l|--only-local
+--
 contextSetApplianceListOnlyLocal
 
 # list only supported appliances that are present on the remote repository.
 -r|--only-remote
+--
 contextSetApplianceListOnlyRemote
 
 # specify the output format:
@@ -949,12 +953,12 @@ contextSetApplianceVolumesRemove
 contextSetApplianceVolumesDump
 
 # specify the dump file path (defaulted to current directory)
--p|--dump-file-path
+(-p|--dump-file-path)=?
 .+
 contextSetApplianceVolumesDumpPath
 
 # specific list of volume. used with --rm and --dump options
--v|--volume-list
+(-v|--volume-list)=?
 [^,]+(,[^,]+)*
 contextSetApplianceVolumesList
 
@@ -1149,13 +1153,92 @@ initializeExecutionContext() {
   DOMAIN_APPLIANCE_COMMAND_UPGRADE_OPTION_APPLIANCE_SEQUENCE=
 }
 
-### build the final execution context regarding provided arguments
-buildExecutionContextFromArguments() {
+### mutates the execution context with a key and a value as arguments
+mutateExecutionContext() {
   :
 }
 
-### parses all arguments
-function parseArguments() {
+### build the final execution context regarding provided arguments
+buildExecutionContextFromArguments() {
+  # args come with 3 possible forms:
+  # dashed key (-f or --format i.e.)
+  # dashed key followed by one or more spaces followed by a value (-l 2 i.e.)
+  # dashed key equals value (-l=error i.e.)
+  # as a result, the argument extraction is not uniform.
+  # - first, handle the case key=value by extracting one arg. if it leads to
+  #   create a pair, mutate the execution context
+  #   - worked, restart the process with the next argument
+  #   - did not work, fatal, bad argument specification from the user
+  # - if a pair is not built, attempt to mutate the execution context with this
+  #   unique argument.
+  #   - if it worked, restart the process with the next argument
+  #   - if it didn't work, pick the next argument a attempt again to mutate the
+  #     execution context to build a key=value argument
+  #     - if it did not work, fatal error, bad argument specification from the
+  #       user
+  #     - if it worked, restart with the next argument
+  local arg=
+
+  # these two variable represent the key and the value part of an argument
+  local key=
+  local value=
+
+  for arg in $@; do
+    # tranform an arg of the form <key=value> into <key value>
+    # the transformation result is used only if we are not in the middle of an
+    # argument scanning (collected the key bu the value collect is in progress)
+    local transformed_pair="$(
+      echo "$arg"
+      | sed 's/=/ /'
+    )"
+
+    # transformation effective and $key is not set : key set means previous
+    # argument scan only extracted the key of a pair
+    if [ -z "$key" ] && [ ! "$arg" = "$transformed_pair" ]; then
+      # iterate through these 2 guys
+      for arg in $transformed_pair; do
+        # fill the key first, then the value
+        if [ -z "$key" ]; then
+          key="$arg"
+          continue
+        fi
+
+        value="$arg"
+      done
+
+      # mutate the execution context
+      mutateExecutionContext "$key" "$value"
+    else
+      if [ -z "$key" ]; then
+        # if key is not set, attempting to mutate the execution context with this
+        # unique argument. May fail spuriously  but not fatally yet
+        mutateExecutionContext "$arg"
+
+        # mutation failed, key is kept and the next argument is scanned for the
+        # value
+        if [ ! $? ];then
+          key="$arg"
+          continue
+        fi
+      else
+        value="$arg"
+        mutateExecutionContext "$key" "$value"
+
+        # if failed, error at the user side, exiting
+        if [ ! $? ]; then
+          exit 1
+        fi
+
+        # argument fully processed, next one if any remaining
+        key=
+        value=
+      fi
+    fi
+  done
+}
+
+### entry point
+run() {
   # argument are positional. First come global options, then, if any, domain
   # then domain options then then domain's command come, finally the command's
   # options.
@@ -1175,4 +1258,4 @@ function parseArguments() {
   buildExecutionContextFromArguments "$@"
 }
 
-parseArguments "$@"
+run "$@"
