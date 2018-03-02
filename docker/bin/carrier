@@ -1,7 +1,7 @@
 #!/bin/sh
 
-#### standalone mode, external utility functins not loaded yet #################
-set -e
+#### standalone mode, external utility functions not loaded yet ################
+set -ex
 
 ### set up paths after calling this script
 initializePaths() {
@@ -127,7 +127,7 @@ loadUtilities
 
 # log function wired, fail on error is not necessary anymore
 set +e
-#### end of standalone mode, external utility functins loaded ##################
+#### end of standalone mode, external utility functions loaded #################
 
 ### basic usage function, shows syntax, how to use, purpose and so on...
 usage() {
@@ -225,7 +225,11 @@ EOI
   )"
 
   GLOBAL_COMMAND_INFO_OPTIONS_REFERENTIAL="$(cat << EOI
-# no options so far
+# specify the output format:
+# - shell: give a a list of pairs of the form VAR=VAL
+# - json: create a json object containing requested properties
+(-f|--format)=?
+shell|json
 EOI
   )"
 
@@ -419,7 +423,7 @@ list|pretty
 EOI
   )"
 
-  DOMAIN_IMAGE_INFO_COMMAND_OPTIONS_REFERENTIAL="$(cat << EOI
+  DOMAIN_IMAGE_COMMAND_INFO_OPTIONS_REFERENTIAL="$(cat << EOI
 # report all properties of requested image
 -a|--report-all
 --
@@ -473,7 +477,7 @@ shell|json
 EOI
   )"
 
-  DOMAIN_IMAGE_UPGRADE_COMMAND_OPTIONS_REFERENTIAL="$(cat << EOI
+  DOMAIN_IMAGE_COMMAND_UPGRADE_OPTIONS_REFERENTIAL="$(cat << EOI
 # attempt an upgrade of all built images by checking their dependencies
 # integrity and status. If one or more dependencies have a problem or is newer
 # than the observed image, both actions are taken:
@@ -505,7 +509,7 @@ EOI
 EOI
   )"
 
-  DOMAIN_APPLIANCE_BUILD_COMMAND_OPTIONS_REFERENTIAL="$(cat << EOI
+  DOMAIN_APPLIANCE_COMMAND_BUILD_OPTIONS_REFERENTIAL="$(cat << EOI
 # When building an appliance, remove all appliance service images that already
 # exist on the docker host. This is not the default behavior as by default, if
 # images exist, nothing is built
@@ -525,7 +529,7 @@ EOI
 EOI
   )"
 
-  DOMAIN_APPLIANCE_LIST_COMMAND_OPTIONS_REFERENTIAL="$(cat << EOI
+  DOMAIN_APPLIANCE_COMMAND_LIST_OPTIONS_REFERENTIAL="$(cat << EOI
 # list all appliances, built, not built, local and remote
 -a|--all
 --
@@ -563,7 +567,7 @@ one-line|pretty
 EOI
   )"
 
-  DOMAIN_APPLIANCE_CHECK_COMMAND_OPTIONS_REFERENTIAL="$(cat << EOI
+  DOMAIN_APPLIANCE_COMMAND_CHECK_OPTIONS_REFERENTIAL="$(cat << EOI
 # verify all built appliances by checking each of its service image. (default
 # behavior)
 -a|--all-installed
@@ -595,7 +599,7 @@ EOI
 EOI
   )"
 
-  DOMAIN_APPLIANCE_INFO_COMMAND_OPTIONS_REFERENTIAL="$(cat << EOI
+  DOMAIN_APPLIANCE_COMMAND_INFO_OPTIONS_REFERENTIAL="$(cat << EOI
 # report all information properties of the appliance (default behavior)
 -a|--report-all
 --
@@ -636,7 +640,7 @@ shell|json
 EOI
   )"
 
-  DOMAIN_APPLIANCE_START_COMMAND_OPTIONS_REFERENTIAL="$(cat << EOI
+  DOMAIN_APPLIANCE_COMMAND_START_OPTIONS_REFERENTIAL="$(cat << EOI
 # if appliances requested to start does not exist, attempt to build it
 # beforehand using default options
 -b|--build
@@ -649,7 +653,7 @@ EOI
 EOI
   )"
 
-  DOMAIN_APPLIANCE_STOP_COMMAND_OPTIONS_REFERENTIAL="$(cat << EOI
+  DOMAIN_APPLIANCE_COMMAND_STOP_OPTIONS_REFERENTIAL="$(cat << EOI
 # when stopping an appliance, also remove created containers. Containers are
 # considered ephemeral by design so it is the default behavior
 -d|--rm
@@ -662,7 +666,7 @@ EOI
 EOI
   )"
 
-  DOMAIN_APPLIANCE_VOLUMES_COMMAND_OPTIONS_REFERENTIAL="$(cat << EOI
+  DOMAIN_APPLIANCE_COMMAND_VOLUMES_OPTIONS_REFERENTIAL="$(cat << EOI
 -v|--volume-list
 [^,]+(,[^,]+)*
 
@@ -684,7 +688,7 @@ EOI
 EOI
   )"
 
-  DOMAIN_APPLIANCE_UPGRADE_COMMAND_OPTIONS_REFERENTIAL="$(cat << EOI
+  DOMAIN_APPLIANCE_COMMAND_UPGRADE_OPTIONS_REFERENTIAL="$(cat << EOI
 # scan all built appliances
 -a|--all-installed
 --
@@ -717,6 +721,12 @@ EOI
   )"
 }
 
+### initialize the execution context of carrier, dictating what to do with
+### provided arguments
+initializeExecutionContext() {
+  :
+}
+
 ### parses all arguments
 function parseArguments() {
   # argument are positional. First come global options, then, if any, domain
@@ -734,6 +744,11 @@ function parseArguments() {
   DOMAIN_OPTIONS=
   COMMAND=
   COMMAND_OPTIONS=
+
+  # parse provided argument and use referentials to extract the execution
+  # context. It will dictate how the carrier script will behave, which domain,
+  # command and options to take into account.
+  initializeExecutionContext "$@"
 }
 
 parseArguments "$@"
