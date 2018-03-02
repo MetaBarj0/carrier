@@ -1,7 +1,7 @@
 #!/bin/sh
 
 #### standalone mode, external utility functions not loaded yet ################
-set -ex
+set -e
 
 ### set up paths after calling this script
 initializePaths() {
@@ -151,11 +151,12 @@ usageFull() {
 ### built the argument referential, sort of description and constraints about
 ### each valid argument.
 ### each line of a variable definition define a pattern one arg can match at a
-### time.
-### 2 consecutive lines denote a key-value pair for argument necessitating a
-### value.
-### An 'empty pattern' (--) on the 2nd line denotes that the argument does not
-### wait for a value
+### time :
+###
+### line 0: optional comment lines starting with #
+### line 1: pattern for argument
+### line 2: pattern for argument value or --
+### line 3: function name initializing execution context
 buildArgumentsReferential() {
   GLOBAL_OPTIONS_REFERENTIAL="$(cat << EOI
 # desired log level. Defaulted to '2' or 'error'.
@@ -163,12 +164,14 @@ buildArgumentsReferential() {
 #      carrier info -l 2
 (-l|--log-level)=?
 1|2|3|4|5|6|fatal|error|warning|info|debug|trace
+contextSetLogLevel
 
 # desired output for logs. Defaulted to '&2' that is stderr
 # i.e. carrier info --log-output=error.log
 #      carrier info -o '&2'
 (-o|--log-output)=?
 .+
+contextSetLogOutput
 EOI
   )"
 
@@ -212,6 +215,7 @@ EOI
 #          vagrant is not found, the process fails.
 help|info|install|pack|unpack|vagrant
 --
+contextSetGlobalCommand
 EOI
   )"
 
@@ -221,6 +225,7 @@ EOI
 #      carrier help --full
 -H|--full
 --
+contextSetHelpMode
 EOI
   )"
 
@@ -230,6 +235,7 @@ EOI
 # - json: create a json object containing requested properties
 (-f|--format)=?
 shell|json
+contextSetInfoFormat
 EOI
   )"
 
@@ -240,11 +246,13 @@ EOI
 # already exists and does not correspond to a previous carrier installation
 -f|--force
 --
+contextSetInstallForce
 
 # If reinstallation occurs, keep the existing one.
 # i.e carrier install --force --keep-previous-installation
 -k|--keep-previous-installation
 --
+contextSetInstallKeep
 EOI
   )"
 
@@ -256,11 +264,13 @@ EOI
 # i.e carrier pack --fetch-all-images-sources
 -s|--fetch-all-images-sources
 --
+contextSetPackFetchAll
 
 # Instead of packing carrier, only fetch sources of images. This option can be
 # specified with -s and -i. This is not the default behavior of packing.
 -o|--only-fetch-sources
 --
+contextSetPackFetchOnly
 
 # While packing, fetch sources of specified images only. Sources of unspecified
 # images will not be fetched, leading to a less heavy package but forcing one to
@@ -270,6 +280,7 @@ EOI
 # i.e carrier pack -i metabarj0/wget,metabarj0/llvm
 (-i|--fetch-images-sources)=?
 [^,]+(,[^,]+)*
+contextSetPackSpecificImageFetch
 EOI
   )"
 
@@ -277,6 +288,7 @@ EOI
 # While unpaking, do not delete fetch sources. This is not the default behavior
 -k|--keep-sources-if-any
 --
+contextSetUnpackKeepSources
 EOI
   )"
 
@@ -285,11 +297,13 @@ EOI
 # vagrant is supposed to be found in the PATH environment variable.
 (-p|--vagrant-path)=?
 .+
+contextSetVagrantPath
 
 # commands/arguments/options to forward to the vagrant program. Must be enclosed
 # by quotes to be parsed as a single argument in the carrier point of view.
 '.+'
 --
+contextSetVagrantArguments
 EOI
   )"
 
@@ -307,6 +321,7 @@ EOI
 #            appliance specific commands and options.
 bootstrap|image|appliance
 --
+contextSetDomain
 EOI
   )"
 
@@ -322,6 +337,7 @@ EOI
 # command.
 -t|--retag-existing-images
 --
+contextSetBootstrapRunRetag
 EOI
   )"
 
@@ -332,6 +348,7 @@ EOI
 # retagged. This is not the default behavior.
 -r|--remove-existing-images
 --
+contextSetImageBuildRemoveExisting
 
 # sequence (or unique) image to be built. The sequence can be made of :
 # - image name (the directory name containing image files)
@@ -340,6 +357,7 @@ EOI
 # - a mix of all three
 [^,]+(,[^,]+)?
 --
+contextSetImageBuildImageSequence
 EOI
   )"
 
@@ -347,21 +365,26 @@ EOI
 # list all images, built, not built, local and remote
 -a|--all
 --
+contextSetImageListAll
 
 # list only built images
 -b|--only-built
 --
+contextSetImageListOnlyBuilt
 
 # list only not built images
 -n|--only-not-built
 --
+contextSetImageListOnlyNotBuilt
 
 # list only local images that are not present on remote repository (new images
 # being created for instance)
 -l|--only-local
+contextSetImageListOnlyLocal
 
 # list only supported images that are present on the remote repository.
 -r|--only-remote
+contextSetImageListOnlyRemote
 
 # specify the output format:
 # - one-line outputs the result in one line, each image name being separated by
@@ -382,6 +405,7 @@ EOI
 # The docker format works only for built images
 (-f|--format)=?
 one-line|pretty|docker(:'.*')?
+contextSetImageListFormat
 EOI
   )"
 
@@ -397,18 +421,22 @@ EOI
 # checking all images is the default behavior
 -a|--all-installed
 --
+contextSetImageCheckAllBuilt
 
 # ignore the build date of dependecies when checking images
 -d|--ignore-date
 --
+contextSetImageCheckIgnoreDate
 
 # ignore if dependency is missing on the docker host when checking images
 -m|--ignore-missing
 --
+contextSetImageCheckIgnoreMissing
 
 # ignore detected defect in image checking (not recommended)
 -i|--ignore-image-dist-defects
 --
+contextSetImageCheckIgnoreDependencyDefects
 
 # format the output if something is found:
 # - list gives a list of the form:
@@ -416,10 +444,12 @@ EOI
 # - pretty ouput a nice table (default)
 (-f|--format)=?
 list|pretty
+contextSetImageCheckFormat
 
 # explicit image list to cheack instead of all
 (-l|--image-list)=?
 [^,]+(,[^,]+)*
+contextSetImageCheckImageSequence
 EOI
   )"
 
@@ -427,53 +457,65 @@ EOI
 # report all properties of requested image (default behavior)
 -a|--report-all
 --
+contextSetImageInfoAllProps
 
 # only report the image.dist content
 -i|--report-image-content
 --
+contextSetImageInfoOnlyContent
 
 # only report the docker image name provided
 -p|--report-provides
 --
+contextSetImageInfoOnlyProvides
 
 # only report dependency image names
 -r|--report-requires
 --
+contextSetImageInfoOnlyRequires
 
 # report the name of the base image
 -b|--report-base-image
 --
+contextSetImageInfoOnlyBaseImage
 
 # report the name of the image used to fetch sources
 -d|--report-sources-fetch-image
 --
+contextSetImageInfoOnlyFetchImage
 
 # report the command used to fetch sources
 -s|--report-sources-fetch-command
 --
+contextSetImageInfoOnlyFetchCommand
 
 # report the name of the sources tarball
 -c|--report-sources-tarball-name
 --
+contextSetImageInfoOnlyTarballName
 
 # report extra dockerfile commands appended to the generated Dockerfile for the
 # image building process
 -x|--report-build-extra-dockerfile-commands
 --
+contextSetImageInfoOnlyBuildExtraDockerfileCommands
 
 # report extra dockerfile commands used to build the final image
 -z|--report-final-extra-dockerfile-commands
 --
+contextSetImageInfoOnlyFinalExtraDockerfileCommands
 
 # specify the output format:
 # - shell: give a a list of pairs of the form VAR=VAL
 # - json: create a json object containing requested properties
 (-f|--format)=?
 shell|json
+contextSetImageInfoFormat
 
 # the image to observe
 .+
 --
+contextSetImageInfoImage
 EOI
   )"
 
@@ -487,25 +529,30 @@ EOI
 # this is the default behavior
 -a|--all-installed
 --
+contextSetImageUpgradeAll
 
 # ignore the date of dependencies of the observed image. Note that ignore date
 # in using the upgrade command will always inhibit the image rebuild.
 -d|--ignore-date
 --
+contextSetImageUpgradeIgnoreDate
 
 # does not report missing dependency
 -m|--ignore-missing
 --
+contextSetImageUpgradeIgnoreMissing
 
 # does not report a defect problem in a dependency image
 -i|--ignore-image-dist-defects
 --
+contextSetImageUpgradeIgnoreDependencyDefects
 
 # specify an image list instead of attempting to upgrade them all. list has the
 # form :
 # image1,image2...
 (-l|--image-list)=?
 [^,]+(,[^,]+)*
+contextSetImageUpgradeImageSequence
 EOI
   )"
 
@@ -515,17 +562,20 @@ EOI
 # images exist, nothing is built
 -r|--remove-existing-images
 --
+contextSetApplianceBuildRemoveExisting
 
 # When building an appliance, tag all existing service image using the
 # '+%Y%m%d%H%M%S' format usable with the date command. This is not the default
 # behavior as by default, if images exist, nothing is built
 -t|--tag-existing-images
 --
+contextSetApplianceBuildTagExisting
 
 # the appliance list to build. Has the form:
 # appliance1,appliance2...
 [^,]+(,[^,]+)?
 --
+contextSetApplianceBuildApplianceSequence
 EOI
   )"
 
@@ -533,26 +583,31 @@ EOI
 # list all appliances, built, not built, local and remote
 -a|--all
 --
+contextSetApplianceListAll
 
 # list only built appliances
 -b|--only-built
 --
+contextSetApplianceListOnlyBuilt
 
 # list only not built appliances
 -n|--only-not-built
 --
+contextSetApplianceListOnlyNotBuilt
 
 # list only local appliances that are not present on remote repository (new
 # appliances being created for instance)
 -l|--only-local
+contextSetApplianceListOnlyLocal
 
 # list only supported appliances that are present on the remote repository.
 -r|--only-remote
+contextSetApplianceListOnlyRemote
 
 # specify the output format:
 # - one-line outputs the result in one line, each appliance name being separated
 #   by a space character and formated as following:
-    appliance1:flags,appliance2:flags,...
+#   appliance1:flags,appliance2:flags,...
 #   flags being:
 #   - b for built
 #   - n for not built
@@ -564,6 +619,7 @@ EOI
 # - pretty outputs a very nice table (default)
 (-f|--format)=?
 one-line|pretty
+contextSetApplianceListFormat
 EOI
   )"
 
@@ -572,18 +628,21 @@ EOI
 # behavior)
 -a|--all-installed
 --
+contextSetApplianceCheckAll
 
 # when checking an appliance service image, a dependency collection is done for
 # each service image. If one or more dependencies are more up to date than the
 # service image, it is ignored and the service image will be considered ok
 -d|--ignore-date
 --
+contextSetApplianceCheckIgnoreDate
 
 # when checking an appliance service image, a dependency collection is done for
 # each service image. If one or more dependencies are missing on the docker host
 # it is ignored and the service image will be considered ok
 -m|--ignore-missing
 --
+contextSetApplianceCheckIgnoreMissing
 
 # when checking an appliance service image, a dependency collection is done for
 # each service image. If one or more dependencies have something wrong in their
@@ -591,11 +650,13 @@ EOI
 # (this is not recommended)
 -i|--ignore-image-dist-defects
 --
+contextSetApplianceCheckIgnoreDependencyDefects
 
 # explicit list of appliance to check. The list has the form:
 # appliance1,appliance2...
 (-l|--appliance-list)=?
 [^,]+(,[^,]+)*
+contextSetApplianceCheckApplianceList
 EOI
   )"
 
@@ -603,40 +664,50 @@ EOI
 # report all information properties of the appliance (default behavior)
 -a|--report-all
 --
+contextSetApplianceInfoAllProps
 
 # report only the base image used for the observed service image
 -b|--report-base-image
 --
+contextSetApplianceInfoOnlyBase
 
 # execute a docker-compose config on the appliance docker-compose.yml file
 -c|--report-config
 --
+contextSetApplianceInfoOnlyConfig
 
 # reports only dependent images required for the service being observed
 -r|--report-requires
 --
+contextSetApplianceInfoOnlyRequires
 
 # report only extra Dockerfile commands used in the observed service image
 -x|--report-extra-dockerfile-commands
 --
+contextSetApplianceInfoOnlyExtraDockerfileCommands
 
 # inspect all services of the appliance (default behavior)
 -s|--all-services
 --
+contextSetApplianceInfoAllServices
 
 # specify a list of service to observe. List has the form:
 # service1,service2...
 (-s|--service)=?
 [^,]+(,[^,])*
+contextSetApplianceInfoServiceSequence
 
 # output format of the report
 # shell is a list of pairs of the form key=value (default)
 # json output the result in a json object
 (-f|--format)=?
 shell|json
+contextSetApplianceInfoFormat
 
+# the appliance to get info from
 .+
 --
+contextSetApplianceInfoAppliance
 EOI
   )"
 
@@ -645,16 +716,19 @@ EOI
 # beforehand using default options. Default behavior
 -b|--build
 --
+contextSetApplianceStartBuild
 
 # do not attempt to build appliance service image if they are missing. If one
 # or more service images are missing this command will fail(not default behavior)
 -n|--dont-build
 --
+contextSetApplianceStartDontBuild
 
 # list of appliance to start. List has the form:
 # appliance1,appliance2...
 [^,]+(,[^,]+)*
 --
+contextSetApplianceStartApplianceSequence
 EOI
   )"
 
@@ -663,16 +737,19 @@ EOI
 # considered ephemeral by design so it is the default behavior
 -d|--rm
 --
+contextSetApplianceStopRemoveContainers
 
 # do not delete appliance container when stopping. This is not the default
 # behavior
 -k|--keep-containers
 --
+contextSetApplianceStopKeepContainers
 
 # list of appliance to stop. List has the form:
 # appliance1,appliance2...
 [^,]+(,[^,]+)*
 --
+contextSetApplianceStopApplianceSequence
 EOI
   )"
 
@@ -680,26 +757,32 @@ EOI
 # list the appliance volumes
 -l|--list
 --
+contextSetApplianceVolumesList
 
 # remove all the appliance volumes
 -r|--rm
 --
+contextSetApplianceVolumesRemove
 
 # dump specified volumes
 -d|--dump
 --
+contextSetApplianceVolumesDump
 
 # specify the dump file path (defaulted to current directory)
 -p|--dump-file-path
 .+
+contextSetApplianceVolumesDumpPath
 
 # specific list of volume. used with --rm and --dump options
 -v|--volume-list
 [^,]+(,[^,]+)*
+contextSetApplianceVolumesList
 
 # targeted appliance
 (-a|--appliance)=?
 .+
+contextSetApplianceVolumesAppliance
 EOI
   )"
 
@@ -707,6 +790,7 @@ EOI
 # scan all built appliances
 -a|--all-installed
 --
+contextSetApplianceUpgradeAll
 
 # when checking an appliance service image, a dependency collection is done for
 # each service image. If one or more dependencies are more up to date than the
@@ -714,12 +798,14 @@ EOI
 # date
 -d|--ignore-date
 --
+contextSetApplianceUpgradeIgnoreDate
 
 # when checking an appliance service image, a dependency collection is done for
 # each service image. If one or more dependencies are missing on the docker host
 # it is ignored and the service image will be considered up to date
 -m|--ignore-missing
 --
+contextSetApplianceUpgradeIgnoreMissing
 
 # when checking an appliance service image, a dependency collection is done for
 # each service image. If one or more dependencies have something wrong in their
@@ -727,11 +813,13 @@ EOI
 # date (this is not recommended)
 -i|--ignore-image-dist-defects
 --
+contextSetApplianceUpgradeIgnoreDependencyDefects
 
 # explicit list of appliance to check. The list has the form:
 # appliance1,appliance2...
 (-l|--appliance-list)=?
 [^,]+(,[^,]+)*
+contextSetApplianceUpgradeApplianceSequence
 EOI
   )"
 }
@@ -768,12 +856,12 @@ initializeExecutionContext() {
   GLOBAL_COMMAND_VAGRANT_OPTION_PATH='vagrant'
   GLOBAL_COMMAND_VAGRANT_OPTION_ARGUMENTS=
 
-  # carrier bootstrap
+  # bootstrap or image or appliance
   DOMAIN=
 
   DOMAIN_OPTIONS=
 
-  # carrier bootstrap run
+  # bootstrap run or image build or appliance stop for instance
   DOMAIN_COMMAND=
 
   DOMAIN_BOOTSTRAP_OPTIONS=
