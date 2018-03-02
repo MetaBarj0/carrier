@@ -1177,12 +1177,11 @@ buildExecutionContextFromArguments() {
   #     - if it did not work, fatal error, bad argument specification from the
   #       user
   #     - if it worked, restart with the next argument
-  local arg=
 
   # these two variable represent the key and the value part of an argument
-  local key=
-  local value=
+  local key= ; local value=
 
+  local arg=
   for arg in $@; do
     # tranform an arg of the form <key=value> into <key value>
     # the transformation result is used only if we are not in the middle of an
@@ -1230,8 +1229,7 @@ buildExecutionContextFromArguments() {
         fi
 
         # argument fully processed, next one if any remaining
-        key=
-        value=
+        key= ; value=
       fi
     fi
   done
