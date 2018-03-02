@@ -520,3 +520,10 @@ error() {
 fatal() {
   log 'fatal: '"$1" "$2"
 }
+
+# delete shell comment lines in argument
+deleteCommentLines() {
+  if [ ! -z "$1" ]; then
+    echo "$1" | sed -E '/^ *#/d'
+  fi
+}

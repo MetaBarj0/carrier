@@ -352,7 +352,7 @@ EOI
 #          vagrant is not found, the process fails.
 help|info|install|pack|unpack|vagrant
 --
-contextSetGlobalCommand
+contextSetCommand
 EOI
   )"
 
@@ -468,7 +468,7 @@ EOI
 # - run bootstrap the system
 check|run
 --
-contextSetDomainCommand
+contextSetCommand
 EOI
   )"
 
@@ -498,7 +498,7 @@ EOI
 # - upgrade can upgrade one or more image regarding their dependencies status
 build|list|check|info|upgrade
 --
-contextSetDomainCommand
+contextSetCommand
 EOI
   )"
 
@@ -733,7 +733,7 @@ EOI
 # - volumes can help the user to manage columes used by an appliance
 build|list|check|info|upgrade|start|stop|volumes
 --
-contextSetDomainCommand
+contextSetCommand
 EOI
   )"
 
@@ -1015,7 +1015,7 @@ initializeExecutionContext() {
   GLOBAL_OPTION_LOG_OUTPUT='&2'
 
   # carrier help
-  GLOBAL_COMMAND='help'
+  COMMAND='help'
 
   # carrier help -H
   GLOBAL_COMMAND_HELP_OPTION_MODE=
@@ -1042,11 +1042,10 @@ initializeExecutionContext() {
   # bootstrap or image or appliance
   DOMAIN=
 
+  # not used yet
   DOMAIN_OPTIONS=
 
-  # bootstrap run or image build or appliance stop for instance
-  DOMAIN_COMMAND=
-
+  # not used yet
   DOMAIN_BOOTSTRAP_OPTIONS=
   DOMAIN_IMAGE_OPTIONS=
   DOMAIN_APPLIANCE_OPTIONS=
@@ -1153,9 +1152,327 @@ initializeExecutionContext() {
   DOMAIN_APPLIANCE_COMMAND_UPGRADE_OPTION_APPLIANCE_SEQUENCE=
 }
 
+### utility function mutating the execution context provided with a referential
+### and a pair of key value
+tryMutateReferential() {
+  local referential="$1"
+  local key="$2";
+  local value="$3";
+
+  # each 'entry' in a referential is made of 3 lines
+  local key_pattern= ; local value_pattern= ; local mutator=
+
+  # iterating through the referential
+  for line in $referential; do
+    [ -z "$key_pattern" ] && key_pattern="$line" && continue \
+    || [ -z "$value_pattern" ] && value_pattern="$line" && continue \
+    || mutator="$line"
+
+    # test the provided key
+    if ! echo "$key" | grep -Ex "'$key_pattern'" 1> /dev/null; then
+      # the key do not match, test another entry in the referential
+      # resetting patterns and mutator for another turn
+      key_pattern= ; value_pattern= ; mutator=
+      continue
+    fi
+
+    # testing value if necessary, a '--' pattern indicating that the key has not
+    # value associated in the referential
+    if [ ! "$value_pattern" = '--' ]; then
+      if ! echo "$value" | grep -Ex "'$value_pattern'" 1> /dev/null; then
+        # the value do not match, test another entry in the referential
+        # resetting patterns and mutator for another turn
+        key_pattern= ; value_pattern= ; mutator=
+      continue
+      fi
+
+      # value matched the pattern, call the mutator with both key and value
+      "$mutator" "$key" "$value"
+      return $?
+    else
+      # no value needed for this referential entry, call the mutator passing
+      # only the key
+      "$mutator" "$key"
+      return $?
+    fi
+  done
+
+  # failed to modify the execution context for this referential. unless it is
+  # the most specialized referential (command options) it is not fatal as more
+  # specialized referential will be explored for mutation
+  return 1
+}
+
+### specialized mutator designed to mutate global options settings. Provided with
+### 2 arguments with at least one that must be non empty.
+tryMutateGlobalOptions() {
+  # key MUST be set
+  local key="$1";
+  local value="$2";
+
+  # clean referential, removing all comments
+  local referential="$(deleteCommentLines "$GLOBAL_OPTIONS_REFERENTIAL")"
+
+  tryMutateReferential "$referential" "$key" "$value"
+  return $?
+}
+
+### specialized mutator designed to mutate the domain. Provided with
+### 2 arguments with at least one that must be non empty.
+tryMutateDomain() {
+  # key MUST be set
+  local key="$1";
+  local value="$2";
+
+  # clean referential, removing all comments
+  local referential="$(deleteCommentLines "$DOMAINS_REFERENTIAL")"
+
+  tryMutateReferential "$referential" "$key" "$value"
+  return $?
+}
+
+### specialized mutator designed to mutate domain options settings. Provided
+### with 2 arguments with at least one that must be non empty.
+tryMutateDomainOptions() {
+  # there is not any domain option taht are supported so far
+  return 1
+}
+
+### specialized mutator designed to mutate global commands settings. Provided
+### with 2 arguments with at least one that must be non empty.
+tryMutateGlobalCommand() {
+  # key MUST be set
+  local key="$1";
+  local value="$2";
+
+  # clean referential, removing all comments
+  local referential="$(deleteCommentLines "$GLOBAL_COMMANDS_REFERENTIAL")"
+
+  tryMutateReferential "$referential" "$key" "$value"
+  return $?
+}
+
+### attempt to mutate a domain command. Test all domains command in chain. if
+### all fail, it means the key and value are not domain commands
+tryMutateDomainCommand() {
+  # key MUST be set
+  local key="$1";
+  local value="$2";
+
+  # clean referentials, removing all comments
+  local bootstrap_referential="$(
+    deleteCommentLines "$DOMAIN_BOOTSTRAP_COMMANDS_REFERENTIAL"
+  )"
+
+  local image_referential="$(
+    deleteCommentLines "$DOMAIN_IMAGE_COMMANDS_REFERENTIAL"
+  )"
+
+  local appliance_referential="$(
+    deleteCommentLines "$DOMAIN_APPLIANCE_COMMANDS_REFERENTIAL"
+  )"
+
+  tryMutateReferential "$bootstrap_referential" "$key" "$value" \
+  || tryMutateReferential "$image_referential" "$key" "$value" \
+  || tryMutateReferential "$appliance_referential" "$key" "$value" \
+  || return 1
+
+  # allright, mutation occured
+  return 0
+}
+
+### attempt to modify the execution context related to options of global
+### commands.
+tryMutateGlobalCommandOptions() {
+  # key MUST be set
+  local key="$1";
+  local value="$2";
+
+  # clean referentials, removing all comments
+  local help_referential="$(
+    deleteCommentLines "$GLOBAL_COMMAND_HELP_OPTIONS_REFERENTIAL"
+  )"
+
+  local info_referential="$(
+    deleteCommentLines "$GLOBAL_COMMAND_INFO_OPTIONS_REFERENTIAL"
+  )"
+
+  local install_referential="$(
+    deleteCommentLines "$GLOBAL_COMMAND_INSTALL_OPTIONS_REFERENTIAL"
+  )"
+
+  local pack_referential="$(
+    deleteCommentLines "$GLOBAL_COMMAND_PACK_OPTIONS_REFERENTIAL"
+  )"
+
+  local unpack_referential="$(
+    deleteCommentLines "$GLOBAL_COMMAND_UNPACK_OPTIONS_REFERENTIAL"
+  )"
+
+  local vagrant_referential="$(
+    deleteCommentLines "$GLOBAL_COMMAND_VAGRANT_OPTIONS_REFERENTIAL"
+  )"
+
+  # chaining mutation attempt, if all fail, argument were not about global
+  # command options
+  tryMutateReferential "$help_referential" "$key" "$value" \
+  || tryMutateReferential "$info_referential" "$key" "$value" \
+  || tryMutateReferential "$install_referential" "$key" "$value" \
+  || tryMutateReferential "$pack_referential" "$key" "$value" \
+  || tryMutateReferential "$unpack_referential" "$key" "$value" \
+  || tryMutateReferential "$vagrant_referential" "$key" "$value" \
+  || return 1
+
+  # allright, mutation occured
+  return 0
+}
+
+tryMutateDomainCommandOptions() {
+  # key MUST be set
+  local key="$1";
+  local value="$2";
+
+  # clean referentials, removing all comments
+  local bootstrap_check_referential="$(
+    deleteCommentLines "$DOMAIN_BOOTSTRAP_COMMAND_CHECK_OPTIONS_REFERENTIAL"
+  )"
+
+  local bootstrap_run_referential="$(
+    deleteCommentLines "$DOMAIN_BOOTSTRAP_COMMAND_RUN_OPTIONS_REFERENTIAL"
+  )"
+
+  local image_build_referential="$(
+    deleteCommentLines "$DOMAIN_IMAGE_COMMAND_BUILD_OPTIONS_REFERENTIAL"
+  )"
+
+  local image_list_referential="$(
+    deleteCommentLines "$DOMAIN_IMAGE_COMMAND_LIST_OPTIONS_REFERENTIAL"
+  )"
+
+  local image_check_referential="$(
+    deleteCommentLines "$DOMAIN_IMAGE_COMMAND_CHECK_OPTIONS_REFERENTIAL"
+  )"
+
+  local image_info_referential="$(
+    deleteCommentLines "$DOMAIN_IMAGE_COMMAND_INFO_OPTIONS_REFERENTIAL"
+  )"
+
+  local image_upgrade_referential="$(
+    deleteCommentLines "$DOMAIN_IMAGE_COMMAND_UPGRADE_OPTIONS_REFERENTIAL"
+  )"
+
+  local appliance_build_referential="$(
+    deleteCommentLines "$DOMAIN_APPLIANCE_COMMAND_BUILD_OPTIONS_REFERENTIAL"
+  )"
+
+  local appliance_list_referential="$(
+    deleteCommentLines "$DOMAIN_APPLIANCE_COMMAND_LIST_OPTIONS_REFERENTIAL"
+  )"
+
+  local appliance_check_referential="$(
+    deleteCommentLines "$DOMAIN_APPLIANCE_COMMAND_CHECK_OPTIONS_REFERENTIAL"
+  )"
+
+  local appliance_info_referential="$(
+    deleteCommentLines "$DOMAIN_APPLIANCE_COMMAND_INFO_OPTIONS_REFERENTIAL"
+  )"
+
+  local appliance_upgrade_referential="$(
+    deleteCommentLines "$DOMAIN_APPLIANCE_COMMAND_UPGRADE_OPTIONS_REFERENTIAL"
+  )"
+
+  local appliance_start_referential="$(
+    deleteCommentLines "$DOMAIN_APPLIANCE_COMMAND_START_OPTIONS_REFERENTIAL"
+  )"
+
+  local appliance_stop_referential="$(
+    deleteCommentLines "$DOMAIN_APPLIANCE_COMMAND_STOP_OPTIONS_REFERENTIAL"
+  )"
+
+  local appliance_volumes_referential="$(
+    deleteCommentLines "$DOMAIN_APPLIANCE_COMMAND_VOLUMES_OPTIONS_REFERENTIAL"
+  )"
+
+  tryMutateReferential "$bootstrap_check_referential" "$key" "$value" \
+  || tryMutateReferential "$bootstrap_run_referential" "$key" "$value" \
+  || tryMutateReferential "$image_build_referential" "$key" "$value" \
+  || tryMutateReferential "$image_list_referential" "$key" "$value" \
+  || tryMutateReferential "$image_check_referential" "$key" "$value" \
+  || tryMutateReferential "$image_info_referential" "$key" "$value" \
+  || tryMutateReferential "$image_upgrade_referential" "$key" "$value" \
+  || tryMutateReferential "$appliance_build_referential" "$key" "$value" \
+  || tryMutateReferential "$appliance_list_referential" "$key" "$value" \
+  || tryMutateReferential "$appliance_check_referential" "$key" "$value" \
+  || tryMutateReferential "$appliance_info_referential" "$key" "$value" \
+  || tryMutateReferential "$appliance_upgrade_referential" "$key" "$value" \
+  || tryMutateReferential "$appliance_start_referential" "$key" "$value" \
+  || tryMutateReferential "$appliance_stop_referential" "$key" "$value" \
+  || tryMutateReferential "$appliance_volumes_referential" "$key" "$value" \
+  || return 1
+
+  # allright, mutation occured
+  return 0
+}
+
 ### mutates the execution context with a key and a value as arguments
 mutateExecutionContext() {
-  :
+  local key="$1"
+  local value="$2"
+
+  # contextual mutation of the execution environment
+  # - modification of global option is context free
+  # - modification of the domain is ok only if not already set
+  # - modification of domain option ok if domain is set
+  # - modification of the command ok if not already set and depends if domain is
+  #   set or not => global command or domain command
+  # - command options modification can only take place after a command is set
+  # as a result, a pair <key value> is used to mutate in order :
+  # - global options                                   | more     ^ less
+  # - domain                                           | specific | specific
+  # - domain options                                   |          |
+  # - global command or domain command                 |          |
+  # - global command options or domain command options V          |
+  #
+  # Moreover, mutating global command and domain command are mutually exclusive
+  # based on the domain set
+  # same thing about global command option and domain command option, makes
+  # sense.
+  # general logic is following. The deeper you go the more specific you get:
+  #
+  # try mutate global option
+  # `-> success => return 0
+  # `-> failure ->
+  #     try mutate domain
+  #     `-> success => return 0
+  #     `-> failure ->
+  #         `-> try mutate domain option
+  #             `-> success => return 0
+  #             `-> failure ->
+  #                 try mutate global command
+  #                 `-> success => return 0
+  #                 `-> failure ->
+  #                     `-> try mutate domain command
+  #                         `-> success => return 0
+  #                         `-> failure ->
+  #                             `-> try mutate global command options
+  #                                 `-> success => return 0
+  #                                 `-> failure ->
+  #                                     try mutate domain command options
+  #                                     `-> success => return 0
+  #                                     `-> failure => return 1
+
+  # chaining mutators by specificity order
+  tryMutateGlobalOptions "$key" "$value" \
+  || tryMutateDomain "$key" "$value" \
+  || tryMutateDomainOptions "$key" "$value" \
+  || tryMutateGlobalCommand "$key" "$value" \
+  || tryMutateDomainCommand "$key" "$value" \
+  || tryMutateGlobalCommandOptions "$key" "$value" \
+  || tryMutateDomainCommandOptions \
+  || return 1
+
+  # mutation succeeded!
+  return 0
 }
 
 ### build the final execution context regarding provided arguments
@@ -1187,7 +1504,7 @@ buildExecutionContextFromArguments() {
     # the transformation result is used only if we are not in the middle of an
     # argument scanning (collected the key bu the value collect is in progress)
     local transformed_pair="$(
-      echo "$arg"
+      echo "$arg" \
       | sed 's/=/ /'
     )"
 
@@ -1215,7 +1532,7 @@ buildExecutionContextFromArguments() {
 
         # mutation failed, key is kept and the next argument is scanned for the
         # value
-        if [ ! $? ];then
+        if [ ! $? -eq 0 ];then
           key="$arg"
           continue
         fi
@@ -1224,7 +1541,7 @@ buildExecutionContextFromArguments() {
         mutateExecutionContext "$key" "$value"
 
         # if failed, error at the user side, exiting
-        if [ ! $? ]; then
+        if [ ! $? -eq 0 ]; then
           exit 1
         fi
 
