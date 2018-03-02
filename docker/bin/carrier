@@ -1149,6 +1149,11 @@ initializeExecutionContext() {
   DOMAIN_APPLIANCE_COMMAND_UPGRADE_OPTION_APPLIANCE_SEQUENCE=
 }
 
+### build the final execution context regarding provided arguments
+buildExecutionContextFromArguments() {
+  :
+}
+
 ### parses all arguments
 function parseArguments() {
   # argument are positional. First come global options, then, if any, domain
@@ -1163,8 +1168,11 @@ function parseArguments() {
   # parse provided argument and use referentials to extract the execution
   # context. It will dictate how the carrier script will behave, which domain,
   # command and options to take into account.
-  initializeExecutionContext "$@"
+  initializeExecutionContext
+
+  # once initialization is done, overwrite values in variables regarding
+  # provided arguments
+  buildExecutionContextFromArguments "$@"
 }
 
 parseArguments "$@"
-usageFull
