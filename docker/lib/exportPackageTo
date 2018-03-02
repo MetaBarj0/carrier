@@ -16,7 +16,7 @@ mkdir -p "$package_directory"
 IFS=$'\n' \
 eval 'tar --no-recursion \
           -cf "$package_directory"/"$package_file_name" \
-	  $(cat /image.dist)'
+     $(cat /image.dist)'
 
 if [ ! $? -eq 0 ]; then
   echo 'Error while creating package...exiting...'

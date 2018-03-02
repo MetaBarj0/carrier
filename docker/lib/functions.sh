@@ -4,19 +4,6 @@ getThreadCount() {
   echo $(cat /proc/cpuinfo | grep processor | wc -l)
 }
 
-# output the first argument on the stderr
-error() {
-  # output 'error' if there is no argument provided
-  local msg=
-  if [ -z "$1" ]; then
-    msg='error'
-  else
-    msg="$1"
-  fi
-
-  echo "$msg" 1>&2
-}
-
 # wait an user input to put in a variable and echo this variable. If no
 # input is made by the user before an end-of-line character, the provided
 # default value is used. This function explicitely fails if no default value is
@@ -480,4 +467,56 @@ EOI
   done
 
   echo "$map"
+}
+
+setValueWithDefault() {
+  if [ -z "$2" ]; then
+    error 'No default value specified...exiting...'
+    return 1
+  fi
+
+  local value="$1"
+  if [ -z "$value" ]; then
+    value="$2"
+  fi
+
+  echo "$value"
+}
+
+# internal log function
+log() {
+  local msg="$(setValueWithDefault "$1" 'missing message')"
+  local dest="$(setValueWithDefault "$2" '&2')"
+
+  eval 'echo '"$msg"' 1>'"$dest"
+}
+
+# logging function, designed to trace
+trace() {
+  log 'trace: '"$1" "$2"
+}
+
+# logging function, designed to debug
+debug() {
+  log 'debug: '"$1" "$2"
+}
+
+# logging function, designed to info
+info() {
+  log 'info: '"$1" "$2"
+}
+
+# logging function, designed to warning
+warning() {
+  log 'warning: '"$1" "$2"
+}
+
+# logging function, designed to error
+error() {
+  log 'error: '"$1" "$2"
+}
+
+# logging function, designed to fatal
+fatal() {
+  log 'fatal: '"$1" "$2"
 }

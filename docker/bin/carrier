@@ -1,1 +1,739 @@
 #!/bin/sh
+
+#### standalone mode, external utility functins not loaded yet #################
+set -e
+
+### set up paths after calling this script
+initializePaths() {
+  # get the full path of the called script
+  cd $(dirname "$0")
+  CALLED_SCRIPT="$(pwd -P)"/"$(basename "$0")"
+  cd - 1>/dev/null 2>&1
+
+  # if it is a symlink, resolve it, keeping the link path
+  if [ -L "$CALLED_SCRIPT" ]; then
+    INSTALLED_LINK_PATH="$CALLED_SCRIPT"
+    CARRIER_SCRIPT_PATH="$(readlink -f "$CALLED_SCRIPT")"
+  else
+    CARRIER_SCRIPT_PATH="$CALLED_SCRIPT"
+  fi
+
+  # if the carrier script has been renammed, not supported => error
+  if [ ! "$(basename "$CARRIER_SCRIPT_PATH")" = 'carrier' ]; then
+    echo '`carrier` script has been renammed, not supported...exiting' 1>&2
+    return 1
+  fi
+
+  # this directory exists and its path is absolute, verifying its name though
+  CARRIER_BIN_DIR="$(dirname "$CARRIER_SCRIPT_PATH")"
+
+  if [ ! "$(basename "$CARRIER_BIN_DIR")" = 'bin' ]; then
+    cat << EOI 1>&2
+The \`carrier\` script must reside in the \`bin/\` directory.
+Not supported...exiting...
+EOI
+  return 1
+  fi
+
+  # set up each carrier directories and verify them
+  local relative_carrier_root_dir="$CARRIER_BIN_DIR"/..
+  local relative_carrier_lib_dir="$relative_carrier_root_dir"/lib
+  local relative_carrier_share_dir="$relative_carrier_root_dir"/share
+  local relative_carrier_share_bootstrap_dir=\
+"$relative_carrier_share_dir"/bootstrap
+  local relative_carrier_share_images_dir="$relative_carrier_share_dir"/images
+  local relative_carrier_share_appliances_dir=\
+"$relative_carrier_share_dir"/appliances
+  local relative_carrier_src_dir="$relative_carrier_root_dir"/src
+
+  if [ ! -d "$relative_carrier_lib_dir" ]; then
+    cat << EOI 1>&2
+Fatal: $relative_carrier_lib_dir does not exist. Your \`carrier\` package seems
+broken or corrupted. Not supported...exiting...
+EOI
+  return 1
+  fi
+
+  if [ ! -d "$relative_carrier_share_dir" ]; then
+    cat << EOI 1>&2
+Fatal: $relative_carrier_share_dir does not exist. Your \`carrier\` package
+seems broken or corrupted. Not supported...exiting...
+EOI
+  return 1
+  fi
+
+  if [ ! -d "$relative_carrier_share_bootstrap_dir" ]; then
+    cat << EOI 1>&2
+Fatal: $relative_carrier_share_bootstrap_dir does not exist. Your \`carrier\`
+package seems broken or corrupted. Not supported...exiting...
+EOI
+  return 1
+  fi
+
+  if [ ! -d "$relative_carrier_share_images_dir" ]; then
+    cat << EOI 1>&2
+Fatal: $relative_carrier_share_images_dir does not exist. Your \`carrier\`
+package seems broken or corrupted. Not supported...exiting...
+EOI
+  return 1
+  fi
+
+  if [ ! -d "$relative_carrier_share_appliances_dir" ]; then
+    cat << EOI 1>&2
+Fatal: $relative_carrier_share_appliances_dir does not exist. Your \`carrier\`
+package seems broken or corrupted. Not supported...exiting...
+EOI
+  return 1
+  fi
+
+  if [ ! -d "$relative_carrier_src_dir" ]; then
+    cat << EOI 1>&2
+Fatal: $relative_carrier_src_dir does not exist. Your \`carrier\` package seems
+broken or corrupted. Not supported...exiting...
+EOI
+  return 1
+  fi
+
+  cd $relative_carrier_root_dir
+  CARRIER_ROOT_DIR="$(pwd -P)"
+  cd - 1>/dev/null 2>&1
+
+  CARRIER_LIB_DIR="$CARRIER_ROOT_DIR"/lib
+  CARRIER_SHARE_DIR="$CARRIER_ROOT_DIR"/share
+  CARRIER_SHARE_BOOTSTRAP_DIR="$CARRIER_SHARE_DIR"/bootstrap
+  CARRIER_SHARE_IMAGES_DIR="$CARRIER_SHARE_DIR"/images
+  CARRIER_SHARE_APPLIANCES_DIR="$CARRIER_SHARE_DIR"/appliances
+  CARRIER_SRC_DIR="$CARRIER_ROOT_DIR"/src
+}
+
+### load utilities located in $CARRIER_LIB_DIR/functions.sh
+loadUtilities() {
+  local functions_sh_path="$CARRIER_LIB_DIR"/functions.sh
+
+  if [ ! -f "$functions_sh_path" ]; then
+    cat << EOI 1>&2
+Fatal: $CARRIER_LIB_DIR/functions.sh does not exist. Your \`carrier\` package
+seems broken or corrupted. not supported...existing...
+EOI
+    return 1
+  fi
+
+  # source stuff!
+  . "$functions_sh_path"
+}
+
+initializePaths
+loadUtilities
+
+# log function wired, fail on error is not necessary anymore
+set +e
+#### end of standalone mode, external utility functins loaded ##################
+
+### basic usage function, shows syntax, how to use, purpose and so on...
+usage() {
+  cat << EOI
+Usage:
+  carrier [global options] \\
+          [[domain] [domain options] command [command options]] | \\
+          command [command options]
+
+Use:
+
+  carrier help --full to get a full usage description
+EOI
+}
+
+### Get a full help on usage
+usageFull() {
+  :
+}
+
+### built the argument referential, sort of description and constraints about
+### each valid argument.
+### each line of a variable definition define a pattern one arg can match at a
+### time.
+### 2 consecutive lines denote a key-value pair for argument necessitating a
+### value.
+### An 'empty pattern' (--) on the 2nd line denotes that the argument does not
+### wait for a value
+buildArgumentsReferential() {
+  GLOBAL_OPTIONS_REFERENTIAL="$(cat << EOI
+# desired log level. Defaulted to '2' or 'error'.
+# i.e. carrier info --log-level=error
+#      carrier info -l 2
+(-l|--log-level)=?
+1|2|3|4|5|6|fatal|error|warning|info|debug|trace
+
+# desired output for logs. Defaulted to '&2' that is stderr
+# i.e. carrier info --log-output=error.log
+#      carrier info -o '&2'
+(-o|--log-output)=?
+.+
+EOI
+  )"
+
+  GLOBAL_COMMANDS_REFERENTIAL="$(cat << EOI
+# domainless commands. only valid when not any domain is specified.
+#
+# help: provides help about carrier usage
+#       i.e. carrier help
+#
+# info: Provides general information about carrier
+#       i.e. carrier info
+#
+# install: Install carrier to the specified location. Installation is a simple
+#          process consisting in creating a symbolic link to the specified
+#          location. If carrier is already installed somewhere or a symlink exist
+#          with the specified name, the process fails by default.
+#          Note: If a file (not a symlink) exists at the specified location the
+#          process will always fails even if forced.
+#          If a symlink exists and points on something existing other than a
+#          carrier installation, the process will always fails to preserve
+#          system integrity.
+#
+# pack: Packs carrier into a single executable file, easying its transportation
+#       and allowing it to be used on network-isolated systems (using specific
+#       command options). By default, all the directory architecture of carrier
+#       is packed, including necessary resources to bootstrap your system. Thus,
+#       an internet connection is required to pack carrier.
+#       Moreover, user file ~/.carrier will also be included. The resulting file
+#       will be a shell script containing shell code and base64 encoded tar
+#       archive. As a result, modern tar and base64 implementations are
+#       necessary to use the pack command efficiently
+#       i.e. carrier pack
+#
+# unpack: unpack a packed version of carrier, creating the original directory
+#         structure of carrier. If you downloaded image sources in the packed
+#         carrier, you can choose to keep them (this is not the default behavior
+#         though). The .carrier file is extracted to the user directory.
+#
+# vagrant: manipulate the vagrant environment of carrier. Each command and
+#          option you specify are directly forwarded to the vagrant program. If
+#          vagrant is not found, the process fails.
+help|info|install|pack|unpack|vagrant
+--
+EOI
+  )"
+
+  GLOBAL_COMMAND_HELP_OPTIONS_REFERENTIAL="$(cat << EOI
+# options for the domainless help command. Turn on exhaustive help
+# i.e. carrier help -H
+#      carrier help --full
+-H|--full
+--
+EOI
+  )"
+
+  GLOBAL_COMMAND_INFO_OPTIONS_REFERENTIAL="$(cat << EOI
+# no options so far
+EOI
+  )"
+
+  GLOBAL_COMMAND_INSTALL_OPTIONS_REFERENTIAL="$(cat << EOI
+# Force the installation of carrier to the path specified even if a previous
+# installation has been detected. If a reinstallation occurs, remove the
+# previous one. Even if this flag is set, installation may fail if destination
+# already exists and does not correspond to a previous carrier installation
+-f|--force
+--
+
+# If reinstallation occurs, keep the existing one.
+# i.e carrier install --force --keep-previous-installation
+-k|--keep-previous-installation
+--
+EOI
+  )"
+
+  GLOBAL_COMMAND_PACK_OPTIONS_REFERENTIAL="$(cat << EOI
+# While packing, fetch all supported image sources from the internet and embbed
+# them in the package. Beware as the package could grow arbitrarily large. Using
+# this option is interesting if you want to use carrier on a network isolated
+# system. This is not the default behavior of packing.
+# i.e carrier pack --fetch-all-images-sources
+-s|--fetch-all-images-sources
+--
+
+# Instead of packing carrier, only fetch sources of images. This option can be
+# specified with -s and -i. This is not the default behavior of packing.
+-o|--only-fetch-sources
+--
+
+# While packing, fetch sources of specified images only. Sources of unspecified
+# images will not be fetched, leading to a less heavy package but forcing one to
+# grab source from the internet if an attempt to build an image that does not
+# have its source stored locally is made. This is not the default behavior of
+# packing.
+# i.e carrier pack -i metabarj0/wget,metabarj0/llvm
+(-i|--fetch-images-sources)=?
+[^,]+(,[^,]+)*
+EOI
+  )"
+
+  GLOBAL_COMMAND_UNPACK_OPTIONS_REFERENTIAL="$(cat << EOI
+# While unpaking, do not delete fetch sources. This is not the default behavior
+-k|--keep-sources-if-any
+--
+EOI
+  )"
+
+  GLOBAL_COMMAND_VAGRANT_OPTIONS_REFERENTIAL="$(cat << EOI
+# Specify where to find the vagrant program. Defaulted to vagrant, therefore,
+# vagrant is supposed to be found in the PATH environment variable.
+(-p|--vagrant-path)=?
+.+
+
+# commands/arguments/options to forward to the vagrant program. Must be enclosed
+# by quotes to be parsed as a single argument in the carrier point of view.
+'.+'
+--
+EOI
+  )"
+
+  DOMAINS_REFERENTIAL="$(cat << EOI
+# specific domain of application for carrier. A domain is the highest level
+# context carrier acts on.
+#
+# bootstrap: the bootstrap context can be used with bootstrap specific commands
+#            and options. Allows one to deal with all the bootstrapping stuff.
+#
+# image: the image context is related to docker image manipulation and provides
+#        image specific commands and options.
+#
+# appliance: the appliance domain deals with appliance manipulation and provides
+#            appliance specific commands and options.
+bootstrap|image|appliance
+--
+EOI
+  )"
+
+  DOMAIN_BOOTSTRAP_COMMAND_CHECK_OPTIONS_REFERENTIAL="$(cat << EOI
+# no options yet
+EOI
+  )"
+
+  DOMAIN_BOOTSTRAP_COMMAND_RUN_OPTIONS_REFERENTIAL="$(cat << EOI
+# specifying this option for a bootstrap run command allows to keep existing
+# images produced by a previous bootstrap run. Images will be tagged with the
+# current data and time using the '+%Y%m%d%H%M%S' format usable with the date
+# command.
+-b|--retag-existing-images
+--
+EOI
+  )"
+
+  DOMAIN_IMAGE_COMMAND_BUILD_OPTIONS_REFERENTIAL="$(cat << EOI
+# specifying this option while building an image prevent the system to tag a
+# previous version existing on the docker host. As a result, if a previous
+# version of the image being built were present; it is deleted instead of being
+# retagged. This is ot the default behavior.
+-r|--remove-existing-images
+--
+
+# sequence (or unique) image to be built. The sequence can be made of :
+# - image name (the directory name containing image files)
+# - relative path of the image manifest file
+# - absolute path of the image manifest file
+# - a mix of all three
+[^,]+(,[^,]+)?
+--
+EOI
+  )"
+
+  DOMAIN_IMAGE_COMMAND_LIST_OPTIONS_REFERENTIAL="$(cat << EOI
+# list all images, built, not built, local and remote
+-a|--all
+--
+
+# list only built images
+-b|--only-built
+--
+
+# list only not built images
+-n|--only-not-built
+--
+
+# list only local images that are not present on remote repository (new images
+# being created for instance)
+-l|--only-local
+
+# list only supported images that are present on the remote repository.
+-r|--only-remote
+
+# specify the output format:
+# - one-line outputs the result in one line, each image name being separated by
+#   a space character and formated as following:
+#   image1:flags,image2:flags,...
+#   flags being:
+#   - b for built
+#   - n for not built
+#   - l for local
+#   - r for remote
+# Note that local and remote are not exclusive though it is unlikely to have an
+# image flagged as remote that is not present on your local system (unless you
+# deliberatly removed it)
+# - pretty outputs a very nice table (default)
+# - docker relies on the docker client to output the result. You can specify
+# docker specific format information appending
+# \`:'docker format args for docker images'\`
+# The docker format works only for built images
+(-f|--format)=?
+one-line|pretty|docker(:'.*')?
+EOI
+  )"
+
+  DOMAIN_IMAGE_COMMAND_CHECK_OPTIONS_REFERENTIAL="$(cat << EOI
+# checks all built image by checking their dependencies integrity. If an image
+# name is output, it means that something is wrong with the dependency chain.
+# Image name is output if:
+# - a dependency is newer than the image, meaning the image may need to be
+#   rebuilt
+# - a dependency is missing meaning the image may not be up to date
+# - the /image.dist file of the image is missing or corrupted, meaning something
+#   went wrong when image has been built.
+# checking all images is the default behavior
+-a|--all-installed
+--
+
+# ignore the build date of dependecies when checking images
+-d|--ignore-date
+--
+
+# ignore if dependency is missing on the docker host when checking images
+-m|--ignore-missing
+--
+
+# ignore detected defect in image checking (not recommended)
+-i|--ignore-image-dist-defects
+--
+
+# format the output if something is found:
+# - list gives a list of the form:
+#   image:issue1,issue2...
+# - pretty ouput a nice table (default)
+(-f|--format)=?
+list|pretty
+
+# explicit image list to cheack instead of all
+(-l|--image-list)=?
+[^,]+(,[^,]+)*
+EOI
+  )"
+
+  DOMAIN_IMAGE_INFO_COMMAND_OPTIONS_REFERENTIAL="$(cat << EOI
+# report all properties of requested image
+-a|--report-all
+--
+
+# only report the image.dist content
+-i|--report-image-content
+--
+
+# only report the docker image name provided
+-p|--report-provides
+--
+
+# only report dependency image names
+-r|--report-requires
+--
+
+# report the name of the base image
+-b|--report-base-image
+--
+
+# report the name of the image used to fetch sources
+-d|--report-sources-fetch-image
+--
+
+# report the command used to fetch sources
+-s|--report-sources-fetch-command
+--
+
+# report the name of the sources tarball
+-c|--report-sources-tarball-name
+--
+
+# report extra dockerfile commands appended to the generated Dockerfile for the
+# image building process
+-x|--report-build-extra-dockerfile-commands
+--
+
+# report extra dockerfile commands used to build the final image
+-z|--report-final-extra-dockerfile-commands
+--
+
+# specify the output format:
+# - shell: give a a list of pairs of the form VAR=VAL
+# - json: create a json object containing requested properties
+(-f|--format)=?
+shell|json
+
+# the image to observe
+.+
+--
+EOI
+  )"
+
+  DOMAIN_IMAGE_UPGRADE_COMMAND_OPTIONS_REFERENTIAL="$(cat << EOI
+# attempt an upgrade of all built images by checking their dependencies
+# integrity and status. If one or more dependencies have a problem or is newer
+# than the observed image, both actions are taken:
+# - dependencies is corrupted: report the issue and does nothing else
+# - a dependency is newer than the image : the observed image is rebuilt
+# - a dependency is missing : report and does nothing else
+# this is the default behavior
+-a|--all-installed
+--
+
+# ignore the date of dependencies of the observed image. Note that ignore date
+# in using the upgrade command will always inhibit the image rebuild.
+-d|--ignore-date
+--
+
+# does not report missing dependency
+-m|--ignore-missing
+--
+
+# does not report a defect problem in a dependency image
+-i|--ignore-image-dist-defects
+--
+
+# specify an image list instead of attempting to upgrade them all. list has the
+# form :
+# image1,image2...
+(-l|--image-list)=?
+[^,]+(,[^,]+)*
+EOI
+  )"
+
+  DOMAIN_APPLIANCE_BUILD_COMMAND_OPTIONS_REFERENTIAL="$(cat << EOI
+# When building an appliance, remove all appliance service images that already
+# exist on the docker host. This is not the default behavior as by default, if
+# images exist, nothing is built
+-r|--remove-existing-images
+--
+
+# When building an appliance, tag all existing service image using the
+# '+%Y%m%d%H%M%S' format usable with the date command. This is not the default
+# behavior as by default, if images exist, nothing is built
+-t|--tag-existing-images
+--
+
+# the appliance list to build. Has the form:
+# appliance1,appliance2...
+[^,]+(,[^,]+)?
+--
+EOI
+  )"
+
+  DOMAIN_APPLIANCE_LIST_COMMAND_OPTIONS_REFERENTIAL="$(cat << EOI
+# list all appliances, built, not built, local and remote
+-a|--all
+--
+
+# list only built appliances
+-b|--only-built
+--
+
+# list only not built appliances
+-n|--only-not-built
+--
+
+# list only local appliances that are not present on remote repository (new
+# appliances being created for instance)
+-l|--only-local
+
+# list only supported appliances that are present on the remote repository.
+-r|--only-remote
+
+# specify the output format:
+# - one-line outputs the result in one line, each appliance name being separated
+#   by a space character and formated as following:
+    appliance1:flags,appliance2:flags,...
+#   flags being:
+#   - b for built
+#   - n for not built
+#   - l for local
+#   - r for remote
+# Note that local and remote are not exclusive though it is unlikely to have an
+# appliance flagged as remote that is not present on your local system (unless you
+# deliberatly removed it)
+# - pretty outputs a very nice table (default)
+(-f|--format)=?
+one-line|pretty
+EOI
+  )"
+
+  DOMAIN_APPLIANCE_CHECK_COMMAND_OPTIONS_REFERENTIAL="$(cat << EOI
+# verify all built appliances by checking each of its service image. (default
+# behavior)
+-a|--all-installed
+--
+
+# when checking an appliance service image, a dependency collection is done for
+# each service image. If one or more dependencies are more up to date than the
+# service image, it is ignored and the service image will be considered ok
+-d|--ignore-date
+--
+
+# when checking an appliance service image, a dependency collection is done for
+# each service image. If one or more dependencies are missing on the docker host
+# it is ignored and the service image will be considered ok
+-m|--ignore-missing
+--
+
+# when checking an appliance service image, a dependency collection is done for
+# each service image. If one or more dependencies have something wrong in their
+# image.dist file, it is ignored and the service image will be considered ok
+# (this is not recommended)
+-i|--ignore-image-dist-defects
+--
+
+# explicit list of appliance to check. The list has the form:
+# appliance1,appliance2...
+(-l|--appliance-list)=?
+[^,]+(,[^,]+)*
+EOI
+  )"
+
+  DOMAIN_APPLIANCE_INFO_COMMAND_OPTIONS_REFERENTIAL="$(cat << EOI
+# report all information properties of the appliance (default behavior)
+-a|--report-all
+--
+
+# report only the base image used for the observed service image
+-b|--report-base-image
+--
+
+# execute a docker-compose config on the appliance docker-compose.yml file
+-c|--config
+--
+
+# reports only dependent images required for the service being observed
+-r|--report-requires
+--
+
+# report only extra Dockerfile commands used in the observed service image
+-x|--report-extra-dockerfile-commands
+--
+
+# inspect all services of the appliance (default behavior)
+-s|--all-services
+--
+
+# specify a list of service to observe. List has the form:
+# service1,service2...
+(-s|--service)=?
+[^,]+(,[^,])*
+
+# output format of the report
+# shell is a list of pairs of the form key=value (default)
+# json output the result in a json object
+(-f|--format)=?
+shell|json
+
+.+
+--
+EOI
+  )"
+
+  DOMAIN_APPLIANCE_START_COMMAND_OPTIONS_REFERENTIAL="$(cat << EOI
+# if appliances requested to start does not exist, attempt to build it
+# beforehand using default options
+-b|--build
+--
+
+# list of appliance to start. List has the form:
+# appliance1,appliance2...
+[^,]+(,[^,]+)*
+--
+EOI
+  )"
+
+  DOMAIN_APPLIANCE_STOP_COMMAND_OPTIONS_REFERENTIAL="$(cat << EOI
+# when stopping an appliance, also remove created containers. Containers are
+# considered ephemeral by design so it is the default behavior
+-d|--rm
+--
+
+# list of appliance to stop. List has the form:
+# appliance1,appliance2...
+[^,]+(,[^,]+)*
+--
+EOI
+  )"
+
+  DOMAIN_APPLIANCE_VOLUMES_COMMAND_OPTIONS_REFERENTIAL="$(cat << EOI
+-v|--volume-list
+[^,]+(,[^,]+)*
+
+# list the appliance volumes
+-l|--list
+--
+
+# remove all the appliance volumes
+-r|--rm
+--
+
+# specify the dump file path
+-d|--dump-file-path
+.+
+
+# targeted appliance
+(-a|--appliance)=?
+.+
+EOI
+  )"
+
+  DOMAIN_APPLIANCE_UPGRADE_COMMAND_OPTIONS_REFERENTIAL="$(cat << EOI
+# scan all built appliances
+-a|--all-installed
+--
+
+# when checking an appliance service image, a dependency collection is done for
+# each service image. If one or more dependencies are more up to date than the
+# service image, it is ignored and the service image will be considered up to
+# date
+-d|--ignore-date
+--
+
+# when checking an appliance service image, a dependency collection is done for
+# each service image. If one or more dependencies are missing on the docker host
+# it is ignored and the service image will be considered up to date
+-m|--ignore-missing
+--
+
+# when checking an appliance service image, a dependency collection is done for
+# each service image. If one or more dependencies have something wrong in their
+# image.dist file, it is ignored and the service image will be considered up to
+# date (this is not recommended)
+-i|--ignore-image-dist-defects
+--
+
+# explicit list of appliance to check. The list has the form:
+# appliance1,appliance2...
+(-l|--appliance-list)=?
+[^,]+(,[^,]+)*
+EOI
+  )"
+}
+
+### parses all arguments
+function parseArguments() {
+  # argument are positional. First come global options, then, if any, domain
+  # then domain options then then domain's command come, finally the command's
+  # options.
+  # if domain is not specified, that is perfectly valid, directly jump to
+  # command and command's option
+
+  # first build the argument referential
+  buildArgumentsReferential
+
+  # these globals are initialized by the argument parsing
+  GLOBAL_OPTIONS=
+  DOMAIN=
+  DOMAIN_OPTIONS=
+  COMMAND=
+  COMMAND_OPTIONS=
+}
+
+parseArguments "$@"
