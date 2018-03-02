@@ -1164,12 +1164,23 @@ tryMutateReferential() {
 
   # iterating through the referential
   for line in $referential; do
-    [ -z "$key_pattern" ] && key_pattern="$line" && continue \
-    || [ -z "$value_pattern" ] && value_pattern="$line" && continue \
-    || mutator="$line"
+    # iterate to initialize locals
+    if [ -z "$key_pattern" ]; then
+      key_pattern="$line"
+      continue
+    fi
+
+    if [ -z "$value_pattern" ]; then
+      value_pattern="$line"
+      continue
+    fi
+
+    mutator="$line"
 
     # test the provided key
-    if ! echo "$key" | grep -Ex "'$key_pattern'" 1> /dev/null; then
+    echo "$key" | grep -Ex -- "$key_pattern" 1> /dev/null
+
+    if [ ! $? -eq 0 ]; then
       # the key do not match, test another entry in the referential
       # resetting patterns and mutator for another turn
       key_pattern= ; value_pattern= ; mutator=
@@ -1179,7 +1190,9 @@ tryMutateReferential() {
     # testing value if necessary, a '--' pattern indicating that the key has not
     # value associated in the referential
     if [ ! "$value_pattern" = '--' ]; then
-      if ! echo "$value" | grep -Ex "'$value_pattern'" 1> /dev/null; then
+      echo "$value" | grep -Ex -- "$value_pattern" 1> /dev/null
+
+      if [ ! $? -eq 0 ]; then
         # the value do not match, test another entry in the referential
         # resetting patterns and mutator for another turn
         key_pattern= ; value_pattern= ; mutator=
@@ -1187,12 +1200,12 @@ tryMutateReferential() {
       fi
 
       # value matched the pattern, call the mutator with both key and value
-      "$mutator" "$key" "$value"
+      echo m="$mutator" k="$key" v="$value"
       return $?
     else
       # no value needed for this referential entry, call the mutator passing
       # only the key
-      "$mutator" "$key"
+      echo m="$mutator" k="$key"
       return $?
     fi
   done
@@ -1486,70 +1499,97 @@ buildExecutionContextFromArguments() {
   #   create a pair, mutate the execution context
   #   - worked, restart the process with the next argument
   #   - did not work, fatal, bad argument specification from the user
-  # - if a pair is not built, attempt to mutate the execution context with this
-  #   unique argument.
+  # - if a pair is not built, take the next argument to make one then, mutate
+  #   the execution context
   #   - if it worked, restart the process with the next argument
-  #   - if it didn't work, pick the next argument a attempt again to mutate the
-  #     execution context to build a key=value argument
-  #     - if it did not work, fatal error, bad argument specification from the
-  #       user
-  #     - if it worked, restart with the next argument
+  #   - if it didn't work attempt to mutate the execution context with only the
+  #     key
+  #     - if it didn't work, fatal error as user input is bad regarding the
+  #       referential
+  #     - if it worked, restart with the value as next argument
 
   # these two variable represent the key and the value part of an argument
   local key= ; local value=
 
   local arg=
   for arg in $@; do
-    # tranform an arg of the form <key=value> into <key value>
-    # the transformation result is used only if we are not in the middle of an
-    # argument scanning (collected the key bu the value collect is in progress)
-    local transformed_pair="$(
-      echo "$arg" \
-      | sed 's/=/ /'
-    )"
+    # this trick allow to use picked arg several time for one iteration of the
+    # outermost for loop. Thanks to multi level continue
+    while true; do
+      # tranform an arg of the form <key=value> into <key value> the
+      # transformation result is used only if we are not in the middle of an
+      # argument scanning (collected the key bu the value collect is in
+      # progress)
+      local possible_transformed_pair="$(
+        echo "$arg" \
+        | sed 's/=/ /'
+      )"
 
-    # transformation effective and $key is not set : key set means previous
-    # argument scan only extracted the key of a pair
-    if [ -z "$key" ] && [ ! "$arg" = "$transformed_pair" ]; then
-      # iterate through these 2 guys
-      for arg in $transformed_pair; do
-        # fill the key first, then the value
-        if [ -z "$key" ]; then
-          key="$arg"
-          continue
-        fi
+      # transformation effective and $key is not set : key set means previous
+      # argument scan only extracted the key of a pair
+      if [ -z "$key" ] && [ ! "$arg" = "$possible_transformed_pair" ]; then
+        # iterate through these 2 guys
+        for arg in $possible_transformed_pair; do
+          # fill the key first, then the value
+          if [ -z "$key" ]; then
+            key="$arg"
+            continue
+          fi
 
-        value="$arg"
-      done
+          value="$arg"
+        done
 
-      # mutate the execution context
-      mutateExecutionContext "$key" "$value"
-    else
-      if [ -z "$key" ]; then
-        # if key is not set, attempting to mutate the execution context with this
-        # unique argument. May fail spuriously  but not fatally yet
-        mutateExecutionContext "$arg"
-
-        # mutation failed, key is kept and the next argument is scanned for the
-        # value
-        if [ ! $? -eq 0 ];then
-          key="$arg"
-          continue
-        fi
-      else
-        value="$arg"
+        # mutate the execution context
         mutateExecutionContext "$key" "$value"
 
-        # if failed, error at the user side, exiting
+        # if the mutation failed, it means the user input was bad
         if [ ! $? -eq 0 ]; then
-          exit 1
+          return 1
         fi
 
-        # argument fully processed, next one if any remaining
-        key= ; value=
+        # get out of the infinite while if the mutation succeeded
+        break
+      else
+        # assign the key first
+        if [ -z "$key" ]; then
+          key="$arg"
+          continue 2
+        fi
+
+        # then the value
+        value="$arg"
+
+        # attempt the mutation with these 2 things. May fails but not fatally as
+        # it could succeed with only the key
+        mutateExecutionContext "$key" "$value"
+
+        # failed, attempt the mutation with the key
+        if [ ! $? -eq 0 ]; then
+          mutateExecutionContext "$key"
+
+          # failure here is fatal
+          if [ ! $? -eq 0 ]; then
+            return 1
+          fi
+
+          # value is still set, use it in the next iteration
+          key=
+          arg="$value"
+
+          # one turn again in the infinite while loop
+          continue
+        fi
+
+        # get out of the infinite while
+        break
       fi
-    fi
+    done
   done
+
+  # half set pair denotes a failure
+  if [ ! -z "$key" ]; then
+    exit 1
+  fi
 }
 
 ### entry point
