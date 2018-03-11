@@ -1227,7 +1227,7 @@ tryMutateDomain() {
 ### specialized mutator designed to mutate domain options settings. Provided
 ### with 2 arguments with at least one that must be non empty.
 tryMutateDomainOptions() {
-  # there is not any domain option taht are supported so far
+  # there is not any domain option that are supported so far
   return 1
 }
 
@@ -1408,7 +1408,7 @@ tryMutateDomainCommandOptions() {
 }
 
 ### mutates the execution context with a key and a value as arguments
-mutateExecutionContext() {
+tryMutateExecutionContext() {
   local key="$1"
   local value="$2"
 
@@ -1461,16 +1461,75 @@ mutateExecutionContext() {
   || tryMutateGlobalCommand "$key" "$value" \
   || tryMutateDomainCommand "$key" "$value" \
   || tryMutateGlobalCommandOptions "$key" "$value" \
-  || tryMutateDomainCommandOptions \
+  || tryMutateDomainCommandOptions "$key" "$value" \
   || return 1
 
   # mutation succeeded!
   return 0
 }
 
+### internal function attempting to mutate the execution context with a provided
+### argument of the form key=value
+tryMutateExecutionContextWithKeyEqualsValueArg() {
+  if ! isPair "$1"; then
+    return 1
+  fi
+
+  local key="$(keyOf "$1")"
+  local value="$(valueOf "$1")"
+
+  tryMutateExecutionContext "$key" "$value"
+
+  return $?
+}
+
 ### build the final execution context regarding provided arguments
 buildExecutionContextFromArguments() {
-  :
+  # the arguments provided could take 2 different forms :
+  # - simple switch
+  # - key-value pair
+  # The simple switch may have the dashed or double dashed form
+  # The key-value pair may have the space or the '=' as separator. A space
+  # character could be specified more than once. This is not the case for the
+  # '=' character separator.
+
+  # description of the algorithm:
+  # As arguments may take several forms that are parsed differently, the
+  # behavior of the algorithm depends of the form of the argument.
+  # The most deterministic form is the key=value form.
+  # Thus, the algorithm will attempt to mutate the execution context trying to
+  # extract key and value from the next argument.
+  # If the key/value extraction fails, the algorithm will try to mutate the
+  # execution context with the next argument as if it had the dashed or double
+  # dashed form. If it fails, the algorithm will attempt to extract the next
+  # argument and consider it as the value of the previous one (that is the key
+  # therefore)
+
+  local extractedKeyFromArg=
+
+  local arg=
+  for arg in $@; do
+    if [ -z "$extractedKeyFromArg" ]; then
+      # assuming I have a key=value argument
+      tryMutateExecutionContextWithKeyEqualsValueArg "$arg" && continue
+
+      # didn't work, assuming the arg is a single switch
+      tryMutateExecutionContext "$arg" && continue
+
+      # didn't work, arg may be the key of a key/value pair
+      extractedKeyFromArg="$arg" && continue
+    else
+      # attempting to mutate the execution context with a key/value pair. this
+      # is the last chance thus, failing here is fatal and denotes that the
+      # argument pair is not conform to the referential
+      tryMutateExecutionContext \
+        "$extractedKeyFromArg" \
+        "$arg" \
+      || return 1
+
+      extractedKeyFromArg=
+    fi
+  done
 }
 
 ### entry point

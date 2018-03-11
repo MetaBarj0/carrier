@@ -33,24 +33,36 @@ makePair() {
   echo "$1"'='"$2"
 }
 
+isPair() {
+  if [ -z "$1" ]; then
+    error 'No argument specified...exiting...'
+    return 1
+  fi
+
+  # a pair is something of the form key=value
+  echo "$1" | grep -Ex '^[^=]+=.+$'
+
+  return $?
+}
+
 # extract KEY of a pair having the following form : KEY=VALUE
 keyOf() {
-  if [ -z "$1" ]; then
+  if [ -z "$1" ] || ! isPair "$1"; then
     error 'No pair specified...exiting...'
     return 1
   fi
 
-  echo "$1" | sed -E 's/([^=]*)=.*$/\1/'
+  echo "$1" | sed -E 's/(^[^=]+)=.+$/\1/'
 }
 
 # extract VALUE of a pair having the following form : KEY=VALUE
 valueOf() {
-  if [ -z "$1" ]; then
+  if [ -z "$1" ] || ! isPair "$1"; then
     error 'No pair specified...exiting...'
     return 1
   fi
 
-  echo "$1" | sed -E 's/[^=]*=(.*)$/\1/'
+  echo "$1" | sed -E 's/^[^=]+=(.+)$/\1/'
 }
 
 # generate a random modified base64 string ready to be used in a docker build
