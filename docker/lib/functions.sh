@@ -40,7 +40,7 @@ isPair() {
   fi
 
   # a pair is something of the form key=value
-  echo "$1" | grep -Ex '^[^=]+=.+$'
+  echo "$1" | grep -Ex '^[^=]+=.+$' 1> /dev/null
 
   return $?
 }
