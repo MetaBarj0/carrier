@@ -143,145 +143,125 @@ Use:
 EOI
 }
 
+### internal that remove unnecessary information from global options referential
+### specified in argument
+removeIrrelevantDetailsFromReferentialOption() {
+  local referential="$1"
+
+  echo "$referential"\
+  | sed -E '/^--$/d' \
+  | sed -E '/contextSet.+/d'
+}
+
 ### Get a full help on usage
 usageFull() {
   cat << EOI
 $(usage)
 
 Global options:
-$(echo "$GLOBAL_OPTIONS_REFERENTIAL" \
-  | sed -E '/^--$/d' \
-  | sed -E '/contextSet.+/d')
+$(removeIrrelevantDetailsFromReferentialOption "$GLOBAL_OPTIONS_REFERENTIAL")
 
 Global commands:
-$(echo "$GLOBAL_COMMANDS_REFERENTIAL" \
-  | sed -E '/^--$/d' \
-  | sed -E '/contextSet.+/d')
+$(removeIrrelevantDetailsFromReferentialOption "$GLOBAL_COMMANDS_REFERENTIAL")
 
 Help command options:
-$(echo "$GLOBAL_COMMAND_HELP_OPTIONS_REFERENTIAL" \
-  | sed -E '/^--$/d' \
-  | sed -E '/contextSet.+/d')
+$(removeIrrelevantDetailsFromReferentialOption \
+    "$GLOBAL_COMMAND_HELP_OPTIONS_REFERENTIAL")
 
 Info command options:
-$(echo "$GLOBAL_COMMAND_HELP_OPTIONS_REFERENTIAL" \
-  | sed -E '/^--$/d' \
-  | sed -E '/contextSet.+/d')
+$(removeIrrelevantDetailsFromReferentialOption \
+    "$GLOBAL_COMMAND_HELP_OPTIONS_REFERENTIAL")
 
 Install command options:
-$(echo "$GLOBAL_COMMAND_INSTALL_OPTIONS_REFERENTIAL" \
-  | sed -E '/^--$/d' \
-  | sed -E '/contextSet.+/d')
+$(removeIrrelevantDetailsFromReferentialOption \
+    "$GLOBAL_COMMAND_INSTALL_OPTIONS_REFERENTIAL")
 
 Pack command options:
-$(echo "$GLOBAL_COMMAND_PACK_OPTIONS_REFERENTIAL" \
-  | sed -E '/^--$/d' \
-  | sed -E '/contextSet.+/d')
+$(removeIrrelevantDetailsFromReferentialOption \
+    "$GLOBAL_COMMAND_PACK_OPTIONS_REFERENTIAL")
 
 Unpack command options:
-$(echo "$GLOBAL_COMMAND_UNPACK_OPTIONS_REFERENTIAL" \
-  | sed -E '/^--$/d' \
-  | sed -E '/contextSet.+/d')
+$(removeIrrelevantDetailsFromReferentialOption \
+    "$GLOBAL_COMMAND_UNPACK_OPTIONS_REFERENTIAL")
 
 Vagrant command options:
-$(echo "$GLOBAL_COMMAND_VAGRANT_OPTIONS_REFERENTIAL" \
-  | sed -E '/^--$/d' \
-  | sed -E '/contextSet.+/d')
+$(removeIrrelevantDetailsFromReferentialOption \
+    "$GLOBAL_COMMAND_VAGRANT_OPTIONS_REFERENTIAL")
 
 Domains:
-$(echo "$DOMAINS_REFERENTIAL" \
-  | sed -E '/^--$/d' \
-  | sed -E '/contextSet.+/d')
+$(removeIrrelevantDetailsFromReferentialOption "$DOMAINS_REFERENTIAL")
 
 Bootstrap domain commands:
-$(echo "$DOMAIN_BOOTSTRAP_COMMANDS_REFERENTIAL" \
-  | sed -E '/^--$/d' \
-  | sed -E '/contextSet.+/d')
+$(removeIrrelevantDetailsFromReferentialOption \
+    "$DOMAIN_BOOTSTRAP_COMMANDS_REFERENTIAL")
 
 Bootstrap run command options:
-$(echo "$DOMAIN_BOOTSTRAP_COMMAND_RUN_OPTIONS_REFERENTIAL" \
-  | sed -E '/^--$/d' \
-  | sed -E '/contextSet.+/d')
+$(removeIrrelevantDetailsFromReferentialOption \
+    "$DOMAIN_BOOTSTRAP_COMMAND_RUN_OPTIONS_REFERENTIAL")
 
 Bootstrap check command options:
-$(echo "$DOMAIN_BOOTSTRAP_COMMAND_CHECK_OPTIONS_REFERENTIAL" \
-  | sed -E '/^--$/d' \
-  | sed -E '/contextSet.+/d')
+$(removeIrrelevantDetailsFromReferentialOption \
+    "$DOMAIN_BOOTSTRAP_COMMAND_CHECK_OPTIONS_REFERENTIAL")
 
 Image domain commands:
-$(echo "$DOMAIN_IMAGE_COMMANDS_REFERENTIAL" \
-  | sed -E '/^--$/d' \
-  | sed -E '/contextSet.+/d')
+$(removeIrrelevantDetailsFromReferentialOption \
+    "$DOMAIN_IMAGE_COMMANDS_REFERENTIAL")
 
 Image build command options:
-$(echo "$DOMAIN_IMAGE_COMMAND_BUILD_OPTIONS_REFERENTIAL" \
-  | sed -E '/^--$/d' \
-  | sed -E '/contextSet.+/d')
+$(removeIrrelevantDetailsFromReferentialOption \
+    "$DOMAIN_IMAGE_COMMAND_BUILD_OPTIONS_REFERENTIAL")
 
 Image list command options:
-$(echo "$DOMAIN_IMAGE_COMMAND_LIST_OPTIONS_REFERENTIAL" \
-  | sed -E '/^--$/d' \
-  | sed -E '/contextSet.+/d')
+$(removeIrrelevantDetailsFromReferentialOption \
+    "$DOMAIN_IMAGE_COMMAND_LIST_OPTIONS_REFERENTIAL")
 
 Image check command options:
-$(echo "$DOMAIN_IMAGE_COMMAND_CHECK_OPTIONS_REFERENTIAL" \
-  | sed -E '/^--$/d' \
-  | sed -E '/contextSet.+/d')
+$(removeIrrelevantDetailsFromReferentialOption \
+    "$DOMAIN_IMAGE_COMMAND_CHECK_OPTIONS_REFERENTIAL")
 
 Image info command options:
-$(echo "$DOMAIN_IMAGE_COMMAND_INFO_OPTIONS_REFERENTIAL" \
-  | sed -E '/^--$/d' \
-  | sed -E '/contextSet.+/d')
+$(removeIrrelevantDetailsFromReferentialOption \
+    "$DOMAIN_IMAGE_COMMAND_INFO_OPTIONS_REFERENTIAL")
 
 Image upgrade command options:
-$(echo "$DOMAIN_IMAGE_COMMAND_UPGRADE_OPTIONS_REFERENTIAL" \
-  | sed -E '/^--$/d' \
-  | sed -E '/contextSet.+/d')
+$(removeIrrelevantDetailsFromReferentialOption \
+    "$DOMAIN_IMAGE_COMMAND_UPGRADE_OPTIONS_REFERENTIAL")
 
 Appliance domain commands:
-$(echo "$DOMAIN_APPLIANCE_COMMANDS_REFERENTIAL" \
-  | sed -E '/^--$/d' \
-  | sed -E '/contextSet.+/d')
+$(removeIrrelevantDetailsFromReferentialOption \
+    "$DOMAIN_APPLIANCE_COMMANDS_REFERENTIAL")
 
 Appliance build command options:
-$(echo "$DOMAIN_APPLIANCE_COMMAND_BUILD_OPTIONS_REFERENTIAL" \
-  | sed -E '/^--$/d' \
-  | sed -E '/contextSet.+/d')
+$(removeIrrelevantDetailsFromReferentialOption \
+    "$DOMAIN_APPLIANCE_COMMAND_BUILD_OPTIONS_REFERENTIAL")
 
 Appliance list command options:
-$(echo "$DOMAIN_APPLIANCE_COMMAND_LIST_OPTIONS_REFERENTIAL" \
-  | sed -E '/^--$/d' \
-  | sed -E '/contextSet.+/d')
+$(removeIrrelevantDetailsFromReferentialOption \
+    "$DOMAIN_APPLIANCE_COMMAND_LIST_OPTIONS_REFERENTIAL")
 
 Appliance check command options:
-$(echo "$DOMAIN_APPLIANCE_COMMAND_CHECK_OPTIONS_REFERENTIAL" \
-  | sed -E '/^--$/d' \
-  | sed -E '/contextSet.+/d')
+$(removeIrrelevantDetailsFromReferentialOption \
+    "$DOMAIN_APPLIANCE_COMMAND_CHECK_OPTIONS_REFERENTIAL")
 
 Appliance info command options:
-$(echo "$DOMAIN_APPLIANCE_COMMAND_INFO_OPTIONS_REFERENTIAL" \
-  | sed -E '/^--$/d' \
-  | sed -E '/contextSet.+/d')
+$(removeIrrelevantDetailsFromReferentialOption \
+    "$DOMAIN_APPLIANCE_COMMAND_INFO_OPTIONS_REFERENTIAL")
 
 Appliance start command options:
-$(echo "$DOMAIN_APPLIANCE_COMMAND_START_OPTIONS_REFERENTIAL" \
-  | sed -E '/^--$/d' \
-  | sed -E '/contextSet.+/d')
+$(removeIrrelevantDetailsFromReferentialOption \
+    "$DOMAIN_APPLIANCE_COMMAND_START_OPTIONS_REFERENTIAL")
 
 Appliance stop command options:
-$(echo "$DOMAIN_APPLIANCE_COMMAND_STOP_OPTIONS_REFERENTIAL" \
-  | sed -E '/^--$/d' \
-  | sed -E '/contextSet.+/d')
+$(removeIrrelevantDetailsFromReferentialOption \
+    "$DOMAIN_APPLIANCE_COMMAND_STOP_OPTIONS_REFERENTIAL")
 
 Appliance volumes command options:
-$(echo "$DOMAIN_APPLIANCE_COMMAND_VOLUMES_OPTIONS_REFERENTIAL" \
-  | sed -E '/^--$/d' \
-  | sed -E '/contextSet.+/d')
+$(removeIrrelevantDetailsFromReferentialOption \
+    "$DOMAIN_APPLIANCE_COMMAND_VOLUMES_OPTIONS_REFERENTIAL")
 
 Appliance upgrade command options:
-$(echo "$DOMAIN_APPLIANCE_COMMAND_UPGRADE_OPTIONS_REFERENTIAL" \
-  | sed -E '/^--$/d' \
-  | sed -E '/contextSet.+/d')
+$(removeIrrelevantDetailsFromReferentialOption \
+    "$DOMAIN_APPLIANCE_COMMAND_UPGRADE_OPTIONS_REFERENTIAL")
 EOI
 }
 
@@ -1490,106 +1470,7 @@ mutateExecutionContext() {
 
 ### build the final execution context regarding provided arguments
 buildExecutionContextFromArguments() {
-  # args come with 3 possible forms:
-  # dashed key (-f or --format i.e.)
-  # dashed key followed by one or more spaces followed by a value (-l 2 i.e.)
-  # dashed key equals value (-l=error i.e.)
-  # as a result, the argument extraction is not uniform.
-  # - first, handle the case key=value by extracting one arg. if it leads to
-  #   create a pair, mutate the execution context
-  #   - worked, restart the process with the next argument
-  #   - did not work, fatal, bad argument specification from the user
-  # - if a pair is not built, take the next argument to make one then, mutate
-  #   the execution context
-  #   - if it worked, restart the process with the next argument
-  #   - if it didn't work attempt to mutate the execution context with only the
-  #     key
-  #     - if it didn't work, fatal error as user input is bad regarding the
-  #       referential
-  #     - if it worked, restart with the value as next argument
-
-  # these two variable represent the key and the value part of an argument
-  local key= ; local value=
-
-  local arg=
-  for arg in $@; do
-    # this trick allow to use picked arg several time for one iteration of the
-    # outermost for loop. Thanks to multi level continue
-    while true; do
-      # tranform an arg of the form <key=value> into <key value> the
-      # transformation result is used only if we are not in the middle of an
-      # argument scanning (collected the key bu the value collect is in
-      # progress)
-      local possible_transformed_pair="$(
-        echo "$arg" \
-        | sed 's/=/ /'
-      )"
-
-      # transformation effective and $key is not set : key set means previous
-      # argument scan only extracted the key of a pair
-      if [ -z "$key" ] && [ ! "$arg" = "$possible_transformed_pair" ]; then
-        # iterate through these 2 guys
-        for arg in $possible_transformed_pair; do
-          # fill the key first, then the value
-          if [ -z "$key" ]; then
-            key="$arg"
-            continue
-          fi
-
-          value="$arg"
-        done
-
-        # mutate the execution context
-        mutateExecutionContext "$key" "$value"
-
-        # if the mutation failed, it means the user input was bad
-        if [ ! $? -eq 0 ]; then
-          return 1
-        fi
-
-        # get out of the infinite while if the mutation succeeded
-        break
-      else
-        # assign the key first
-        if [ -z "$key" ]; then
-          key="$arg"
-          continue 2
-        fi
-
-        # then the value
-        value="$arg"
-
-        # attempt the mutation with these 2 things. May fails but not fatally as
-        # it could succeed with only the key
-        mutateExecutionContext "$key" "$value"
-
-        # failed, attempt the mutation with the key
-        if [ ! $? -eq 0 ]; then
-          mutateExecutionContext "$key"
-
-          # failure here is fatal
-          if [ ! $? -eq 0 ]; then
-            return 1
-          fi
-
-          # value is still set, use it in the next iteration
-          key=
-          arg="$value"
-
-          # one turn again in the infinite while loop
-          continue
-        fi
-
-        # get out of the infinite while
-        break
-      fi
-    done
-  done
-
-  # half set pair denotes a failure
-  if [ ! -z "$key" ]; then
-    exit 1
-  fi
+  :
 }
 
 ### entry point
