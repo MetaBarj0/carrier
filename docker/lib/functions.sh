@@ -549,3 +549,23 @@ deleteCommentLines() {
     echo "$1" | sed -E '/^ *#/d'
   fi
 }
+
+# split a sequence of element delimited by a specified separator using another
+# specified separator
+splitSequence() {
+  if [ -z "$1" ]; then
+    error "No sequence specified...exiting..."
+    return 1
+  fi
+
+  if [ -z "$2"+0 ]; then
+    error "No separator specified...exiting..."
+    return 1
+  fi
+
+  local sequence="$1"
+  local src_separator="$2"
+  local dst_separator=$(setValueWithDefault "$3" ' ')
+
+  echo "$sequence" | sed -E 's/'"$src_separator"'/'"$dst_separator"'/g'
+}

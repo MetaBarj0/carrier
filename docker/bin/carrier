@@ -1080,7 +1080,7 @@ initializeExecutionContext() {
   # carrier appliance build devenv_cpp -r
   DOMAIN_APPLIANCE_COMMAND_BUILD_OPTION_REMOVE_EXISTING='no'
   DOMAIN_APPLIANCE_COMMAND_BUILD_OPTION_TAG_EXISTING='no'
-  DOMAIN_APPLIANCE_COMMAND_BUILD_OPTION_APPLIANCE_LIST=
+  DOMAIN_APPLIANCE_COMMAND_BUILD_OPTION_APPLIANCE_SEQUENCE=
 
   # carrier appliance list --only-remote -f one-line
   DOMAIN_APPLIANCE_COMMAND_LIST_OPTION_ALL='yes'
@@ -1590,8 +1590,14 @@ executeImageBuildCommand() {
     return 1
   fi
 
+  # the sequence is comma separated, get it space separated
+  local sequence="$(
+    splitSequence \
+    "$DOMAIN_IMAGE_COMMAND_BUILD_OPTION_IMAGE_SEQUENCE" \
+    ','
+  )"
+
   # build each image in the sequence, calling the right script in a subshell
-  local sequence="$DOMAIN_IMAGE_COMMAND_BUILD_OPTION_IMAGE_SEQUENCE"
   local image=
   for image in $sequence; do
     # the first image build failing return from that function
@@ -1632,9 +1638,29 @@ executeImageUpgradeCommand() {
 
 ### execute the build command of the appliance domain
 executeApplianceBuildCommand() {
-  :
+  # TODO handle options, incomplete
+  if [ ! "$DOMAIN" = 'appliance' ] \
+     || [ ! "$COMMAND" = 'build' ] \
+     || [ -z "$DOMAIN_APPLIANCE_COMMAND_BUILD_OPTION_APPLIANCE_SEQUENCE" ]; then
+    return 1
+  fi
 
-  return 1
+  # the sequence is comma separated, get it space separated
+  local sequence="$(
+    splitSequence \
+    "$DOMAIN_APPLIANCE_COMMAND_BUILD_OPTION_APPLIANCE_SEQUENCE" \
+    ','
+  )"
+
+  # build each appliance in the sequence, calling the right script in a subshell
+  local appliance=
+  for appliance in $sequence; do
+    # the first appliance build failing return from that function
+    ( exec "${CARRIER_LIB_DIR}"/carrier-manage-appliance build "$appliance" ) \
+    || return 1
+  done
+
+  return 0
 }
 
 ### execute the list command of the appliance domain
@@ -1667,16 +1693,56 @@ executeApplianceUpgradeCommand() {
 
 ### execute the start command of the appliance domain
 executeApplianceStartCommand() {
-  :
+  # TODO handle options, incomplete
+  if [ ! "$DOMAIN" = 'appliance' ] \
+     || [ ! "$COMMAND" = 'start' ] \
+     || [ -z "$DOMAIN_APPLIANCE_COMMAND_START_OPTION_APPLIANCE_SEQUENCE" ]; then
+    return 1
+  fi
 
-  return 1
+  # the sequence is comma separated, get it space separated
+  local sequence="$(
+    splitSequence \
+    "$DOMAIN_APPLIANCE_COMMAND_START_OPTION_APPLIANCE_SEQUENCE" \
+    ','
+  )"
+
+  # build each appliance in the sequence, calling the right script in a subshell
+  local appliance=
+  for appliance in $sequence; do
+    # the first appliance build failing return from that function
+    ( exec "${CARRIER_LIB_DIR}"/carrier-manage-appliance start "$appliance" ) \
+    || return 1
+  done
+
+  return 0
 }
 
 ### execute the stop command of the appliance domain
 executeApplianceStopCommand() {
-  :
+  # TODO handle options, incomplete
+  if [ ! "$DOMAIN" = 'appliance' ] \
+     || [ ! "$COMMAND" = 'stop' ] \
+     || [ -z "$DOMAIN_APPLIANCE_COMMAND_STOP_OPTION_APPLIANCE_SEQUENCE" ]; then
+    return 1
+  fi
 
-  return 1
+  # the sequence is comma separated, get it space separated
+  local sequence="$(
+    splitSequence \
+    "$DOMAIN_APPLIANCE_COMMAND_STOP_OPTION_APPLIANCE_SEQUENCE" \
+    ','
+  )"
+
+  # build each appliance in the sequence, calling the right script in a subshell
+  local appliance=
+  for appliance in $sequence; do
+    # the first appliance build failing return from that function
+    ( exec "${CARRIER_LIB_DIR}"/carrier-manage-appliance stop "$appliance" ) \
+    || return 1
+  done
+
+  return 0
 }
 
 ### execute the volumes command of the appliance domain
@@ -1821,6 +1887,11 @@ contextSetImageBuildImageSequence() {
   DOMAIN_IMAGE_COMMAND_BUILD_OPTION_IMAGE_SEQUENCE="$1"
 }
 
+### TODO NYI
+contextSetImageInfoImage() {
+  return 1
+}
+
 ### mutator to setup the appliance command. Valid call if:
 ### - domain is appliance
 contextSetApplianceCommand() {
@@ -1830,6 +1901,50 @@ contextSetApplianceCommand() {
 
   # the specified key (first arg) is the appliance command
   COMMAND="$1"
+}
+
+### TODO NYI
+contextSetApplianceInfoAppliance() {
+  return 1
+}
+
+### mutator to setup the sequence of appliance to build. Valid call if:
+### - domain is appliance
+### - command is build
+contextSetApplianceBuildApplianceSequence() {
+  if [ ! "$DOMAIN" = 'appliance' ] \
+     || [ ! "$COMMAND" = 'build' ]; then
+    return 1
+  fi
+
+  # the key (first arg) is the appliance sequence
+  DOMAIN_APPLIANCE_COMMAND_BUILD_OPTION_APPLIANCE_SEQUENCE="$1"
+}
+
+### mutator to setup the sequence of appliance to start. Valid call if:
+### - domain is appliance
+### - command is start
+contextSetApplianceStartApplianceSequence() {
+  if [ ! "$DOMAIN" = 'appliance' ] \
+     || [ ! "$COMMAND" = 'start' ]; then
+    return 1
+  fi
+
+  # the key (first arg) is the appliance sequence
+  DOMAIN_APPLIANCE_COMMAND_START_OPTION_APPLIANCE_SEQUENCE="$1"
+}
+
+### mutator to setup the sequence of appliance to start. Valid call if:
+### - domain is appliance
+### - command is start
+contextSetApplianceStopApplianceSequence() {
+  if [ ! "$DOMAIN" = 'appliance' ] \
+     || [ ! "$COMMAND" = 'stop' ]; then
+    return 1
+  fi
+
+  # the key (first arg) is the appliance sequence
+  DOMAIN_APPLIANCE_COMMAND_STOP_OPTION_APPLIANCE_SEQUENCE="$1"
 }
 
 #### End of execution context mutator definition area ##########################
