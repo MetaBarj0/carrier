@@ -500,7 +500,17 @@ log() {
   local msg="$(setValueWithDefault "$1" 'missing message')"
   local dest="$(setValueWithDefault "$2" '&2')"
 
-  eval 'echo '"$msg"' 1>'"$dest"
+  # special handling of stderr: does not add "
+  [ ! "$dest" = '&2' ] && dest='"'"$dest"'"'
+
+  # special kind for redirection to be effective :
+  # - with multi line argument, " must be explicitely added for eval
+  command="$(cat << EOI
+echo "$msg" 1>$dest
+EOI
+  )"
+
+  eval "$command"
 }
 
 # logging function, designed to trace

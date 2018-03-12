@@ -1576,16 +1576,30 @@ executeBootstrapRunCommand() {
   # TODO handle options, draft version
   [ "$DOMAIN" = 'bootstrap' ] \
   && [ "$COMMAND" = 'run' ] \
-  && exec "${CARRIER_LIB_DIR}"/carrier-bootstrap
+  && ( exec "${CARRIER_LIB_DIR}"/carrier-bootstrap )
 
   return $?
 }
 
 ### execute the build command of the image domain
 executeImageBuildCommand() {
-  :
+  # TODO handle options, incomplete
+  if [ ! "$DOMAIN" = 'image' ] \
+     || [ ! "$COMMAND" = 'build' ] \
+     || [ -z "$DOMAIN_IMAGE_COMMAND_BUILD_OPTION_IMAGE_SEQUENCE" ]; then
+    return 1
+  fi
 
-  return 1
+  # build each image in the sequence, calling the right script in a subshell
+  local sequence="$DOMAIN_IMAGE_COMMAND_BUILD_OPTION_IMAGE_SEQUENCE"
+  local image=
+  for image in $sequence; do
+    # the first image build failing return from that function
+    ( exec "${CARRIER_LIB_DIR}"/carrier-build-image "$image" ) \
+    || return 1
+  done
+
+  return 0
 }
 
 ### execute the list command of the image domain
@@ -1792,6 +1806,19 @@ contextSetImageCommand() {
 
   # the specified key (first arg) is the image command
   COMMAND="$1"
+}
+
+### mutator to setup the sequence of image to build. Valid call if:
+### - domain is image
+### - command is build
+contextSetImageBuildImageSequence() {
+  if [ ! "$DOMAIN" = 'image' ] \
+     || [ ! "$COMMAND" = 'build' ]; then
+    return 1
+  fi
+
+  # the key (first arg) is the image sequence
+  DOMAIN_IMAGE_COMMAND_BUILD_OPTION_IMAGE_SEQUENCE="$1"
 }
 
 ### mutator to setup the appliance command. Valid call if:
