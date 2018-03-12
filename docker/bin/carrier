@@ -332,7 +332,7 @@ EOI
 #          vagrant is not found, the process fails.
 help|info|install|pack|unpack|vagrant
 --
-contextSetCommand
+contextSetGlobalCommand
 EOI
   )"
 
@@ -448,7 +448,7 @@ EOI
 # - run bootstrap the system
 check|run
 --
-contextSetCommand
+contextSetBootstrapCommand
 EOI
   )"
 
@@ -478,7 +478,7 @@ EOI
 # - upgrade can upgrade one or more image regarding their dependencies status
 build|list|check|info|upgrade
 --
-contextSetCommand
+contextSetImageCommand
 EOI
   )"
 
@@ -713,7 +713,7 @@ EOI
 # - volumes can help the user to manage columes used by an appliance
 build|list|check|info|upgrade|start|stop|volumes
 --
-contextSetCommand
+contextSetApplianceCommand
 EOI
   )"
 
@@ -994,8 +994,8 @@ initializeExecutionContext() {
   GLOBAL_OPTION_LOG_LEVEL=2
   GLOBAL_OPTION_LOG_OUTPUT='&2'
 
-  # carrier help
-  COMMAND='help'
+  # carrier help, carrier appliance run ...
+  COMMAND=
 
   # carrier help -H
   GLOBAL_COMMAND_HELP_OPTION_MODE=
@@ -1174,7 +1174,8 @@ tryMutateReferential() {
 
     # value matched the pattern, call the mutator with both key and value,
     # though value may be empty
-    echo m="$mutator" k="$key" v="$value"
+    # echo m="$mutator" k="$key" v="$value"
+    "$mutator" "$key" "$value"
 
     return $?
   done
@@ -1256,11 +1257,9 @@ tryMutateDomainCommand() {
 
   tryMutateReferential "$bootstrap_referential" "$key" "$value" \
   || tryMutateReferential "$image_referential" "$key" "$value" \
-  || tryMutateReferential "$appliance_referential" "$key" "$value" \
-  || return 1
+  || tryMutateReferential "$appliance_referential" "$key" "$value"
 
-  # allright, mutation occured
-  return 0
+  return $?
 }
 
 ### attempt to modify the execution context related to options of global
@@ -1302,11 +1301,9 @@ tryMutateGlobalCommandOptions() {
   || tryMutateReferential "$install_referential" "$key" "$value" \
   || tryMutateReferential "$pack_referential" "$key" "$value" \
   || tryMutateReferential "$unpack_referential" "$key" "$value" \
-  || tryMutateReferential "$vagrant_referential" "$key" "$value" \
-  || return 1
+  || tryMutateReferential "$vagrant_referential" "$key" "$value"
 
-  # allright, mutation occured
-  return 0
+  return $?
 }
 
 tryMutateDomainCommandOptions() {
@@ -1389,11 +1386,9 @@ tryMutateDomainCommandOptions() {
   || tryMutateReferential "$appliance_upgrade_referential" "$key" "$value" \
   || tryMutateReferential "$appliance_start_referential" "$key" "$value" \
   || tryMutateReferential "$appliance_stop_referential" "$key" "$value" \
-  || tryMutateReferential "$appliance_volumes_referential" "$key" "$value" \
-  || return 1
+  || tryMutateReferential "$appliance_volumes_referential" "$key" "$value"
 
-  # allright, mutation occured
-  return 0
+  return $?
 }
 
 ### mutates the execution context with a key and a value as arguments
@@ -1450,11 +1445,9 @@ tryMutateExecutionContext() {
   || tryMutateGlobalCommand "$key" "$value" \
   || tryMutateDomainCommand "$key" "$value" \
   || tryMutateGlobalCommandOptions "$key" "$value" \
-  || tryMutateDomainCommandOptions "$key" "$value" \
-  || return 1
+  || tryMutateDomainCommandOptions "$key" "$value"
 
-  # mutation succeeded!
-  return 0
+  return $?
 }
 
 ### internal function attempting to mutate the execution context with a provided
@@ -1519,7 +1512,119 @@ buildExecutionContextFromArguments() {
       extractedKeyFromArg=
     fi
   done
+
+  [ ! -z "$extractedKeyFromArg" ] && return 1 || return 0
 }
+
+### helper function executing the help command with its options if required
+executeHelp() {
+  if [ "$COMMAND" = 'help' ]; then
+    local mode="$GLOBAL_COMMAND_HELP_OPTION_MODE"
+    [ "$mode" = '-H' ] || [ "$mode" = '--full' ]
+    local fullMode=$?
+    [ "$fullMode" -eq 0 ] && usageFull || usage
+  else
+    # help is not the requested command
+    return 1
+  fi
+}
+
+### helper function executing one global command if specified
+executeGlobalCommand() {
+  executeHelp
+
+  return $?
+}
+
+### helper function executing one domain command if specified
+executeDomainCommand() {
+  executeBootstrapCommand \
+  || executeImageCommand \
+  || executeApplianceCommand
+
+  return $?
+}
+
+### Once the execution context is set, execute the script using it. As the
+### execution context is verified when set, one function must succeed
+executeWithContext() {
+  executeGlobalCommand \
+  || executeDomainCommand
+
+  return $?
+}
+
+#### Execution context mutator definition area #################################
+
+### Mutator to set a global command. Valid call if:
+### - no domain specified
+contextSetGlobalCommand() {
+  if [ ! -z "$DOMAIN" ]; then
+    return 1
+  fi
+
+  # the key specified (first argument) is the command
+  COMMAND="$1"
+}
+
+### mutator to set the help mode. Valid call if:
+### - command is 'help'
+contextSetHelpMode() {
+  if [ ! "$COMMAND" = 'help' ]; then
+    return 1
+  fi
+
+  # the key (first value) is the help mode
+  GLOBAL_COMMAND_HELP_OPTION_MODE="$1"
+}
+
+### mutator to set the domain. Valid call if:
+### - no global command specified sooner
+contextSetDomain() {
+  # empty domain and non empty command denotes a global command specified sooner
+  if [ -z "$DOMAIN" ] \
+     && [ ! -z "$COMMAND" ]; then
+    return 1
+  fi
+
+  # the specified key (first arg) is the domain
+  DOMAIN="$1"
+}
+
+### mutator to setup the bootstrap command. Valid call if:
+### - domain is bootstrap
+contextSetBootstrapCommand() {
+  if [ ! "$DOMAIN" = 'bootstrap' ]; then
+    return 1
+  fi
+
+  # the specified key (first arg) is the bootstrap command
+  COMMAND="$1"
+}
+
+### mutator to setup the image command. Valid call if:
+### - domain is image
+contextSetImageCommand() {
+  if [ ! "$DOMAIN" = 'image' ]; then
+    return 1
+  fi
+
+  # the specified key (first arg) is the image command
+  COMMAND="$1"
+}
+
+### mutator to setup the appliance command. Valid call if:
+### - domain is appliance
+contextSetApplianceCommand() {
+  if [ ! "$DOMAIN" = 'appliance' ]; then
+    return 1
+  fi
+
+  # the specified key (first arg) is the appliance command
+  COMMAND="$1"
+}
+
+#### End of execution context mutator definition area ##########################
 
 ### entry point
 run() {
@@ -1540,6 +1645,9 @@ run() {
   # once initialization is done, overwrite values in variables regarding
   # provided arguments
   buildExecutionContextFromArguments "$@"
+
+  # execution context built successfully, executing the script
+  [ $? -eq 0 ] && executeWithContext || return 1
 }
 
 run "$@"
