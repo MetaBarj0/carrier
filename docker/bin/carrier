@@ -1144,23 +1144,15 @@ tryMutateReferential() {
 
   # iterating through the referential
   for line in $referential; do
-    # iterate to initialize locals
-    if [ -z "$key_pattern" ]; then
-      key_pattern="$line"
-      continue
-    fi
-
-    if [ -z "$value_pattern" ]; then
-      value_pattern="$line"
-      continue
-    fi
-
+    # iterate to initialize locals, then do the processing
+    [ -z "$key_pattern" ] && key_pattern="$line" && continue
+    [ -z "$value_pattern" ] && value_pattern="$line" && continue
     mutator="$line"
 
     # test the provided key
     echo "$key" | grep -Ex -- "$key_pattern" 1> /dev/null
 
-    if [ ! $? -eq 0 ]; then
+    if [ $? -ne 0 ]; then
       # the key do not match, test another entry in the referential
       # resetting patterns and mutator for another turn
       key_pattern= ; value_pattern= ; mutator=
@@ -1176,18 +1168,15 @@ tryMutateReferential() {
         # the value do not match, test another entry in the referential
         # resetting patterns and mutator for another turn
         key_pattern= ; value_pattern= ; mutator=
-      continue
+        continue
       fi
-
-      # value matched the pattern, call the mutator with both key and value
-      echo m="$mutator" k="$key" v="$value"
-      return $?
-    else
-      # no value needed for this referential entry, call the mutator passing
-      # only the key
-      echo m="$mutator" k="$key"
-      return $?
     fi
+
+    # value matched the pattern, call the mutator with both key and value,
+    # though value may be empty
+    echo m="$mutator" k="$key" v="$value"
+
+    return $?
   done
 
   # failed to modify the execution context for this referential. unless it is
