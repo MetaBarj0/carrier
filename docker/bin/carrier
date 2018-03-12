@@ -1517,7 +1517,7 @@ buildExecutionContextFromArguments() {
 }
 
 ### helper function executing the help command with its options if required
-executeHelp() {
+executeHelpCommand() {
   if [ "$COMMAND" = 'help' ]; then
     local mode="$GLOBAL_COMMAND_HELP_OPTION_MODE"
     [ "$mode" = '-H' ] || [ "$mode" = '--full' ]
@@ -1529,9 +1529,184 @@ executeHelp() {
   fi
 }
 
+### helper function executing the info command with its options if required
+executeInfoCommand() {
+  :
+
+  return $?
+}
+
+### helper function executing the install command with its options if required
+executeInstallCommand() {
+  :
+
+  return $?
+}
+
+### helper function executing the pack command with its options if required
+executePackCommand() {
+  :
+
+  return $?
+}
+
+### helper function executing the unpack command with its options if required
+executeUnpackCommand() {
+  :
+
+  return $?
+}
+
+### helper function executing the vagrant command with its options if required
+executeVagrantCommand() {
+  :
+
+  return $?
+}
+
+### execute the check command of the bootstrap domain
+executeBootstrapCheckCommand() {
+  :
+
+  return $?
+}
+
+### execute the check command of the bootstrap domain
+executeBootstrapRun() {
+}
+
+### execute the build command of the image domain
+executeImageBuildCommand() {
+  :
+
+  return $?
+}
+
+### execute the list command of the image domain
+executeImageListCommand() {
+  :
+
+  return $?
+}
+
+### execute the check command of the image domain
+executeImageCheckCommand() {
+  :
+
+  return $?
+}
+
+### execute the info command of the image domain
+executeImageInfoCommand() {
+  :
+
+  return $?
+}
+
+### execute the upgrade command of the image domain
+executeImageUpgradeCommand() {
+  :
+
+  return $?
+}
+
+### execute the build command of the appliance domain
+executeApplianceBuildCommand() {
+  :
+
+  return $?
+}
+
+### execute the list command of the appliance domain
+executeApplianceListCommand() {
+  :
+
+  return $?
+}
+
+### execute the check command of the appliance domain
+executeApplianceCheckCommand() {
+  :
+
+  return $?
+}
+
+### execute the info command of the appliance domain
+executeApplianceInfoCommand() {
+  :
+
+  return $?
+}
+
+### execute the upgrade command of the appliance domain
+executeApplianceUpgradeCommand() {
+  :
+
+  return $?
+}
+
+### execute the start command of the appliance domain
+executeApplianceStartCommand() {
+  :
+
+  return $?
+}
+
+### execute the stop command of the appliance domain
+executeApplianceStopCommand() {
+  :
+
+  return $?
+}
+
+### execute the volumes command of the appliance domain
+executeApplianceVolumesCommand() {
+  :
+
+  return $?
+}
+
+### helper function executing the specified bootstrap command
+executeBootstrapCommand() {
+  executeBootstrapRunCommand \
+  || executeBootstrapCheckCommand
+
+  return $?
+}
+
+### helper function executing the specified image command
+executeImageCommand() {
+  executeImageBuildCommand \
+  || executeImageListCommand \
+  || executeImageCheckCommand \
+  || executeImageInfoCommand \
+  || executeImageUpgradeCommand
+
+  return $?
+}
+
+### helper function executing the specified apliance command
+executeApplianceCommand() {
+  executeApplianceBuildCommand \
+  || executeApplianceListCommand \
+  || executeApplianceCheckCommand \
+  || executeApplianceInfoCommand \
+  || executeApplianceUpgradeCommand \
+  || executeApplianceStartCommand \
+  || executeApplianceStopCommand \
+  || executeApplianceVolumesCommand
+
+  return $?
+}
+
 ### helper function executing one global command if specified
 executeGlobalCommand() {
-  executeHelp
+  executeHelpCommand \
+  || executeInfoCommand \
+  || executeInstallCommand \
+  || executePackCommand \
+  || executeUnpackCommand \
+  || executeVagrantCommand
 
   return $?
 }
