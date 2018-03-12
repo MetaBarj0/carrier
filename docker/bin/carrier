@@ -1533,143 +1533,149 @@ executeHelpCommand() {
 executeInfoCommand() {
   :
 
-  return $?
+  return 1
 }
 
 ### helper function executing the install command with its options if required
 executeInstallCommand() {
   :
 
-  return $?
+  return 1
 }
 
 ### helper function executing the pack command with its options if required
 executePackCommand() {
   :
 
-  return $?
+  return 1
 }
 
 ### helper function executing the unpack command with its options if required
 executeUnpackCommand() {
   :
 
-  return $?
+  return 1
 }
 
 ### helper function executing the vagrant command with its options if required
 executeVagrantCommand() {
   :
 
-  return $?
+  return 1
 }
 
 ### execute the check command of the bootstrap domain
 executeBootstrapCheckCommand() {
   :
 
-  return $?
+  return 1
 }
 
 ### execute the check command of the bootstrap domain
-executeBootstrapRun() {
+executeBootstrapRunCommand() {
+  # TODO handle options, draft version
+  [ "$DOMAIN" = 'bootstrap' ] \
+  && [ "$COMMAND" = 'run' ] \
+  && exec "${CARRIER_LIB_DIR}"/carrier-bootstrap
+
+  return $?
 }
 
 ### execute the build command of the image domain
 executeImageBuildCommand() {
   :
 
-  return $?
+  return 1
 }
 
 ### execute the list command of the image domain
 executeImageListCommand() {
   :
 
-  return $?
+  return 1
 }
 
 ### execute the check command of the image domain
 executeImageCheckCommand() {
   :
 
-  return $?
+  return 1
 }
 
 ### execute the info command of the image domain
 executeImageInfoCommand() {
   :
 
-  return $?
+  return 1
 }
 
 ### execute the upgrade command of the image domain
 executeImageUpgradeCommand() {
   :
 
-  return $?
+  return 1
 }
 
 ### execute the build command of the appliance domain
 executeApplianceBuildCommand() {
   :
 
-  return $?
+  return 1
 }
 
 ### execute the list command of the appliance domain
 executeApplianceListCommand() {
   :
 
-  return $?
+  return 1
 }
 
 ### execute the check command of the appliance domain
 executeApplianceCheckCommand() {
   :
 
-  return $?
+  return 1
 }
 
 ### execute the info command of the appliance domain
 executeApplianceInfoCommand() {
   :
 
-  return $?
+  return 1
 }
 
 ### execute the upgrade command of the appliance domain
 executeApplianceUpgradeCommand() {
   :
 
-  return $?
+  return 1
 }
 
 ### execute the start command of the appliance domain
 executeApplianceStartCommand() {
   :
 
-  return $?
+  return 1
 }
 
 ### execute the stop command of the appliance domain
 executeApplianceStopCommand() {
   :
 
-  return $?
+  return 1
 }
 
 ### execute the volumes command of the appliance domain
 executeApplianceVolumesCommand() {
   :
 
-  return $?
+  return 1
 }
 
 ### helper function executing the specified bootstrap command
 executeBootstrapCommand() {
-  executeBootstrapRunCommand \
-  || executeBootstrapCheckCommand
+  executeBootstrapCheckCommand \
+  || executeBootstrapRunCommand
 
   return $?
 }
