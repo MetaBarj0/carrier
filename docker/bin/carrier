@@ -136,7 +136,7 @@ isTraceLogLevel() {
   return $?
 }
 
-### utility function returning true if log level is debug
+### utility function returning true if log level is debug or greater
 isDebugLogLevel() {
   # trace is special, do not activate debug if trace is specified
   [ "$GLOBAL_OPTION_LOG_LEVEL" = 'debug' ]
@@ -144,7 +144,7 @@ isDebugLogLevel() {
   return $?
 }
 
-### utility function returning true if log level is info
+### utility function returning true if log level is info or greater
 isInfoLogLevel() {
   isDebugLogLevel \
   || [ "$GLOBAL_OPTION_LOG_LEVEL" = 'info' ]
@@ -152,15 +152,15 @@ isInfoLogLevel() {
   return $?
 }
 
-### utility function returning true if log level is warning
+### utility function returning true if log level is warning or greater
 isWarningLogLevel() {
-  isDebugLogLevel \
+  isInfoLogLevel \
   || [ "$GLOBAL_OPTION_LOG_LEVEL" = 'warning' ]
 
   return $?
 }
 
-### utility function returning true if log level is error
+### utility function returning true if log level is error or greater
 isErrorLogLevel() {
   isWarningLogLevel \
   || [ "$GLOBAL_OPTION_LOG_LEVEL" = 'error' ]
@@ -168,9 +168,9 @@ isErrorLogLevel() {
   return $?
 }
 
-### utility function returning true if log level is fatal
+### utility function returning true if log level is fatal or greater
 isFatalLogLevel() {
-  isFatalLogLevel \
+  isErrorLogLevel \
   || [ "$GLOBAL_OPTION_LOG_LEVEL" = 'fatal' ]
 
   return $?
