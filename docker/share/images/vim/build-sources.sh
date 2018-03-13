@@ -35,5 +35,5 @@ make -j $JOBS && make install
 packageIncluding \
   /usr/local/bin/vim-entrypoint.sh \
   /usr/local/share/terminfo \
-  metabarj0/python2 \
+  metabarj0/python3 \
   metabarj0/lua
