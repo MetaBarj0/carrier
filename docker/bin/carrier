@@ -1871,8 +1871,6 @@ executeImageBuildCommand() {
     ( exec "${CARRIER_LIB_DIR}"/carrier-build-image "$image" ) \
     || return 1
   done
-
-  return 0
 }
 
 ### execute the list command of the image domain
@@ -1926,8 +1924,6 @@ executeApplianceBuildCommand() {
     ( exec "${CARRIER_LIB_DIR}"/carrier-manage-appliance build "$appliance" ) \
     || return 1
   done
-
-  return 0
 }
 
 ### execute the list command of the appliance domain
@@ -1981,8 +1977,6 @@ executeApplianceStartCommand() {
     ( exec "${CARRIER_LIB_DIR}"/carrier-manage-appliance start "$appliance" ) \
     || return 1
   done
-
-  return 0
 }
 
 ### execute the stop command of the appliance domain
@@ -2008,8 +2002,6 @@ executeApplianceStopCommand() {
     ( exec "${CARRIER_LIB_DIR}"/carrier-manage-appliance stop "$appliance" ) \
     || return 1
   done
-
-  return 0
 }
 
 ### execute the volumes command of the appliance domain
@@ -2021,6 +2013,8 @@ executeApplianceVolumesCommand() {
 
 ### helper function executing the specified bootstrap command
 executeBootstrapCommand() {
+  info 'attempting to execute one bootstrap command one after another'
+
   executeBootstrapCheckCommand \
   || executeBootstrapRunCommand
 
@@ -2054,6 +2048,8 @@ executeImageCommand() {
 
 ### helper function executing the specified apliance command
 executeApplianceCommand() {
+  info 'attempting to execute one appliance command one after another'
+
   executeApplianceBuildCommand \
   || executeApplianceListCommand \
   || executeApplianceCheckCommand \
@@ -2075,6 +2071,8 @@ executeApplianceCommand() {
 
 ### helper function executing one global command if specified
 executeGlobalCommand() {
+  info 'Attempting to execute one global command one after another'
+
   executeHelpCommand \
   || executeInfoCommand \
   || executeInstallCommand \
@@ -2094,6 +2092,8 @@ executeGlobalCommand() {
 
 ### helper function executing one domain command if specified
 executeDomainCommand() {
+  info 'attempting to execute one command from all domains one after another'
+
   executeBootstrapCommand \
   || executeImageCommand \
   || executeApplianceCommand
