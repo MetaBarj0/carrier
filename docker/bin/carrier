@@ -129,6 +129,83 @@ loadUtilities
 set +e
 #### end of standalone mode, external utility functions loaded #################
 
+### utility function returning true if log level is trace
+isTraceLogLevel() {
+  [ "$GLOBAL_OPTION_LOG_LEVEL" = 'trace' ]
+
+  return $?
+}
+
+### utility function returning true if log level is debug
+isDebugLogLevel() {
+  # trace is special, do not activate debug if trace is specified
+  [ "$GLOBAL_OPTION_LOG_LEVEL" = 'debug' ]
+
+  return $?
+}
+
+### utility function returning true if log level is info
+isInfoLogLevel() {
+  isDebugLogLevel \
+  || [ "$GLOBAL_OPTION_LOG_LEVEL" = 'info' ]
+
+  return $?
+}
+
+### utility function returning true if log level is warning
+isWarningLogLevel() {
+  isDebugLogLevel \
+  || [ "$GLOBAL_OPTION_LOG_LEVEL" = 'warning' ]
+
+  return $?
+}
+
+### utility function returning true if log level is error
+isErrorLogLevel() {
+  isWarningLogLevel \
+  || [ "$GLOBAL_OPTION_LOG_LEVEL" = 'error' ]
+
+  return $?
+}
+
+### utility function returning true if log level is fatal
+isFatalLogLevel() {
+  isFatalLogLevel \
+  || [ "$GLOBAL_OPTION_LOG_LEVEL" = 'fatal' ]
+
+  return $?
+}
+
+### logging function, designed to debug
+### first and unique argument is the message
+debug() {
+  isDebugLogLevel && log "$1" "$GLOBAL_OPTION_LOG_OUTPUT"
+}
+
+### logging function, designed to info
+### first and unique argument is the message
+info() {
+  isInfoLogLevel && log "$1" "$GLOBAL_OPTION_LOG_OUTPUT"
+}
+
+### logging function, designed to warning
+### first and unique argument is the message
+warning() {
+  isWarningLogLevel && log "$1" "$GLOBAL_OPTION_LOG_OUTPUT"
+}
+
+### logging function, designed to error
+### first and unique argument is the message
+error() {
+  isErrorLogLevel && log "$1" "$GLOBAL_OPTION_LOG_OUTPUT"
+}
+
+### logging function, designed to fatal
+### first and unique argument is the message
+fatal() {
+  isFatalLogLevel && log "$1" "$GLOBAL_OPTION_LOG_OUTPUT"
+}
+
 ### basic usage function, shows syntax, how to use, purpose and so on...
 usage() {
   cat << EOI
@@ -278,9 +355,9 @@ buildArgumentsReferential() {
   GLOBAL_OPTIONS_REFERENTIAL="$(cat << EOI
 # desired log level. Defaulted to '2' or 'error'.
 # i.e. carrier info --log-level=error
-#      carrier info -l 2
+#      carrier info -l debug
 (-l|--log-level)=?
-1|2|3|4|5|6|fatal|error|warning|info|debug|trace
+fatal|error|warning|info|debug|trace
 contextSetLogLevel
 
 # desired output for logs. Defaulted to '&2' that is stderr
@@ -1809,6 +1886,8 @@ executeDomainCommand() {
 ### Once the execution context is set, execute the script using it. As the
 ### execution context is verified when set, one function must succeed
 executeWithContext() {
+  debug 'entering in executeWithContext()'
+
   executeGlobalCommand \
   || executeDomainCommand
 
@@ -1816,6 +1895,18 @@ executeWithContext() {
 }
 
 #### Execution context mutator definition area #################################
+
+### Mutator to set the log level. Valid call in any circumstances
+contextSetLogLevel() {
+  # key/value pair
+  GLOBAL_OPTION_LOG_LEVEL="$2"
+}
+
+### Mutator to set the log output. Valid call in any circumstances
+contextSetLogOutput() {
+  # key/value pair
+  GLOBAL_OPTION_LOG_OUTPUT="$2"
+}
 
 ### Mutator to set a global command. Valid call if:
 ### - no domain specified
@@ -1888,6 +1979,11 @@ contextSetImageBuildImageSequence() {
 }
 
 ### TODO NYI
+contextSetImageListOnlyLocal() {
+  return 1
+}
+
+### TODO NYI
 contextSetImageInfoImage() {
   return 1
 }
@@ -1905,6 +2001,16 @@ contextSetApplianceCommand() {
 
 ### TODO NYI
 contextSetApplianceInfoAppliance() {
+  return 1
+}
+
+### TODO NYI
+contextSetApplianceListOnlyLocal() {
+  return 1
+}
+
+### TODO NYI
+contextSetApplianceVolumesList() {
   return 1
 }
 
@@ -1969,8 +2075,9 @@ run() {
   # provided arguments
   buildExecutionContextFromArguments "$@"
 
-  # execution context built successfully, executing the script
-  [ $? -eq 0 ] && executeWithContext || return 1
+  # execution context built successfully, executing the script, otherwise, print
+  # basic usage information
+  [ $? -eq 0 ] && executeWithContext || usage && return 1
 }
 
 run "$@"
