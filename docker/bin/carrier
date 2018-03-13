@@ -1845,6 +1845,9 @@ executeBootstrapRunCommand() {
     info 'bootstrap run requested, starting it in a subshell'
     ( exec "${CARRIER_LIB_DIR}"/carrier-bootstrap )
     executionResult=$?
+
+  [ $executionResult -ne 0 ] \
+  && fatal 'could not bootstrap the system.'
   fi
 
   debug 'executeBootstrapRunCommand() Result'
@@ -1885,7 +1888,7 @@ $DOMAIN_IMAGE_COMMAND_BUILD_OPTION_IMAGE_SEQUENCE"
     executionResult=$?
 
     if [ $executionResult -ne 0 ]; then
-      error 'Failed to build the requested '"$image"' image.'
+      fatal 'Failed to build the requested '"$image"' image.'
       return $executionResult
     fi
   done
