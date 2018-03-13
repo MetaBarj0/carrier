@@ -17,7 +17,7 @@ CFLAGS='-O3 -s' \
   ./configure \
     --prefix=$PREFIX \
     --with-features=huge \
-    --enable-pythoninterp=dynamic \
+    --enable-python3interp=dynamic \
     --enable-luainterp=yes \
     --enable-fail-if-missing \
     --enable-gui=no \
