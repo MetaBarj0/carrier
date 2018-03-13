@@ -136,10 +136,10 @@ isTraceLogLevel() {
   return $?
 }
 
-### utility function returning true if log level is debug or greater
+### utility function returning true if log level is debug
 isDebugLogLevel() {
-  # trace is special, do not activate debug if trace is specified
-  [ "$GLOBAL_OPTION_LOG_LEVEL" = 'debug' ]
+  isTraceLogLevel \
+  || [ "$GLOBAL_OPTION_LOG_LEVEL" = 'debug' ]
 
   return $?
 }
@@ -1838,7 +1838,14 @@ executeBootstrapRunCommand() {
   && [ "$COMMAND" = 'run' ] \
   && ( exec "${CARRIER_LIB_DIR}"/carrier-bootstrap )
 
-  return $?
+  local executionResult=$?
+
+  debug '*** executeBootstrapRunCommand() Result'
+  [ $executionResult -eq 0 ] \
+  && debug 'execution succeeded' \
+  || debug 'execution failed'
+
+  return $executionResult
 }
 
 ### execute the build command of the image domain
@@ -2017,7 +2024,14 @@ executeBootstrapCommand() {
   executeBootstrapCheckCommand \
   || executeBootstrapRunCommand
 
-  return $?
+  local executionResult=$?
+
+  debug '*** executeBootstrapCommand() Result'
+  [ $executionResult -eq 0 ] \
+  && debug 'execution succeeded' \
+  || debug 'execution failed'
+
+  return $executionResult
 }
 
 ### helper function executing the specified image command
@@ -2028,7 +2042,14 @@ executeImageCommand() {
   || executeImageInfoCommand \
   || executeImageUpgradeCommand
 
-  return $?
+  local executionResult=$?
+
+  debug '*** executeImageCommand() Result'
+  [ $executionResult -eq 0 ] \
+  && debug 'execution succeeded' \
+  || debug 'execution failed'
+
+  return $executionResult
 }
 
 ### helper function executing the specified apliance command
@@ -2042,7 +2063,14 @@ executeApplianceCommand() {
   || executeApplianceStopCommand \
   || executeApplianceVolumesCommand
 
-  return $?
+  local executionResult=$?
+
+  debug '*** executeApplianceCommand() Result'
+  [ $executionResult -eq 0 ] \
+  && debug 'execution succeeded' \
+  || debug 'execution failed'
+
+  return $executionResult
 }
 
 ### helper function executing one global command if specified
@@ -2054,7 +2082,14 @@ executeGlobalCommand() {
   || executeUnpackCommand \
   || executeVagrantCommand
 
-  return $?
+  local executionResult=$?
+
+  debug '*** executeGlobalCommand() Result'
+  [ $executionResult -eq 0 ] \
+  && debug 'execution succeeded' \
+  || debug 'execution failed'
+
+  return $executionResult
 }
 
 ### helper function executing one domain command if specified
@@ -2063,18 +2098,49 @@ executeDomainCommand() {
   || executeImageCommand \
   || executeApplianceCommand
 
-  return $?
+  local executionResult=$?
+
+  debug '*** executeDomainCommand() Result'
+  [ $executionResult -eq 0 ] \
+  && debug 'execution succeeded' \
+  || debug 'execution failed'
+
+  return $executionResult
+}
+
+### Helper function activating the trace mode if requested (--log-level=trace)
+### and executing this script from its very start
+executeWithTraceIfRequested() {
+  if isTraceLogLevel \
+     && [ ! ${TRACE_ENABLED+0} ]; then
+  debug 'trace enabled; restarting script...'
+
+  local carrier_script="$(
+    sed '2i\set -x' ${CARRIER_SCRIPT_PATH}
+  )"
+
+  TRACE_ENABLED= eval "$carrier_script"
+  exit $?
+fi
 }
 
 ### Once the execution context is set, execute the script using it. As the
 ### execution context is verified when set, one function must succeed
 executeWithContext() {
-  debug "$(debugOutputExecutionContext)"
+  debug "*** Execution Context
+$(debugOutputExecutionContext)"
 
   executeGlobalCommand \
   || executeDomainCommand
 
-  return $?
+  local executionResult=$?
+
+  debug '*** executeWithContext() Result'
+  [ $executionResult -eq 0 ] \
+  && debug 'execution succeeded' \
+  || debug 'execution failed'
+
+  return $executionResult
 }
 
 #### Execution context mutator definition area #################################
@@ -2257,6 +2323,9 @@ run() {
   # once initialization is done, overwrite values in variables regarding
   # provided arguments
   buildExecutionContextFromArguments "$@"
+
+  # if log level trace is required, restart the execution of the script
+  executeWithTraceIfRequested
 
   # execution context built successfully, executing the script, otherwise, print
   # basic usage information
