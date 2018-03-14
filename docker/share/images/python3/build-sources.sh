@@ -6,12 +6,12 @@ if [ -z $REPOSITORY ]; then
 fi
 
 # extract sources and prepare for build
-tar -xf Python-3.6.3.tar.xz
+tar -xf Python-3.6.4.tar.xz
 
 # copy the custom setup file to enable ssl support
-cp -f Setup Python-3.6.3/Modules/
+cp -f Setup Python-3.6.4/Modules/
 
-cd Python-3.6.3
+cd Python-3.6.4
 mkdir build && cd build
 
 PREFIX=/usr/local

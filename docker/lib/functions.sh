@@ -166,9 +166,11 @@ getPackageFiles() {
     return 1
   fi
 
-  # browse package content, keeping only files
+  # browse package content, keeping only files, making sure the separator is new
+  # line character
   local files=
   local x=
+  local IFS=$'\n'
   for x in $dist_file_content; do
     # just in case the package specified exists but is not a direct dependency
     # the the one being built
@@ -205,6 +207,16 @@ makeUnique() {
   echo "$list" | sort | uniq
 }
 
+# internal wrapper around include function. Designed to be called by include
+# (recursive call) when on item to include is a packaged image. The IFS is
+# reduced to \n, to correctly handle file names containing blank characters
+wrapIncludeWithAlteredIFS() {
+  local oldIFS="$IFS"
+  IFS=$'\n'
+  include "$@"
+  IFS="$oldIFS"
+}
+
 # internal function designed to include files, directories or entire package
 # inside the buildt image. This function is intended to be called by the
 # 'packageIncluding' function
@@ -234,8 +246,11 @@ include() {
         return 1
       fi
 
-      # recursive call with the list of files
-      include "$package_files"
+      # recursive call with the list of files. Files in the list may contain
+      # some special characters as space or tabs... Therefore, a special wrapper
+      # is called to ensure each file names are separated by a new line and not
+      # an eventual blanck character
+      wrapIncludeWithAlteredIFS "$package_files"
     fi
   done
 
