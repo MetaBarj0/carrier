@@ -4,13 +4,12 @@ metabarj0/gcc
 metabarj0/cmake
 metabarj0/ninja
 metabarj0/zlib
-metabarj0/python2
+metabarj0/python3
 metabarj0/bzip2
 metabarj0/ncurses"
 
 PROVIDES=metabarj0/llvm
 
-# TODO : test that ufo
 SOURCES_FETCH_IMAGE=metabarj0/wget
 SOURCES_FETCH_COMMAND=\
 'wget --no-check-certificate '\
