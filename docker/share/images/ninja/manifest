@@ -1,4 +1,4 @@
-REQUIRES="metabarj0/python2
+REQUIRES="metabarj0/python3
 metabarj0/wget"
 
 PROVIDES=metabarj0/ninja
