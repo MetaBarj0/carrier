@@ -17,7 +17,7 @@ CFLAGS='-O3 -s' \
   ./configure \
     --prefix=$PREFIX \
     --with-features=huge \
-    --enable-pythoninterp=dynamic \
+    --enable-python3interp=dynamic \
     --enable-luainterp=yes \
     --enable-fail-if-missing \
     --enable-gui=no \
@@ -35,5 +35,5 @@ make -j $JOBS && make install
 packageIncluding \
   /usr/local/bin/vim-entrypoint.sh \
   /usr/local/share/terminfo \
-  metabarj0/python2 \
+  metabarj0/python3 \
   metabarj0/lua
