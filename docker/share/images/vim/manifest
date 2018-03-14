@@ -12,7 +12,6 @@ SOURCES_FETCH_COMMAND=\
 'https://github.com/vim/vim/archive/master.tar.gz'
 SOURCES_TARBALL_NAME='master.tar.gz'
 
-# TODO : test this entrypoint
 BUILD_EXTRA_DOCKERFILE_COMMANDS=\
 'COPY vim-entrypoint.sh /usr/local/bin/'
 

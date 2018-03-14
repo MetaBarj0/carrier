@@ -70,6 +70,9 @@ ln -sf \
   /usr/local/lib/gcc/amd64-linux-musl/7.3.0/crtend.o \
   /usr/local/lib/crtend.o
 
+# removing intermediate compiled python files
+rm -rf ${PREFIX}/lib/python3.6
+
 # 4- make this image a package using either package or packageIncluding
 # as llvm is built using gcc, including it too
 packageIncluding metabarj0/gcc
