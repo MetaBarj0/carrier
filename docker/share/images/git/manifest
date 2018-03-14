@@ -5,7 +5,7 @@ metabarj0/curl
 metabarj0/openssl
 metabarj0/expat
 metabarj0/pcre2
-metabarj0/python2
+metabarj0/python3
 metabarj0/gettext
 metabarj0/autoconf
 metabarj0/m4
@@ -18,8 +18,8 @@ BASE_IMAGE=busybox
 SOURCES_FETCH_IMAGE=metabarj0/wget
 SOURCES_FETCH_COMMAND=\
 'wget --no-check-certificate '\
-'https://github.com/git/git/archive/v2.16.1.tar.gz'
-SOURCES_TARBALL_NAME='v2.16.1.tar.gz'
+'https://github.com/git/git/archive/v2.16.2.tar.gz'
+SOURCES_TARBALL_NAME='v2.16.2.tar.gz'
 
 BUILD_EXTRA_DOCKERFILE_COMMANDS="$(cat << EOI
 COPY git-entrypoint.sh /usr/local/bin/

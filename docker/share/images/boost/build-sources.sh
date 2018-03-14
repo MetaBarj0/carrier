@@ -20,7 +20,7 @@ JOBS=$(getThreadCount)
 ./b2 -j$JOBS install
 
 # remove pyc file from python invocation during build time
-rm -rf ${PREFIX}/lib/python2.7
+rm -rf ${PREFIX}/lib/python3.6
 
 # make this image a package
 packageIncluding ${PREFIX}/include/sched.h

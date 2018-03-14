@@ -6,8 +6,8 @@ if [ -z $REPOSITORY ]; then
 fi
 
 # extract sources and prepare for build
-tar -xf v2.16.1.tar.gz
-cd git-2.16.1
+tar -xf v2.16.2.tar.gz
+cd git-2.16.2
 
 make configure
 
@@ -36,6 +36,6 @@ make -j $JOBS \
 # make this image a package, packaging the entrypoint as well
 packageIncluding \
   /usr/local/bin/git-entrypoint.sh \
-  metabarj0/python2 \
+  metabarj0/python3 \
   metabarj0/openssh \
   metabarj0/diffutils
