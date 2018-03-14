@@ -7,8 +7,8 @@ PROVIDES=metabarj0/python3
 SOURCES_FETCH_IMAGE=metabarj0/wget
 SOURCES_FETCH_COMMAND=\
 'wget --no-check-certificate '\
-'https://www.python.org/ftp/python/3.6.3/Python-3.6.3.tar.xz'
-SOURCES_TARBALL_NAME='Python-3.6.3.tar.xz'
+'https://www.python.org/ftp/python/3.6.4/Python-3.6.4.tar.xz'
+SOURCES_TARBALL_NAME='Python-3.6.4.tar.xz'
 
 BUILD_EXTRA_DOCKERFILE_COMMANDS='COPY Setup ./'
 
