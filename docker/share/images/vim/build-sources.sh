@@ -18,6 +18,7 @@ CFLAGS='-O3 -s' \
     --prefix=$PREFIX \
     --with-features=huge \
     --enable-python3interp=dynamic \
+    --enable-pythoninterp=dynamic \
     --enable-luainterp=yes \
     --enable-fail-if-missing \
     --enable-gui=no \
@@ -36,4 +37,5 @@ packageIncluding \
   /usr/local/bin/vim-entrypoint.sh \
   /usr/local/share/terminfo \
   metabarj0/python3 \
+  metabarj0/python2 \
   metabarj0/lua
