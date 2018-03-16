@@ -1068,8 +1068,16 @@ EOI
 ### initialize the execution context of carrier, dictating what to do with
 ### provided arguments
 initializeExecutionContext() {
-  # carrier --log-level=2 ...
-  GLOBAL_OPTION_LOG_LEVEL=2
+  info 'Initializing the execution context with default values'
+
+  # user can set up this variable value before executing this script. It allows
+  # to take benefit of the log level before having to parse arguments passed to
+  # the script, allowing to log level higher than error before the execution
+  # begins
+  # carrier --log-level=error ...
+  [ -z "$GLOBAL_OPTION_LOG_LEVEL" ] \
+  && GLOBAL_OPTION_LOG_LEVEL=error
+
   GLOBAL_OPTION_LOG_OUTPUT='&2'
 
   # carrier help, carrier appliance run ...
