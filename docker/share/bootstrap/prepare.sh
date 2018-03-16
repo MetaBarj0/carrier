@@ -133,7 +133,7 @@ EOI
   REPOSITORY=$(docker images metabarj0/manifest -q)
 
   if [ $REPOSITORY ]; then
-    docker rmi $REPOSITORY
+    docker rmi metabarj0/manifest
   fi
 
   docker build --squash -t metabarj0/manifest -f Dockerfile.manifest .
@@ -209,7 +209,7 @@ buildGccImage() {
   REPOSITORY=$(docker images metabarj0/gcc -q)
 
   if [ $REPOSITORY ]; then
-    docker rmi $REPOSITORY
+    docker rmi metabarj0/gcc
   fi
 
   # script to install the built gcc image
@@ -349,7 +349,7 @@ EOI
   REPOSITORY=$(docker images metabarj0/make -q)
 
   if [ $REPOSITORY ]; then
-    docker rmi $REPOSITORY
+    docker rmi metabarj0/make
   fi
 
   docker build --squash -t metabarj0/make -f Dockerfile.make .
@@ -416,7 +416,7 @@ EOI
   REPOSITORY=$(docker images metabarj0/docker-cli -q)
 
   if [ $REPOSITORY ]; then
-    docker rmi $REPOSITORY
+    docker rmi docker-cli
   fi
 
   docker build --squash -t metabarj0/docker-cli -f Dockerfile.docker-cli .
