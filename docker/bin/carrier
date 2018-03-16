@@ -104,6 +104,7 @@ EOI
   CARRIER_SHARE_IMAGES_DIR="$CARRIER_SHARE_DIR"/images
   CARRIER_SHARE_APPLIANCES_DIR="$CARRIER_SHARE_DIR"/appliances
   CARRIER_SRC_DIR="$CARRIER_ROOT_DIR"/src
+  CARRIER_TMP_DIR="$CARRIER_ROOT_DIR"/tmp
 }
 
 ### load utilities located in $CARRIER_LIB_DIR/functions.sh
@@ -1842,8 +1843,8 @@ executeBootstrapRunCommand() {
 
   if [ "$DOMAIN" = 'bootstrap' ] \
      && [ "$COMMAND" = 'run' ]; then
-    info 'bootstrap run requested, starting it in a subshell'
-    ( exec "${CARRIER_LIB_DIR}"/carrier-bootstrap )
+    info 'bootstrap run requested'
+    bootstrap_run
     executionResult=$?
 
   [ $executionResult -ne 0 ] \
@@ -2325,6 +2326,184 @@ contextSetApplianceStopApplianceSequence() {
 
 #### End of execution context mutator definition area ##########################
 
+#### bootstrap specific functions
+
+### simply copy the bootstrap dir from share to a temporary staging area
+bootstrap_fetchInStagingArea() {
+  cp -r "$CARRIER_SHARE_BOOTSTRAP_DIR" "$CARRIER_TMP_DIR"
+
+  local executionResult=$?
+
+  [ $executionResult -ne 0 ] \
+  && fatal 'Unabled to copy bootstrap files in staging area.'
+
+  debug 'bootstrap_fetchInStagingArea() Result'
+  [ $executionResult -eq 0 ] \
+  && debug 'execution succeeded' \
+  || debug 'execution failed'
+
+  return $executionResult
+}
+
+### copy useful lib script to the temporary staging area where bootstrap file
+### reside
+bootstrap_fetchLibInStagingArea() {
+  cp "$CARRIER_LIB_DIR"/exportPackageTo \
+     "$CARRIER_LIB_DIR"/importPackageFrom \
+     "$CARRIER_LIB_DIR"/functions.sh \
+     "$CARRIER_TMP_DIR"/bootstrap
+
+  local executionResult=$?
+
+  [ $executionResult -ne 0 ] \
+  && fatal 'Unabled to copy utilities files in staging area.'
+
+  debug 'bootstrap_fetchLibInStagingArea() Result'
+  [ $executionResult -eq 0 ] \
+  && debug 'execution succeeded' \
+  || debug 'execution failed'
+
+  return $executionResult
+}
+
+### build the bootstrap docker image responsible to bootstrap the system
+bootstrap_build() {
+  cd "$CARRIER_TMP_DIR"/bootstrap
+
+  docker build --squash -t metabarj0/bootstrap . \
+  && docker image prune -f
+
+  local executionResult=$?
+
+  [ $executionResult -ne 0 ] \
+  && fatal 'bootstrap image build failed.'
+
+  debug 'bootstrap_build() Result'
+  [ $executionResult -eq 0 ] \
+  && debug 'execution succeeded' \
+  || debug 'execution failed'
+
+  cd - 1>/dev/null 2>&1
+
+  return $executionResult
+}
+
+### ask for some configuration and run the bootstrap image to bootstrap the
+### system
+bootstrap_run_image() {
+  # need some functions
+  . "$CARRIER_TMP_DIR"/bootstrap/functions.sh
+
+  cat << EOI
+Specify the version of GCC you want to build. Note that today, only 7.2.0
+and 7.3.0 are supported : [7.3.0]
+EOI
+
+  local gcc_version="$(readValueWithDefault '7.3.0')"
+
+  cat << EOI
+Specify the binutils version you want to build. Note that for GCC 7.3.0, 2.29
+is a working version : [2.29]
+EOI
+
+  local binutils_version="$(readValueWithDefault '2.29')"
+
+  cat << EOI
+Specify the version of Kernel headers you want to use. Note that for GCC 7.3.0
+the 4.14.3 version works perfectly well. Moreover, only version 4+ is
+supported : [4.14.14]
+EOI
+
+  local kernel_version="$(readValueWithDefault '4.14.14')"
+
+  cat << EOI
+Specify the make version you want to use. Note that version 4.2 is
+good : [4.2]
+EOI
+
+  local make_version="$(readValueWithDefault '4.2')"
+
+  # run the bootstrap image
+  docker run --rm -it \
+    -v /var/run/docker.sock:/var/run/docker.sock \
+    -e GCC_VERSION="$gcc_version" \
+    -e BINUTILS_VERSION="$binutils_version" \
+    -e KERNEL_VERSION="$kernel_version" \
+    -e MAKE_VERSION="$make_version" \
+    metabarj0/bootstrap
+
+  local executionResult=$?
+
+  [ $executionResult -ne 0 ] \
+  && fatal 'bootstrap image failed to run correctly.' \
+  && return $executionResult
+
+  cat << EOI
+Bootstrapping successfully done! Would you like to remove the
+metabarj0/bootstrap docker image? [Y/n]
+EOI
+
+  local remove_bootstrap="$(readValueWithDefault 'Y')"
+
+  if [ $remove_bootstrap = 'Y' ] || [ $remove_bootstrap = 'y' ]; then
+    docker rmi metabarj0/bootstrap
+
+    executionResult=$?
+
+    [ $executionResult -ne 0 ] \
+    && fatal 'Unabled to remove the bootstrap image.' \
+    return $executionResult
+  fi
+
+  debug 'bootstrap_run_image() Result'
+  [ $executionResult -eq 0 ] \
+  && debug 'execution succeeded' \
+  || debug 'execution failed'
+
+  return $executionResult
+}
+
+### once the system is bootstrapped, clean the staging area
+bootstrap_cleanupStagingArea() {
+  rm -rf "$CARRIER_TMP_DIR"/bootstrap
+
+  local executionResult=$?
+
+  [ $executionResult -ne 0 ] \
+  && fatal 'Unabled to swipe bootstrap files in staging area.'
+
+  debug 'bootstrap_cleanupStagingArea() Result'
+  [ $executionResult -eq 0 ] \
+  && debug 'execution succeeded' \
+  || debug 'execution failed'
+
+  return $?
+}
+
+### run the full bootstrap procedure
+bootstrap_run() {
+  info 'Running the bootstrap procedure'
+
+  bootstrap_fetchInStagingArea \
+  && bootstrap_fetchLibInStagingArea \
+  && bootstrap_build \
+  && bootstrap_run_image \
+  && bootstrap_cleanupStagingArea
+
+  local executionResult=$?
+
+  [ $executionResult -ne 0 ] \
+  && fatal 'bootstrap procedure failed at some point'
+
+  debug 'bootstrap_run() Result'
+  [ $executionResult -eq 0 ] \
+  && debug 'execution succeeded' \
+  || debug 'execution failed'
+
+  return $executionResult
+}
+#### End of bootstrap specific functions
+
 ### entry point
 run() {
   # argument are positional. First come global options, then, if any, domain
@@ -2353,4 +2532,5 @@ run() {
   [ $? -eq 0 ] && executeWithContext || usage && return 1
 }
 
+#### The script starts here
 run "$@"
