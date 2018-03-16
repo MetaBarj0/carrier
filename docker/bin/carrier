@@ -2520,24 +2520,32 @@ run() {
   # if domain is not specified, that is perfectly valid, directly jump to
   # command and command's option
 
-  # first build the argument referential
-  buildArgumentsReferential
+  executeWithTraceIfRequested
 
   # parse provided argument and use referentials to extract the execution
   # context. It will dictate how the carrier script will behave, which domain,
   # command and options to take into account.
   initializeExecutionContext
 
-  # once initialization is done, overwrite values in variables regarding
-  # provided arguments
-  buildExecutionContextFromArguments "$@"
+  buildArgumentsReferential \
+  && initializeExecutionContext \
+  && buildExecutionContextFromArguments "$@"
 
-  # if log level trace is required, restart the execution of the script
-  executeWithTraceIfRequested
+  local executionResult=$?
 
-  # execution context built successfully, executing the script, otherwise, print
-  # basic usage information
-  [ $? -eq 0 ] && executeWithContext || usage && return 1
+  if [ "$executionResult" -ne 0 ]; then
+    error 'Failed to initialize carrier'
+    return 1
+  else
+    executeWithContext
+
+    executionResult=$?
+
+    if [ "$executionResult" -ne 0 ]; then
+      usage
+      return 1
+    fi
+  fi
 }
 
 #### The script starts here
