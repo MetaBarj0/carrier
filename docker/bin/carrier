@@ -229,6 +229,13 @@ removeIrrelevantDetailsFromReferentialOption() {
   echo "$referential"\
   | sed -E '/^--$/d' \
   | sed -E '/contextSet.+/d'
+
+  local executionResult=$?
+
+  [ "$executionResult" -ne 0 ] \
+  && fatal 'could not purify the options referential to get detailed help'
+
+  return $executionResult
 }
 
 ### Get a full help on usage
@@ -353,8 +360,10 @@ EOI
 ### line 2: pattern for argument value or --
 ### line 3: function name initializing execution context
 buildArgumentsReferential() {
+  info 'setting up the arguments referential'
+
   GLOBAL_OPTIONS_REFERENTIAL="$(cat << EOI
-# desired log level. Defaulted to '2' or 'error'.
+# desired log level. Defaulted to 'error'.
 # i.e. carrier info --log-level=error
 #      carrier info -l debug
 (-l|--log-level)=?
@@ -1218,6 +1227,7 @@ initializeExecutionContext() {
   DOMAIN_APPLIANCE_COMMAND_UPGRADE_OPTION_APPLIANCE_SEQUENCE=
 }
 
+### internal function displyaing the content of the execution context
 debugOutputExecutionContext() {
   cat << EOI
   GLOBAL_OPTION_LOG_LEVEL=\
@@ -1404,6 +1414,8 @@ EOI
 ### utility function mutating the execution context provided with a referential
 ### and a pair of key value
 tryMutateReferential() {
+  info 'attempting to mutate the execution context'
+
   local referential="$1"
   local key="$2";
   local value="$3";
@@ -1425,6 +1437,10 @@ tryMutateReferential() {
       # the key do not match, test another entry in the referential
       # resetting patterns and mutator for another turn
       key_pattern= ; value_pattern= ; mutator=
+
+      warning 'provided key: '"$key"' does not match the explored referential' \
+        ' key pattern: '"$key_pattern"
+
       continue
     fi
 
@@ -1437,6 +1453,10 @@ tryMutateReferential() {
         # the value do not match, test another entry in the referential
         # resetting patterns and mutator for another turn
         key_pattern= ; value_pattern= ; mutator=
+
+      warning 'provided value: '"$value"' does not match the explored' \
+        'referential value pattern: '"$value_pattern"
+
         continue
       fi
     fi
@@ -1446,18 +1466,27 @@ tryMutateReferential() {
     # echo m="$mutator" k="$key" v="$value"
     "$mutator" "$key" "$value"
 
-    return $?
+    local executionResult=$?
+
+    [ "$executionResult" -ne 0 ] \
+    && warning 'The mutator: '"$mutator"' failed to execute correctly with' \
+        'key: '"$key"' and value: '"$value"
+
+    return $executionResult
   done
 
   # failed to modify the execution context for this referential. unless it is
   # the most specialized referential (command options) it is not fatal as more
   # specialized referential will be explored for mutation
+  warning 'Could not modify the referential: '"$referential"
   return 1
 }
 
 ### specialized mutator designed to mutate global options settings. Provided with
 ### 2 arguments with at least one that must be non empty.
 tryMutateGlobalOptions() {
+  info 'attempting to mutate global options'
+
   # key MUST be set
   local key="$1";
   local value="$2";
@@ -1466,7 +1495,13 @@ tryMutateGlobalOptions() {
   local referential="$(deleteCommentLines "$GLOBAL_OPTIONS_REFERENTIAL")"
 
   tryMutateReferential "$referential" "$key" "$value"
-  return $?
+
+  local executionResult=$?
+
+  warning 'could not mutate global options with key: '"$key"' and ' \
+    'value: '"$value"
+
+  return $executionResult
 }
 
 ### specialized mutator designed to mutate the domain. Provided with
@@ -1480,7 +1515,13 @@ tryMutateDomain() {
   local referential="$(deleteCommentLines "$DOMAINS_REFERENTIAL")"
 
   tryMutateReferential "$referential" "$key" "$value"
-  return $?
+
+  local executionResult=$?
+
+  warning 'could not mutate the domain with key: '"$key"' and '\
+    'value: '"$value"
+
+  return $executionResult
 }
 
 ### specialized mutator designed to mutate domain options settings. Provided
@@ -1501,7 +1542,13 @@ tryMutateGlobalCommand() {
   local referential="$(deleteCommentLines "$GLOBAL_COMMANDS_REFERENTIAL")"
 
   tryMutateReferential "$referential" "$key" "$value"
-  return $?
+
+  local executionResult=$?
+
+    warning 'could not mutate the command with key: '"$key"' and ' \
+      'value: '"$value"
+
+  return $executionResult
 }
 
 ### attempt to mutate a domain command. Test all domains command in chain. if
@@ -1528,7 +1575,12 @@ tryMutateDomainCommand() {
   || tryMutateReferential "$image_referential" "$key" "$value" \
   || tryMutateReferential "$appliance_referential" "$key" "$value"
 
-  return $?
+  local executionResult=$?
+
+    warning 'could not mutate the domain command with key: '"$key"' and ' \
+      'value: '"$value"
+
+  return $executionResult
 }
 
 ### attempt to modify the execution context related to options of global
@@ -1572,7 +1624,12 @@ tryMutateGlobalCommandOptions() {
   || tryMutateReferential "$unpack_referential" "$key" "$value" \
   || tryMutateReferential "$vagrant_referential" "$key" "$value"
 
-  return $?
+  local executionResult=$?
+
+    warning 'could not mutate the global command with key: '"$key"' and ' \
+      'value: '"$value"
+
+  return $executionResult
 }
 
 tryMutateDomainCommandOptions() {
@@ -1657,7 +1714,12 @@ tryMutateDomainCommandOptions() {
   || tryMutateReferential "$appliance_stop_referential" "$key" "$value" \
   || tryMutateReferential "$appliance_volumes_referential" "$key" "$value"
 
-  return $?
+  local executionResult=$?
+
+    warning 'could not mutate the domain command options with ' \
+      'key: '"$key"' and value: '"$value"
+
+  return $executionResult
 }
 
 ### mutates the execution context with a key and a value as arguments
@@ -1716,13 +1778,19 @@ tryMutateExecutionContext() {
   || tryMutateGlobalCommandOptions "$key" "$value" \
   || tryMutateDomainCommandOptions "$key" "$value"
 
-  return $?
+  local executionResult=$?
+
+  warning 'could not mutate the execution context with key: '"$key"' and ' \
+    'value: '"$value"
+
+  return $executionResult
 }
 
 ### internal function attempting to mutate the execution context with a provided
 ### argument of the form key=value
 tryMutateExecutionContextWithKeyEqualsValueArg() {
   if ! isPair "$1"; then
+    warning 'A pair is needed here. '"$1"' is not a pair'
     return 1
   fi
 
@@ -1731,7 +1799,12 @@ tryMutateExecutionContextWithKeyEqualsValueArg() {
 
   tryMutateExecutionContext "$key" "$value"
 
-  return $?
+  local executionResult=$?
+
+    warning 'could not mutate the domain command with key: '"$key"' and ' \
+      'value: '"$value"
+
+  return $executionResult
 }
 
 ### build the final execution context regarding provided arguments
@@ -1761,24 +1834,29 @@ buildExecutionContextFromArguments() {
   local arg=
   for arg in $@; do
     if [ -z "$extractedKeyFromArg" ]; then
-      # assuming I have a key=value argument
-      tryMutateExecutionContextWithKeyEqualsValueArg "$arg" && continue
+      if tryMutateExecutionContextWithKeyEqualsValueArg "$arg"; then
+        info 'key=value args successfully altered the execution context'
+        continue
+      fi
 
-      # didn't work, assuming the arg is a single switch
-      tryMutateExecutionContext "$arg" && continue
+      if tryMutateExecutionContext "$arg"; then
+        info 'single arg successfully altered the execution context'
+        continue
+      fi
 
-      # didn't work, arg may be the key of a key/value pair
+      info 'mutation failed with arg: '"$arg"' continuing...'
       extractedKeyFromArg="$arg" && continue
     else
-      # attempting to mutate the execution context with a key/value pair. this
-      # is the last chance thus, failing here is fatal and denotes that the
-      # argument pair is not conform to the referential
-      tryMutateExecutionContext \
-        "$extractedKeyFromArg" \
-        "$arg" \
-      || return 1
-
-      extractedKeyFromArg=
+      
+      if tryMutateExecutionContext "$extractedKeyFromArg" "$arg"; then
+        info 'key value args successfully altered the execution context'
+        extractedKeyFromArg=
+        continue
+      else
+        error 'Failed to modify the execution context with ' \
+          'key: '"$extractedKeyFromArg"' and value: '"$arg"
+        return 1
+      fi
     fi
   done
 
@@ -1792,10 +1870,13 @@ executeHelpCommand() {
     local mode="$GLOBAL_COMMAND_HELP_OPTION_MODE"
     [ "$mode" = '-H' ] || [ "$mode" = '--full' ]
     local fullMode=$?
-    [ "$fullMode" -eq 0 ] \
-    && info 'full mode help requested' \
-    || info 'brief mode help requested'
-    [ "$fullMode" -eq 0 ] && usageFull || usage
+    if [ "$fullMode" -eq 0 ]; then
+      info 'full mode help requested'
+      usageFull 
+    else
+      info 'brief mode help requested'
+      usage
+    fi
   else
     warning 'help was not the requested command'
     return 1
@@ -1806,6 +1887,7 @@ executeHelpCommand() {
 executeInfoCommand() {
   :
 
+  fatal 'Not implemented yet'
   return 1
 }
 
@@ -1813,6 +1895,7 @@ executeInfoCommand() {
 executeInstallCommand() {
   :
 
+  fatal 'Not implemented yet'
   return 1
 }
 
@@ -1820,6 +1903,7 @@ executeInstallCommand() {
 executePackCommand() {
   :
 
+  fatal 'Not implemented yet'
   return 1
 }
 
@@ -1827,6 +1911,7 @@ executePackCommand() {
 executeUnpackCommand() {
   :
 
+  fatal 'Not implemented yet'
   return 1
 }
 
@@ -1834,6 +1919,7 @@ executeUnpackCommand() {
 executeVagrantCommand() {
   :
 
+  fatal 'Not implemented yet'
   return 1
 }
 
@@ -1841,6 +1927,7 @@ executeVagrantCommand() {
 executeBootstrapCheckCommand() {
   :
 
+  fatal 'Not implemented yet'
   return 1
 }
 
@@ -1855,8 +1942,8 @@ executeBootstrapRunCommand() {
     bootstrap_run
     executionResult=$?
 
-  [ $executionResult -ne 0 ] \
-  && fatal 'could not bootstrap the system.'
+    [ $executionResult -ne 0 ] \
+    && fatal 'could not bootstrap the system.'
   fi
 
   debug 'executeBootstrapRunCommand() Result'
@@ -1894,7 +1981,7 @@ $DOMAIN_IMAGE_COMMAND_BUILD_OPTION_IMAGE_SEQUENCE"
   for image in $sequence; do
     # the first image build failing return from that function
     ( exec "${CARRIER_LIB_DIR}"/carrier-build-image "$image" )
-    executionResult=$?
+    local executionResult=$?
 
     if [ $executionResult -ne 0 ]; then
       fatal 'Failed to build the requested '"$image"' image.'
@@ -1907,6 +1994,7 @@ $DOMAIN_IMAGE_COMMAND_BUILD_OPTION_IMAGE_SEQUENCE"
 executeImageListCommand() {
   :
 
+  fatal 'Not implemented yet'
   return 1
 }
 
@@ -1914,6 +2002,7 @@ executeImageListCommand() {
 executeImageCheckCommand() {
   :
 
+  fatal 'Not implemented yet'
   return 1
 }
 
@@ -1921,6 +2010,7 @@ executeImageCheckCommand() {
 executeImageInfoCommand() {
   :
 
+  fatal 'Not implemented yet'
   return 1
 }
 
@@ -1928,6 +2018,7 @@ executeImageInfoCommand() {
 executeImageUpgradeCommand() {
   :
 
+  fatal 'Not implemented yet'
   return 1
 }
 
@@ -1937,6 +2028,11 @@ executeApplianceBuildCommand() {
   if [ ! "$DOMAIN" = 'appliance' ] \
      || [ ! "$COMMAND" = 'build' ] \
      || [ -z "$DOMAIN_APPLIANCE_COMMAND_BUILD_OPTION_APPLIANCE_SEQUENCE" ]; then
+    error "incomplete or incorrect execution context:
+  DOMAIN=$DOMAIN
+  COMMAND=$COMMAND
+  DOMAIN_APPLIANCE_COMMAND_BUILD_OPTION_APPLIANCE_SEQUENCE=\
+$DOMAIN_APPLIANCE_COMMAND_BUILD_OPTION_APPLIANCE_SEQUENCE"
     return 1
   fi
 
@@ -1951,8 +2047,14 @@ executeApplianceBuildCommand() {
   local appliance=
   for appliance in $sequence; do
     # the first appliance build failing return from that function
-    ( exec "${CARRIER_LIB_DIR}"/carrier-manage-appliance build "$appliance" ) \
-    || return 1
+    ( exec "${CARRIER_LIB_DIR}"/carrier-manage-appliance build "$appliance" )
+
+    local executionResult=$?
+
+    if [ $executionResult -ne 0 ]; then
+      fatal 'Failed to build the requested '"$appliance"' appliance.'
+      return $executionResult
+    fi
   done
 }
 
@@ -1960,6 +2062,7 @@ executeApplianceBuildCommand() {
 executeApplianceListCommand() {
   :
 
+  fatal 'Not implemented yet'
   return 1
 }
 
@@ -1967,6 +2070,7 @@ executeApplianceListCommand() {
 executeApplianceCheckCommand() {
   :
 
+  fatal 'Not implemented yet'
   return 1
 }
 
@@ -1974,6 +2078,7 @@ executeApplianceCheckCommand() {
 executeApplianceInfoCommand() {
   :
 
+  fatal 'Not implemented yet'
   return 1
 }
 
@@ -1981,6 +2086,7 @@ executeApplianceInfoCommand() {
 executeApplianceUpgradeCommand() {
   :
 
+  fatal 'Not implemented yet'
   return 1
 }
 
@@ -1990,6 +2096,11 @@ executeApplianceStartCommand() {
   if [ ! "$DOMAIN" = 'appliance' ] \
      || [ ! "$COMMAND" = 'start' ] \
      || [ -z "$DOMAIN_APPLIANCE_COMMAND_START_OPTION_APPLIANCE_SEQUENCE" ]; then
+    error "incomplete or incorrect execution context:
+  DOMAIN=$DOMAIN
+  COMMAND=$COMMAND
+  DOMAIN_APPLIANCE_COMMAND_START_OPTION_APPLIANCE_SEQUENCE=\
+$DOMAIN_APPLIANCE_COMMAND_START_OPTION_APPLIANCE_SEQUENCE"
     return 1
   fi
 
@@ -2004,8 +2115,14 @@ executeApplianceStartCommand() {
   local appliance=
   for appliance in $sequence; do
     # the first appliance build failing return from that function
-    ( exec "${CARRIER_LIB_DIR}"/carrier-manage-appliance start "$appliance" ) \
-    || return 1
+    ( exec "${CARRIER_LIB_DIR}"/carrier-manage-appliance start "$appliance" )
+
+    local executionResult=$?
+
+    if [ $executionResult -ne 0 ]; then
+      fatal 'Failed to start the requested '"$appliance"' appliance.'
+      return $executionResult
+    fi
   done
 }
 
@@ -2015,6 +2132,11 @@ executeApplianceStopCommand() {
   if [ ! "$DOMAIN" = 'appliance' ] \
      || [ ! "$COMMAND" = 'stop' ] \
      || [ -z "$DOMAIN_APPLIANCE_COMMAND_STOP_OPTION_APPLIANCE_SEQUENCE" ]; then
+    error "incomplete or incorrect execution context:
+  DOMAIN=$DOMAIN
+  COMMAND=$COMMAND
+  DOMAIN_APPLIANCE_COMMAND_STOP_OPTION_APPLIANCE_SEQUENCE=\
+$DOMAIN_APPLIANCE_COMMAND_STOP_OPTION_APPLIANCE_SEQUENCE"
     return 1
   fi
 
@@ -2029,8 +2151,14 @@ executeApplianceStopCommand() {
   local appliance=
   for appliance in $sequence; do
     # the first appliance build failing return from that function
-    ( exec "${CARRIER_LIB_DIR}"/carrier-manage-appliance stop "$appliance" ) \
-    || return 1
+    ( exec "${CARRIER_LIB_DIR}"/carrier-manage-appliance stop "$appliance" )
+
+    local executionResult=$?
+
+    if [ $executionResult -ne 0 ]; then
+      fatal 'Failed to stop the requested '"$appliance"' appliance.'
+      return $executionResult
+    fi
   done
 }
 
@@ -2038,6 +2166,7 @@ executeApplianceStopCommand() {
 executeApplianceVolumesCommand() {
   :
 
+  fatal 'Not implemented yet'
   return 1
 }
 
@@ -2143,15 +2272,18 @@ executeDomainCommand() {
 executeWithTraceIfRequested() {
   if isTraceLogLevel \
      && [ ! ${TRACE_ENABLED+0} ]; then
-  debug 'trace enabled; restarting script...'
+    debug 'trace enabled; restarting script...'
 
-  local carrier_script="$(
-    sed '2i\set -x' ${CARRIER_SCRIPT_PATH}
-  )"
+    local carrier_script="$(
+      sed '2i\set -x' ${CARRIER_SCRIPT_PATH}
+    )"
 
-  TRACE_ENABLED= eval "$carrier_script"
-  exit $?
-fi
+    TRACE_ENABLED= eval "$carrier_script"
+
+    local executionResult=$?
+    debug 'script execution finished, exiting with status code :'$executionResult
+    exit $executionResult
+  fi
 }
 
 ### Once the execution context is set, execute the script using it. As the
@@ -2179,34 +2311,44 @@ $(debugOutputExecutionContext)"
 contextSetLogLevel() {
   # key/value pair
   GLOBAL_OPTION_LOG_LEVEL="$2"
+  debug 'GLOBAL_OPTION_LOG_LEVEL='"$2"
 }
 
 ### Mutator to set the log output. Valid call in any circumstances
 contextSetLogOutput() {
   # key/value pair
   GLOBAL_OPTION_LOG_OUTPUT="$2"
+  debug 'GLOBAL_OPTION_LOG_OUTPUT='"$2"
 }
 
 ### Mutator to set a global command. Valid call if:
 ### - no domain specified
 contextSetGlobalCommand() {
   if [ ! -z "$DOMAIN" ]; then
+    error 'A domain name must not be specified to set the '"$1"' global command'
     return 1
   fi
 
   # the key specified (first argument) is the command
   COMMAND="$1"
+  debug 'COMMAND='"$1"
 }
 
 ### mutator to set the help mode. Valid call if:
 ### - command is 'help'
 contextSetHelpMode() {
   if [ ! "$COMMAND" = 'help' ]; then
+    error "$(cat << EOI
+contextSetHelpMode() can only be used when specified command is help
+  current COMMAND=$COMMAND
+EOI
+    )"
     return 1
   fi
 
   # the key (first value) is the help mode
   GLOBAL_COMMAND_HELP_OPTION_MODE="$1"
+  debug 'GLOBAL_COMMAND_HELP_OPTION_MODE='"$1"
 }
 
 ### mutator to set the domain. Valid call if:
@@ -2215,33 +2357,52 @@ contextSetDomain() {
   # empty domain and non empty command denotes a global command specified sooner
   if [ -z "$DOMAIN" ] \
      && [ ! -z "$COMMAND" ]; then
+    error "$(cat << EOI
+contextSetDomain() can only be used if domain and command are unspecified
+  current DOMAIN=$DOMAIN
+  current COMMAND=$COMMAND
+EOI
+    )"
     return 1
   fi
 
   # the specified key (first arg) is the domain
   DOMAIN="$1"
+  debug 'DOMAIN='"$1"
 }
 
 ### mutator to setup the bootstrap command. Valid call if:
 ### - domain is bootstrap
 contextSetBootstrapCommand() {
   if [ ! "$DOMAIN" = 'bootstrap' ]; then
+    error "$(cat << EOI
+contextSetBootstrapCommand() can only be called if DOMAIN is bootstrap
+  current DOMAIN=$DOMAIN
+EOI
+    )"
     return 1
   fi
 
   # the specified key (first arg) is the bootstrap command
   COMMAND="$1"
+  debug 'COMMAND='"$1"
 }
 
 ### mutator to setup the image command. Valid call if:
 ### - domain is image
 contextSetImageCommand() {
   if [ ! "$DOMAIN" = 'image' ]; then
+    error "$(cat << EOI
+contextSetImageCommand() can only be called if domain is image
+  current DOMAIN=$DOMAIN
+EOI
+    )"
     return 1
   fi
 
   # the specified key (first arg) is the image command
   COMMAND="$1"
+  debug 'COMMAND='"$1"
 }
 
 ### mutator to setup the sequence of image to build. Valid call if:
@@ -2250,20 +2411,34 @@ contextSetImageCommand() {
 contextSetImageBuildImageSequence() {
   if [ ! "$DOMAIN" = 'image' ] \
      || [ ! "$COMMAND" = 'build' ]; then
+  error "$(cat << EOI
+contextSetImageBuildImageSequence() can only be used when the domain is image
+and the command is build.
+  current DOMAIN=$DOMAIN
+  current COMMAND=$COMMAND
+EOI
+  )"
     return 1
   fi
 
   # the key (first arg) is the image sequence
   DOMAIN_IMAGE_COMMAND_BUILD_OPTION_IMAGE_SEQUENCE="$1"
+  debug 'DOMAIN_IMAGE_COMMAND_BUILD_OPTION_IMAGE_SEQUENCE='"$1"
 }
 
 ### TODO NYI
 contextSetImageListOnlyLocal() {
+  :
+
+  fatal 'Not yet implemented'
   return 1
 }
 
 ### TODO NYI
 contextSetImageInfoImage() {
+  :
+
+  fatal 'Not yet implemented'
   return 1
 }
 
@@ -2271,25 +2446,40 @@ contextSetImageInfoImage() {
 ### - domain is appliance
 contextSetApplianceCommand() {
   if [ ! "$DOMAIN" = 'appliance' ]; then
+    error "$(cat << EOI
+contextSetApplianceCommand() can only be called if domain is appliance
+  current DOMAIN=$DOMAIN
+EOI
+    )"
     return 1
   fi
 
   # the specified key (first arg) is the appliance command
   COMMAND="$1"
+  debug 'COMMAND='"$1"
 }
 
 ### TODO NYI
 contextSetApplianceInfoAppliance() {
+  :
+
+  fatal 'Not yet implemented'
   return 1
 }
 
 ### TODO NYI
 contextSetApplianceListOnlyLocal() {
+  :
+
+  fatal 'Not yet implemented'
   return 1
 }
 
 ### TODO NYI
 contextSetApplianceVolumesList() {
+  :
+
+  fatal 'Not yet implemented'
   return 1
 }
 
@@ -2299,11 +2489,19 @@ contextSetApplianceVolumesList() {
 contextSetApplianceBuildApplianceSequence() {
   if [ ! "$DOMAIN" = 'appliance' ] \
      || [ ! "$COMMAND" = 'build' ]; then
+    error "$(cat << EOI
+contextSetApplianceBuildApplianceSequence() can only be called wwhen domain is
+appliance and command is build.
+  current DOMAIN=$DOMAIN
+  current COMMAND=$COMMAND
+EOI
+    )"
     return 1
   fi
 
   # the key (first arg) is the appliance sequence
   DOMAIN_APPLIANCE_COMMAND_BUILD_OPTION_APPLIANCE_SEQUENCE="$1"
+  debug 'DOMAIN_APPLIANCE_COMMAND_BUILD_OPTION_APPLIANCE_SEQUENCE='"$1"
 }
 
 ### mutator to setup the sequence of appliance to start. Valid call if:
@@ -2312,11 +2510,19 @@ contextSetApplianceBuildApplianceSequence() {
 contextSetApplianceStartApplianceSequence() {
   if [ ! "$DOMAIN" = 'appliance' ] \
      || [ ! "$COMMAND" = 'start' ]; then
+    error "$(cat << EOI
+contextSetApplianceStartApplianceSequence() can only be used if domain is
+appliance and command is start
+  current DOMAIN=$DOMAIN
+  current COMMAND=$COMMAND
+EOI
+    )"
     return 1
   fi
 
   # the key (first arg) is the appliance sequence
   DOMAIN_APPLIANCE_COMMAND_START_OPTION_APPLIANCE_SEQUENCE="$1"
+  debug 'DOMAIN_APPLIANCE_COMMAND_START_OPTION_APPLIANCE_SEQUENCE='"$1"
 }
 
 ### mutator to setup the sequence of appliance to start. Valid call if:
@@ -2325,11 +2531,19 @@ contextSetApplianceStartApplianceSequence() {
 contextSetApplianceStopApplianceSequence() {
   if [ ! "$DOMAIN" = 'appliance' ] \
      || [ ! "$COMMAND" = 'stop' ]; then
+    error "$(cat << EOI
+contextSetApplianceStartApplianceSequence() can only be used if domain is
+appliance and command is stop
+  current DOMAIN=$DOMAIN
+  current COMMAND=$COMMAND
+EOI
+    )"
     return 1
   fi
 
   # the key (first arg) is the appliance sequence
   DOMAIN_APPLIANCE_COMMAND_STOP_OPTION_APPLIANCE_SEQUENCE="$1"
+  debug 'DOMAIN_APPLIANCE_COMMAND_STOP_OPTION_APPLIANCE_SEQUENCE='"$1"
 }
 
 #### End of execution context mutator definition area ##########################
@@ -2514,18 +2728,12 @@ bootstrap_run() {
 
 ### entry point
 run() {
-  # argument are positional. First come global options, then, if any, domain
-  # then domain options then then domain's command come, finally the command's
-  # options.
-  # if domain is not specified, that is perfectly valid, directly jump to
-  # command and command's option
+  info 'starting carrier execution'
 
   executeWithTraceIfRequested
 
-  # parse provided argument and use referentials to extract the execution
-  # context. It will dictate how the carrier script will behave, which domain,
-  # command and options to take into account.
-  initializeExecutionContext
+  info "building arguments referential, initializing execution context and
+building the final execution context from provided arguments"
 
   buildArgumentsReferential \
   && initializeExecutionContext \
@@ -2548,5 +2756,5 @@ run() {
   fi
 }
 
-#### The script starts here
+#### The script starts here once the standalone mode has passed
 run "$@"
