@@ -20,7 +20,7 @@ bootstrap_build() {
   cd - 1> /dev/null
 }
 
-bootstrap_run() {
+bootstrap_run_image() {
   # need some functions
   . "$CARRIER_TMP_DIR"/bootstrap/functions.sh
 
@@ -79,8 +79,12 @@ bootstrap_cleanupStagingArea() {
   rm -rf "$CARRIER_TMP_DIR"/bootstrap
 }
 
-bootstrap_fetchInStagingArea
-bootstrap_fetchLibInStagingArea
-bootstrap_build
+bootstrap_run() {
+  bootstrap_fetchInStagingArea
+  bootstrap_fetchLibInStagingArea
+  bootstrap_build
+  bootstrap_run_image
+  bootstrap_cleanupStagingArea
+}
+
 bootstrap_run
-bootstrap_cleanupStagingArea
