@@ -96,7 +96,7 @@ EOI
 
   cd $relative_carrier_root_dir
   CARRIER_ROOT_DIR="$(pwd -P)"
-  cd - 1>/dev/null 2>&1
+  USER_DIRECTORY="$(cd -)"
 
   CARRIER_LIB_DIR="$CARRIER_ROOT_DIR"/lib
   CARRIER_SHARE_DIR="$CARRIER_ROOT_DIR"/share
@@ -181,30 +181,35 @@ isFatalLogLevel() {
 ### first and unique argument is the message
 debug() {
   isDebugLogLevel && log '[debug] '"$1" "$GLOBAL_OPTION_LOG_OUTPUT"
+  return 0
 }
 
 ### logging function, designed to info
 ### first and unique argument is the message
 info() {
   isInfoLogLevel && log '[info] '"$1" "$GLOBAL_OPTION_LOG_OUTPUT"
+  return 0
 }
 
 ### logging function, designed to warning
 ### first and unique argument is the message
 warning() {
   isWarningLogLevel && log '[warning] '"$1" "$GLOBAL_OPTION_LOG_OUTPUT"
+  return 0
 }
 
 ### logging function, designed to error
 ### first and unique argument is the message
 error() {
   isErrorLogLevel && log '[error] '"$1" "$GLOBAL_OPTION_LOG_OUTPUT"
+  return 0
 }
 
 ### logging function, designed to fatal
 ### first and unique argument is the message
 fatal() {
   isFatalLogLevel && log '[fatal] '"$1" "$GLOBAL_OPTION_LOG_OUTPUT"
+  return 0
 }
 
 ### basic usage function, shows syntax, how to use, purpose and so on...
@@ -1438,8 +1443,11 @@ tryMutateReferential() {
       # resetting patterns and mutator for another turn
       key_pattern= ; value_pattern= ; mutator=
 
-      warning 'provided key: '"$key"' does not match the explored referential' \
-        ' key pattern: '"$key_pattern"
+      warning "$(cat << EOI
+provided key: $key does not match the explored referential key
+pattern: $key_pattern
+EOI
+      )"
 
       continue
     fi
@@ -1454,8 +1462,11 @@ tryMutateReferential() {
         # resetting patterns and mutator for another turn
         key_pattern= ; value_pattern= ; mutator=
 
-      warning 'provided value: '"$value"' does not match the explored' \
-        'referential value pattern: '"$value_pattern"
+        warning "$(cat << EOI
+provided value: $value does not match the exploredi referential value
+pattern: $value_pattern
+EOI
+        )"
 
         continue
       fi
@@ -1465,12 +1476,14 @@ tryMutateReferential() {
     # though value may be empty
     # echo m="$mutator" k="$key" v="$value"
     "$mutator" "$key" "$value"
-
     local executionResult=$?
 
     [ "$executionResult" -ne 0 ] \
-    && warning 'The mutator: '"$mutator"' failed to execute correctly with' \
-        'key: '"$key"' and value: '"$value"
+      && warning "$(cat << EOI
+The mutator: $mutator failed to execute correctly with key: $key and
+value: $value
+EOI
+          )"
 
     return $executionResult
   done
@@ -1498,8 +1511,10 @@ tryMutateGlobalOptions() {
 
   local executionResult=$?
 
-  warning 'could not mutate global options with key: '"$key"' and ' \
-    'value: '"$value"
+  warning "$(cat << EOI
+could not mutate global options with key: $key and value: $value
+EOI
+)"
 
   return $executionResult
 }
@@ -1518,8 +1533,10 @@ tryMutateDomain() {
 
   local executionResult=$?
 
-  warning 'could not mutate the domain with key: '"$key"' and '\
-    'value: '"$value"
+  warning "$(cat << EOI
+could not mutate the domain with key: $key and value: $value
+EOI
+  )"
 
   return $executionResult
 }
@@ -1545,8 +1562,10 @@ tryMutateGlobalCommand() {
 
   local executionResult=$?
 
-    warning 'could not mutate the command with key: '"$key"' and ' \
-      'value: '"$value"
+  warning "$(cat << EOI
+could not mutate the command with key: $key and value: $value
+EOI
+)"
 
   return $executionResult
 }
@@ -1577,8 +1596,10 @@ tryMutateDomainCommand() {
 
   local executionResult=$?
 
-    warning 'could not mutate the domain command with key: '"$key"' and ' \
-      'value: '"$value"
+  warning "$(cat << EOI
+could not mutate the domain command with key: $key and value: $value
+EOI
+)"
 
   return $executionResult
 }
@@ -1626,8 +1647,10 @@ tryMutateGlobalCommandOptions() {
 
   local executionResult=$?
 
-    warning 'could not mutate the global command with key: '"$key"' and ' \
-      'value: '"$value"
+  warning "$(cat << EOI
+could not mutate the global command with key: $key and value: $value
+EOI
+)"
 
   return $executionResult
 }
@@ -1716,8 +1739,11 @@ tryMutateDomainCommandOptions() {
 
   local executionResult=$?
 
-    warning 'could not mutate the domain command options with ' \
-      'key: '"$key"' and value: '"$value"
+  warning "$(cat << EOI
+could not mutate the domain command options with key: $key and
+value: $value
+EOI
+)"
 
   return $executionResult
 }
@@ -1780,8 +1806,10 @@ tryMutateExecutionContext() {
 
   local executionResult=$?
 
-  warning 'could not mutate the execution context with key: '"$key"' and ' \
-    'value: '"$value"
+  warning "$(cat << EOI
+could not mutate the execution context with key: $key and value: $value
+EOI
+)"
 
   return $executionResult
 }
@@ -1801,8 +1829,10 @@ tryMutateExecutionContextWithKeyEqualsValueArg() {
 
   local executionResult=$?
 
-    warning 'could not mutate the domain command with key: '"$key"' and ' \
-      'value: '"$value"
+  warning "$(cat << EOI
+could not mutate the domain command with key: $key and value: $value
+EOI
+)"
 
   return $executionResult
 }
@@ -1845,22 +1875,24 @@ buildExecutionContextFromArguments() {
       fi
 
       info 'mutation failed with arg: '"$arg"' continuing...'
-      extractedKeyFromArg="$arg" && continue
-    else
+      extractedKeyFromArg="$arg"
       
+      continue
+    else
       if tryMutateExecutionContext "$extractedKeyFromArg" "$arg"; then
         info 'key value args successfully altered the execution context'
         extractedKeyFromArg=
         continue
       else
-        error 'Failed to modify the execution context with ' \
-          'key: '"$extractedKeyFromArg"' and value: '"$arg"
+        error "$(cat << EOI
+Failed to modify the execution context with key: $extractedKeyFromArg and
+value: $arg
+EOI
+        )"
         return 1
       fi
     fi
   done
-
-  [ ! -z "$extractedKeyFromArg" ] && return 1 || return 0
 }
 
 ### helper function executing the help command with its options if required
@@ -2532,7 +2564,7 @@ contextSetApplianceStopApplianceSequence() {
   if [ ! "$DOMAIN" = 'appliance' ] \
      || [ ! "$COMMAND" = 'stop' ]; then
     error "$(cat << EOI
-contextSetApplianceStartApplianceSequence() can only be used if domain is
+contextSetApplianceStopApplianceSequence() can only be used if domain is
 appliance and command is stop
   current DOMAIN=$DOMAIN
   current COMMAND=$COMMAND
@@ -2548,7 +2580,7 @@ EOI
 
 #### End of execution context mutator definition area ##########################
 
-#### bootstrap specific functions
+#### bootstrap domain specific functions
 
 ### simply copy the bootstrap dir from share to a temporary staging area
 bootstrap_fetchInStagingArea() {
@@ -2724,7 +2756,10 @@ bootstrap_run() {
 
   return $executionResult
 }
-#### End of bootstrap specific functions
+#### End of bootstrap domain specific functions
+
+#### image domain specific functions
+#### End of image domain specific functions
 
 ### entry point
 run() {
