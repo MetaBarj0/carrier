@@ -96,8 +96,6 @@ EOI
 
   cd $relative_carrier_root_dir
   CARRIER_ROOT_DIR="$(pwd -P)"
-  USER_DIRECTORY="$(cd -)"
-
   CARRIER_LIB_DIR="$CARRIER_ROOT_DIR"/lib
   CARRIER_SHARE_DIR="$CARRIER_ROOT_DIR"/share
   CARRIER_SHARE_BOOTSTRAP_DIR="$CARRIER_SHARE_DIR"/bootstrap
@@ -105,6 +103,7 @@ EOI
   CARRIER_SHARE_APPLIANCES_DIR="$CARRIER_SHARE_DIR"/appliances
   CARRIER_SRC_DIR="$CARRIER_ROOT_DIR"/src
   CARRIER_TMP_DIR="$CARRIER_ROOT_DIR"/tmp
+  USER_DIRECTORY="$(cd -)"
 }
 
 ### load utilities located in $CARRIER_LIB_DIR/functions.sh
@@ -2012,7 +2011,7 @@ $DOMAIN_IMAGE_COMMAND_BUILD_OPTION_IMAGE_SEQUENCE"
   local executionResult=1
   for image in $sequence; do
     # the first image build failing return from that function
-    ( exec "${CARRIER_LIB_DIR}"/carrier-build-image "$image" )
+    image_build "$image"
     local executionResult=$?
 
     if [ $executionResult -ne 0 ]; then
@@ -2759,6 +2758,209 @@ bootstrap_run() {
 #### End of bootstrap domain specific functions
 
 #### image domain specific functions
+
+### checking image name or image's manifest file path.
+image_checkManifestPathOrName() {
+  local argument_error_message="$(
+  cat << EOI
+Error: Bad argument specified.
+Expected is either :
+- an absolute path to a manifest file of a docker image project located in the
+  docker/share/images directory
+- a relative path from your current directory to a manifest file of a docker
+  image project located in the docker/share/images directory
+- the name of the directory of the docker image project you want to build,
+  located in the docker/share/images directory
+
+Taking theses remarks into account should help you to resolve your
+problem...exiting...
+EOI
+  )"
+
+  # This script needs one argument: either
+  #  - an absolute path to a manifest file
+  #  - a relative path to a manifest file
+  #  - a valid docker image name which can be found in the share/image directory
+  if [ ! $# -eq 1 ]; then
+    error "$argument_error_message"
+    exit 1
+  fi
+
+  # try to resolve the manifest file path by:
+  #  - appending it to the current user directory, useful if relative path is
+  #    provided
+  #  - testing directly the file path, useful if absolute path is provided
+  local manifest_arg="$1"
+  if [ ! -f ${USER_DIRECTORY}/"$manifest_arg" ] \
+     && [ ! -f "$manifest_arg" ]; then
+    # not a file path, testing the image name
+    manifest_arg=${CARRIER_SHARE_IMAGES_DIR}/"$1"/manifest
+    if [ ! -f ${manifest_arg} ]; then
+      error "$argument_error_message"
+      exit 1
+    fi
+  fi
+
+  # OK, valid argument, exposing the manifest file absolute path
+  MANIFEST_FILE_PATH=${manifest_arg}
+}
+
+### look for the existence of foundation images on the docker host. If this
+### check fails, no build is possible.
+image_checkBootstrapImages() {
+  # first, verify if bootstrap has built all necessary foundation images, that
+  # is metabarj0/manifest, metabarj0/gcc, metabarj0/make and
+  # metabarj0/docker-cli and alpine/wget
+  local required_images="$(
+  cat << EOI
+metabarj0/manifest
+metabarj0/gcc
+metabarj0/make
+metabarj0/docker-cli
+alpine/wget
+EOI
+  )"
+
+  for i in $required_images; do
+    id=$(docker image ls -q $i)
+    if [ -z $id ]; then
+      error "$(cat << EOI
+Error: the mandatory image "$i" has not been found on your docker host. Make
+sure you have properly bootstrapped your docker host before attempting any
+image build...exiting...
+EOI
+)"
+      return 1
+    fi
+  done
+}
+
+### check for the existence of zll dependencies of the image requested to be
+### built and attempt to build them if they are not present on the docker host.
+image_buildDependencies() {
+  # browse all dependencies
+  for dep in $REQUIRES; do
+    # first, check on the host if the image exists; if so, continue without
+    # building it
+    local repository=$(docker image ls -q "$dep")
+    if [ ! -z "$repository" ]; then
+      continue
+    fi
+
+    # no existing image found on the host, building it, the current directory
+    # being the image staging directory, there must be a docker directory to
+    # look into from the global docker tmp directory
+    # TODO : rethink how manifest is found : source variables instead sed-ing
+    #        it. Allows user to define its PROVIDES variable using any form
+    #        that is valid in shell
+    local dependency_manifest=$(
+      find ${FETCHED_MANIFEST} \
+        -name manifest \
+        -exec \
+          grep -EH 'PROVIDES='$dep'$' {} \; \
+          | sed -E 's/^([^:]+):.+/\1/'
+    )
+
+    # transform dependency_manifest to be just the image name
+    local dependency_manifest_dir=$(dirname $dependency_manifest)
+    dependency_manifest=$(basename $dependency_manifest_dir)
+
+    local this_script_name=$(basename $0)
+    local this_script_path=${DOCKER_BIN_DIRECTORY}/$this_script_name
+
+    # calling in a sub-shell, isolating shell variables from each other
+    ( image_build "$dependency_manifest" )
+  done
+
+}
+
+### fill the staging area with file necessary to build the image and its
+### dependencies
+image_fillStagingArea() {
+  local image_directory=$(dirname $MANIFEST_FILE_PATH)
+
+  # create the intermediate images directory in the staging area if it does not
+  # already exist
+  local staging_directory=${CARRIER_TMP_DIR}/images
+
+  # sanitize the satging area if this is this execution is the first (no
+  # recursion)
+  if [ -z "$FETCHED_MANIFEST" ]; then
+    rm -rf $staging_directory
+  fi
+
+  mkdir -p $staging_directory
+
+  # copy the project in the staging area
+  cp -a $image_directory $staging_directory
+
+  # copy necessary lib files in the project directory in the staging area
+  local image_name=$(basename $image_directory)
+  IMAGE_STAGING_DIRECTORY=${staging_directory}/$image_name
+
+  cd $CARRIER_LIB_DIR
+
+  cp \
+    .dockerignore \
+    build-image.sh \
+    build.sh \
+    Dockerfile.build-image \
+    exportPackageTo \
+    functions.sh \
+    importPackageFrom \
+    $IMAGE_STAGING_DIRECTORY
+
+  cd $USER_DIRECTORY
+}
+
+### attempt to build the image and all of its dependencies
+image_buildImageAndDependencies() {
+  # source the content of the manifest file, that will initialize some useful
+  # variables
+  . $MANIFEST_FILE_PATH
+
+  # build all dependencies of this project first if there are
+  if [ ! -z "$REQUIRES" ]; then
+    # genuine source of images is needed
+    fetchManifestImageContent $IMAGE_STAGING_DIRECTORY
+    image_buildDependencies
+  fi
+
+  # rely on some variables extracted from the manifest file that was parsed
+  (
+    exec \
+      ${IMAGE_STAGING_DIRECTORY}/build.sh \
+      $PROVIDES \
+      $IMAGE_STAGING_DIRECTORY \
+      "$SOURCES_FETCH_IMAGE" \
+      "$SOURCES_FETCH_COMMAND" \
+      "$SOURCES_TARBALL_NAME" \
+      "$REQUIRES" \
+      "$BUILD_EXTRA_DOCKERFILE_COMMANDS" \
+      "$BASE_IMAGE" \
+      "$FINAL_EXTRA_DOCKERFILE_COMMANDS"
+  )
+}
+
+### when the build is complete, cleanup the staging area
+image_cleanupStagingArea() {
+  rm -rf $IMAGE_STAGING_DIRECTORY
+
+  if [ -z "$(ls ${CARRIER_TMP_DIR}/images)" ]; then
+    rm -r ${CARRIER_TMP_DIR}/images
+  fi
+}
+
+### entrypoint for carrier image build... may be called recursively in case of
+### dependency image building
+### accept an image name or a manifest file path
+image_build() {
+  image_checkBootstrapImages
+  image_checkManifestPathOrName "$1"
+  image_fillStagingArea
+  image_buildImageAndDependencies
+  image_cleanupStagingArea
+}
 #### End of image domain specific functions
 
 ### entry point

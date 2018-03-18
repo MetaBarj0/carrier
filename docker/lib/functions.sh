@@ -422,9 +422,9 @@ collectSharedObjectDependencies() {
 # built, therefore, it is consistent to check for variables FETCHED_MANIFEST and
 # USER_DIRECTORY
 fetchManifestImageContent() {
-  if [ ${USER_DIRECTORY+0} ]; then
+  if [ ! ${USER_DIRECTORY+0} ]; then
     error "$(cat << EOI
-Error: the internale variable USER_DIRECTORY is not set and maandatory to use
+Error: the internal variable USER_DIRECTORY is not set and maandatory to use
 this function...exiting...
 EOI
     )"
