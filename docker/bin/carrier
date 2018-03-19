@@ -2078,7 +2078,7 @@ $DOMAIN_APPLIANCE_COMMAND_BUILD_OPTION_APPLIANCE_SEQUENCE"
   local appliance=
   for appliance in $sequence; do
     # the first appliance build failing return from that function
-    ( exec "${CARRIER_LIB_DIR}"/carrier-manage-appliance build "$appliance" )
+    ( appliance_manage 'build' "$appliance" )
 
     local executionResult=$?
 
@@ -2146,7 +2146,7 @@ $DOMAIN_APPLIANCE_COMMAND_START_OPTION_APPLIANCE_SEQUENCE"
   local appliance=
   for appliance in $sequence; do
     # the first appliance build failing return from that function
-    ( exec "${CARRIER_LIB_DIR}"/carrier-manage-appliance start "$appliance" )
+    ( appliance_manage 'start' "$appliance" )
 
     local executionResult=$?
 
@@ -2182,7 +2182,7 @@ $DOMAIN_APPLIANCE_COMMAND_STOP_OPTION_APPLIANCE_SEQUENCE"
   local appliance=
   for appliance in $sequence; do
     # the first appliance build failing return from that function
-    ( exec "${CARRIER_LIB_DIR}"/carrier-manage-appliance stop "$appliance" )
+    ( appliance_manage 'stop' "$appliance" )
 
     local executionResult=$?
 
@@ -2521,7 +2521,7 @@ contextSetApplianceBuildApplianceSequence() {
   if [ ! "$DOMAIN" = 'appliance' ] \
      || [ ! "$COMMAND" = 'build' ]; then
     error "$(cat << EOI
-contextSetApplianceBuildApplianceSequence() can only be called wwhen domain is
+contextSetApplianceBuildApplianceSequence() can only be called when domain is
 appliance and command is build.
   current DOMAIN=$DOMAIN
   current COMMAND=$COMMAND
@@ -3057,7 +3057,7 @@ appliance_checkArgument() {
   if [ ! -f "${USER_DIRECTORY}"/"$manifest_arg" ] \
      && [ ! -f "$manifest_arg" ]; then
     # not a file path, testing the appliance name
-    manifest_arg="${DOCKER_APPLIANCES_DIRECTORY}"/"$2"/manifest
+    manifest_arg="${CARRIER_SHARE_APPLIANCES_DIR}"/"$2"/manifest
     if [ ! -f "${manifest_arg}" ]; then
       appliance_showUsage
       return 1
