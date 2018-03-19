@@ -1,8 +1,8 @@
 #!/bin/sh
 
-# source and validate (or invalidate) the appliance's manifest file. Ensure all
-# mandatory variables are set. This is not a deep validation, this functions
-# only verify the exposition of a global variable.
+### source and validate (or invalidate) the appliance's manifest file. Ensure
+### all mandatory variables are set. This is not a deep validation, this
+### functions only verify the exposition of a global variable.
 appliance_shallowValidateManifestFile() {
   # first, source the manifest file
   . "$MANIFEST_FILE_PATH"
@@ -35,7 +35,7 @@ EOI
   APPLIANCE_NAME="$(basename "$(dirname "$MANIFEST_FILE_PATH")")"
 }
 
-# help message on how to use the appliance management system.
+### help message on how to use the appliance management system.
 appliance_showUsage() {
   error "$(
   cat << EOI
@@ -68,8 +68,8 @@ EOI
   )"
 }
 
-# check the argument provided by the user to this script. Ensure that arguments
-# are correct before going any further
+### check the argument provided by the user to this script. Ensure that
+### arguments are correct before going any further
 appliance_checkArgument() {
   # TODO : the command should be known, no necessary to cheack here, has been
   # checked before
@@ -103,7 +103,7 @@ appliance_checkArgument() {
   MANIFEST_FILE_PATH="${manifest_arg}"
 }
 
-# put all necessary files intor the being built appliance staging directory.
+### put all necessary files intor the being built appliance staging directory.
 appliance_fillStagingArea() {
   # TODO : take a look at filling staging area in the image build feature to
   #        see if a refacto could be done
@@ -133,9 +133,9 @@ appliance_fillStagingArea() {
   cd "$USER_DIRECTORY"
 }
 
-# fetch a copy of the master branch of the carrier directory then, copy the
-# entire docker directory into the staging directory. This manifest is used to
-# build various dependencies and serve as a genuine repository.
+### fetch a copy of the master branch of the carrier directory then, copy the
+### entire docker directory into the staging directory. This manifest is used
+### to build various dependencies and serve as a genuine repository.
 appliance_fetchManifest() {
   # use the metabarj0/manifest docker image that MUST exist
   local manifest_image="$(
@@ -162,8 +162,8 @@ EOI
   fetchManifestImageContent "$APPLIANCE_STAGING_DIRECTORY"
 }
 
-# build an image that is required for the appliance and that was not found on
-# the docker host. Relies on the image build system.
+### build an image that is required for the appliance and that was not found on
+### the docker host. Relies on the image build system.
 appliance_buildDependentImage() {
   # uses the metabarj0/manifest container to build required images. It'll result
   # in the creation of a docker directory inside the appliance staging directory
@@ -214,8 +214,8 @@ EOI
   # TODO : check if everything was good before continuing, image build may fail
 }
 
-# enumerates all required images needed by the appliance and build them if
-# they are not on the docker host
+### enumerates all required images needed by the appliance and build them if
+### they are not on the docker host
 appliance_checkRequiredImages() {
   # manifest file read and validated, check existing images and attempt build
   # them if necessary
@@ -231,9 +231,9 @@ appliance_checkRequiredImages() {
   done
 }
 
-# Generate the entire Dockerfile of an image of the appliance, relying on the
-# content of the manifest file and values computed by the process of appliance
-# building.
+### Generate the entire Dockerfile of an image of the appliance, relying on the
+### content of the manifest file and values computed by the process of
+### appliance building.
 appliance_compileDockerfile() {
   # TODO refactor this function by breaking it in more atomic parts
   # create a map between image used in build stages and their alias that will be
@@ -311,8 +311,8 @@ $EXTRA_DOCKERFILE_COMMANDS
 EOI
 }
 
-# create the service's docker image on the docker host using the generated
-# Dockerfile
+### create the service's docker image on the docker host using the generated
+### Dockerfile
 appliance_buildServiceImage() {
   # now we have a dockerfile, we just have to use it to build the appliance
   # image, go to the build context
@@ -331,7 +331,7 @@ appliance_buildServiceImage() {
   cd "$USER_DIRECTORY"
 }
 
-# cleanup the appliance staging area when the build is complete
+### cleanup the appliance staging area when the build is complete
 appliance_cleanupStagingArea() {
   if [ -d "$APPLIANCE_STAGING_DIRECTORY" ]; then
     rm -rf "$APPLIANCE_STAGING_DIRECTORY"
@@ -342,9 +342,9 @@ appliance_cleanupStagingArea() {
   fi
 }
 
-# source the specified function, exposing glabal variables useful to build a
-# service image.
-# $1 : function name
+### source the specified function, exposing glabal variables useful to build a
+### service image.
+### $1 : function name
 appliance_callBuildContextFunction() {
   # execute the function
   "$1"
@@ -371,7 +371,7 @@ EOI
   fi
 }
 
-# unset global variables exposed by one of the manifest's function call
+### unset global variables exposed by one of the manifest's function call
 appliance_unsetBuildContextVariables() {
   unset IMAGE_NAME
   unset BASE_IMAGE
@@ -379,9 +379,9 @@ appliance_unsetBuildContextVariables() {
   unset EXTRA_DOCKERFILE_COMMANDS
 }
 
-# this function will build each and every image that are needed to build each
-# service of the appliance. It relies on the content of the manifest file that
-# has been source and roughly validated
+### this function will build each and every image that are needed to build each
+### service of the appliance. It relies on the content of the manifest file
+### that has been source and roughly validated
 appliance_buildServiceImages() {
   # a common part of an error message
   local part_error_message="$(cat << EOI
@@ -466,8 +466,8 @@ EOI
   done
 }
 
-# entrypoint of the build command. In finality, create the appliance's docker
-# image on the docker host.
+### entrypoint of the build command. In finality, create the appliance's docker
+### image on the docker host.
 appliance_build() {
   # prepare the staging area to build the appliance
   appliance_fillStagingArea
@@ -479,8 +479,8 @@ appliance_build() {
   appliance_cleanupStagingArea
 }
 
-# entrypoint of the start command. If the appliance requested to start has not
-# been built yet, the system will attempt to build it first.
+### entrypoint of the start command. If the appliance requested to start has
+### not been built yet, the system will attempt to build it first.
 appliance_start() {
   # if some image are not yet built, build them
   appliance_build
@@ -500,7 +500,7 @@ appliance_start() {
   appliance_cleanupStagingArea
 }
 
-# entrypoint for the stop command. If the appliance is running, stops it.
+### entrypoint for the stop command. If the appliance is running, stops it.
 appliance_stop() {
   appliance_fillStagingArea
 
@@ -519,9 +519,9 @@ appliance_stop() {
   info 'Appliance '"$APPLIANCE_NAME"' successfully stopped.'
 }
 
-# generic function executing the right function depending on the command
-# provided. The name of the function to call is built appending the command name
-# and 'Appliance'
+### generic function executing the right function depending on the command
+### provided. The name of the function to call is built appending the command
+### name and 'Appliance'
 appliance_executeRequestedCommand() {
   # build the function name according to the provided command
   local function_name=appliance_${COMMAND}
