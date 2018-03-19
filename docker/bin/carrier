@@ -3302,8 +3302,8 @@ appliance_cleanupStagingArea() {
     rm -rf "$APPLIANCE_STAGING_DIRECTORY"
   fi
 
-  if [ -z "$(ls "${DOCKER_TMP_DIRECTORY}"/appliances)" ]; then
-    rm -r "${DOCKER_TMP_DIRECTORY}"/appliances
+  if [ -z "$(ls "${CARRIER_TMP_DIR}"/appliances)" ]; then
+    rm -r "${CARRIER_TMP_DIR}"/appliances
   fi
 }
 
@@ -3434,13 +3434,8 @@ EOI
 ### entrypoint of the build command. In finality, create the appliance's docker
 ### image on the docker host.
 appliance_build() {
-  # prepare the staging area to build the appliance
   appliance_fillStagingArea
-
-  # build the image of each service
   appliance_buildServiceImages
-
-  # fnally, make some cleanup in the staging area
   appliance_cleanupStagingArea
 }
 
@@ -3449,6 +3444,8 @@ appliance_build() {
 appliance_start() {
   # if some image are not yet built, build them
   appliance_build
+
+  appliance_fillStagingArea
 
   cd "$APPLIANCE_STAGING_DIRECTORY"
 
