@@ -2963,6 +2963,9 @@ image_build() {
 }
 #### End of image domain specific functions
 
+#### appliance domain specific functions
+#### End of appliance domain specific functions
+
 ### entry point
 run() {
   info 'starting carrier execution'
