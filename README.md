@@ -16,7 +16,7 @@ provides a pre-configured docker host and docker-compose.
 - docker image reusability
 - docker appliance building
 - docker appliance execution
-- docker appliance persistant storage management
+- docker appliance persistant storage management (yet to come)
 
 To summarize :
 
