@@ -579,7 +579,7 @@ EOI
 # - check verifies one or more images are healthy and up to date
 # - info report about internal informations about an image
 # - upgrade can upgrade one or more image regarding their dependencies status
-build|list|check|info|upgrade
+build|list|check|info|upgrade|factorize
 --
 contextSetImageCommand
 EOI
@@ -799,6 +799,38 @@ contextSetImageUpgradeIgnoreDependencyDefects
 (-l|--image-list)=?
 [^,]+(,[^,]+)*
 contextSetImageUpgradeImageSequence
+EOI
+  )"
+
+  DOMAIN_IMAGE_COMMAND_FACTORIZE_OPTIONS_REFERENTIAL="$(cat << EOI
+# options available when factorizing two or more images to extract a base that
+# contains all common files.
+
+# the name to give to the extracted base image. Note that the provided name
+# must be conform to the docker standart in term of naming.
+(-b|--base-image-name)=?
+.*
+contextSetImageFactorizeBaseImageName
+
+# this is the prefix used to name the extracted base image. As a result, a
+# prefixed base image will look like : prefix/base-image-name when listing
+# docker images
+(-p|--base-image-prefix)=?
+.*
+contextSetImageFactorizeBaseImagePrefix
+
+# suffix used on factorized images. If not specified, the 'factorized' string
+# will be used
+(-s|--factorized-image-suffix)=?
+.+
+contextSetImageFactorizeFactorizedImageSuffix
+
+# the image list to factorize. At least 2 images have to be specified but
+# specifying more than 2 is perfectly valid. However, keep in mind that
+# specified images having lots of files in common tend to be more factorizable.
+(-l|--image-list)=?
+[^,]+(,[^,]+)+
+contextSetImageFactorizeImageSequence
 EOI
   )"
 
@@ -1183,12 +1215,20 @@ initializeExecutionContext() {
   DOMAIN_IMAGE_COMMAND_INFO_OPTION_FORMAT='shell'
   DOMAIN_IMAGE_COMMAND_INFO_OPTION_IMAGE=
 
-  # docker carrier image upgrade metabarj0/git,metabarj0/gdb
+  # carrier image upgrade metabarj0/git,metabarj0/gdb
   DOMAIN_IMAGE_COMMAND_UPGRADE_OPTION_ALL='yes'
   DOMAIN_IMAGE_COMMAND_UPGRADE_OPTION_IGNORE_DATE='no'
   DOMAIN_IMAGE_COMMAND_UPGRADE_OPTION_IGNORE_MISSING='no'
   DOMAIN_IMAGE_COMMAND_UPGRADE_OPTION_IGNORE_DEPENDENCY_DEFECTS='no'
   DOMAIN_IMAGE_COMMAND_UPGRADE_OPTION_IMAGE_SEQUENCE=
+
+  # carrier image factorize \
+  #   -b dev_toolchains \
+  #   -l metabarj0/llvm,metabarj0/gcc
+  DOMAIN_IMAGE_COMMAND_FACTORIZE_OPTION_BASE_IMAGE_NAME=
+  DOMAIN_IMAGE_COMMAND_FACTORIZE_OPTION_BASE_IMAGE_PREFIX='base'
+  DOMAIN_IMAGE_COMMAND_FACTORIZE_OPTION_FACTORIZED_IMAGE_SUFFIX='factorized'
+  DOMAIN_IMAGE_COMMAND_FACTORIZE_OPTION_IMAGE_SEQUENCE=
 
   # carrier appliance build devenv_cpp -r
   DOMAIN_APPLIANCE_COMMAND_BUILD_OPTION_REMOVE_EXISTING='no'
@@ -1731,6 +1771,10 @@ value=$value"
     deleteCommentLines "$DOMAIN_IMAGE_COMMAND_UPGRADE_OPTIONS_REFERENTIAL"
   )"
 
+  local image_factorize_referential="$(
+    deleteCommentLines "$DOMAIN_IMAGE_COMMAND_FACTORIZE_OPTIONS_REFERENTIAL"
+  )"
+
   local appliance_build_referential="$(
     deleteCommentLines "$DOMAIN_APPLIANCE_COMMAND_BUILD_OPTIONS_REFERENTIAL"
   )"
@@ -1770,6 +1814,7 @@ value=$value"
   || tryMutateReferential "$image_check_referential" "$key" "$value" \
   || tryMutateReferential "$image_info_referential" "$key" "$value" \
   || tryMutateReferential "$image_upgrade_referential" "$key" "$value" \
+  || tryMutateReferential "$image_factorize_referential" "$key" "$value" \
   || tryMutateReferential "$appliance_build_referential" "$key" "$value" \
   || tryMutateReferential "$appliance_list_referential" "$key" "$value" \
   || tryMutateReferential "$appliance_check_referential" "$key" "$value" \
@@ -2112,6 +2157,14 @@ executeImageUpgradeCommand() {
   return 1
 }
 
+### execute the factorize command of the image domain
+executeImageFactorizeCommand() {
+  :
+
+  warning 'Not implemented yet'
+  return 1
+}
+
 ### execute the build command of the appliance domain
 executeApplianceBuildCommand() {
   # TODO handle options, incomplete
@@ -2291,7 +2344,8 @@ executeImageCommand() {
   || executeImageListCommand \
   || executeImageCheckCommand \
   || executeImageInfoCommand \
-  || executeImageUpgradeCommand
+  || executeImageUpgradeCommand \
+  || executeImageFactorizeCommand
 
   local returnCode=$?
 
@@ -2552,6 +2606,34 @@ contextSetImageListOnlyLocal() {
 
 ### TODO NYI
 contextSetImageInfoImage() {
+  :
+
+  warning 'Not yet implemented'
+  return 1
+}
+
+contextSetImageFactorizeBaseImagePrefix() {
+  :
+
+  warning 'Not yet implemented'
+  return 1
+}
+
+contextSetImageFactorizeFactorizedImageSuffix() {
+  :
+
+  warning 'Not yet implemented'
+  return 1
+}
+
+contextSetImageFactorizeBaseImageName() {
+  :
+
+  warning 'Not yet implemented'
+  return 1
+}
+
+contextSetImageFactorizeImageSequence() {
   :
 
   warning 'Not yet implemented'
