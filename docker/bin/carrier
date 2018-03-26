@@ -2184,8 +2184,7 @@ executeImageUpgradeCommand() {
 
 ### execute the factorize command of the image domain
 executeImageFactorizeCommand() {
-  :
-
+  fatal "$(debugOutputExecutionContext)"
   fatal 'Not implemented yet'
   return 0
 }
@@ -2654,38 +2653,103 @@ contextSetImageCheckImageSequence() {
 }
 
 contextSetImageFactorizeBaseImagePrefix() {
-  :
+  if [ ! "$DOMAIN" = 'image' ] \
+     || [ ! "$COMMAND" = 'factorize' ]; then
+  info "$(cat << EOI
+contextSetImageFactorizeBaseImagePrefix() can only be used when the domain is
+image and the command is factorize.
+  current DOMAIN=$DOMAIN
+  current COMMAND=$COMMAND
+EOI
+  )"
+    return 1
+  fi
 
-  warning 'Not yet implemented'
-  return 1
+  # the prefix is the second argument
+  DOMAIN_IMAGE_COMMAND_FACTORIZE_OPTION_BASE_IMAGE_PREFIX="$2"
+  debug 'DOMAIN_IMAGE_COMMAND_FACTORIZE_OPTION_BASE_IMAGE_PREFIX='"$2"
+
+  return 0
 }
 
 contextSetImageFactorizeFactorizedImagePrefix() {
-  :
+  if [ ! "$DOMAIN" = 'image' ] \
+     || [ ! "$COMMAND" = 'factorize' ]; then
+  info "$(cat << EOI
+contextSetImageFactorizeFactorizedImagePrefix() can only be used when the
+domain is image and the command is factorize.
+  current DOMAIN=$DOMAIN
+  current COMMAND=$COMMAND
+EOI
+  )"
+    return 1
+  fi
 
-  warning 'Not yet implemented'
-  return 1
+  # the prefix is the second argument
+  DOMAIN_IMAGE_COMMAND_FACTORIZE_OPTION_FACTORIZED_IMAGE_PREFIX="$2"
+  debug 'DOMAIN_IMAGE_COMMAND_FACTORIZE_OPTION_FACTORIZED_IMAGE_PREFIX='"$2"
+
+  return 0
 }
 
 contextSetImageFactorizeBaseImageName() {
-  :
+  if [ ! "$DOMAIN" = 'image' ] \
+     || [ ! "$COMMAND" = 'factorize' ]; then
+  info "$(cat << EOI
+contextSetImageFactorizeBaseImageName() can only be used when the domain is
+image and the command is factorize.
+  current DOMAIN=$DOMAIN
+  current COMMAND=$COMMAND
+EOI
+  )"
+    return 1
+  fi
 
-  warning 'Not yet implemented'
-  return 1
+  # the image name is the second argument
+  DOMAIN_IMAGE_COMMAND_FACTORIZE_OPTION_BASE_IMAGE_NAME="$2"
+  debug 'DOMAIN_IMAGE_COMMAND_FACTORIZE_OPTION_BASE_IMAGE_NAME='"$2"
+
+  return 0
 }
 
 contextSetImageFactorizeImageSequence() {
-  :
+  if [ ! "$DOMAIN" = 'image' ] \
+     || [ ! "$COMMAND" = 'factorize' ]; then
+  info "$(cat << EOI
+contextSetImageFactorizeImageSequence() can only be used when the domain is
+image and the command is factorize.
+  current DOMAIN=$DOMAIN
+  current COMMAND=$COMMAND
+EOI
+  )"
+    return 1
+  fi
 
-  fatal 'Not yet implemented'
+  # the image sequence is the second argument
+  DOMAIN_IMAGE_COMMAND_FACTORIZE_OPTION_IMAGE_SEQUENCE="$2"
+  debug 'DOMAIN_IMAGE_COMMAND_FACTORIZE_OPTION_IMAGE_SEQUENCE='"$2"
+
   return 0
 }
 
 contextSetImageFactorizeRemoveOriginalImages() {
-  :
+  if [ ! "$DOMAIN" = 'image' ] \
+     || [ ! "$COMMAND" = 'factorize' ]; then
+  info "$(cat << EOI
+contextSetImageFactorizeRemoveOriginalImages() can only be used when the domain
+is image and the command is factorize.
+  current DOMAIN=$DOMAIN
+  current COMMAND=$COMMAND
+EOI
+  )"
+    return 1
+  fi
 
-  warning 'Not yet implemented'
-  return 1
+  # no value here
+  DOMAIN_IMAGE_COMMAND_FACTORIZE_OPTION_REMOVE_ORIGINAL_IMAGES='yes'
+  debug 'DOMAIN_IMAGE_COMMAND_FACTORIZE_OPTION_REMOVE_ORIGINAL_IMAGES=yes'
+
+  return 0
 }
 
 ### mutator to setup the appliance command. Valid call if:
