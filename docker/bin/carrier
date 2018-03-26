@@ -1514,8 +1514,7 @@ tryMutateReferential() {
     [ -z "$value_pattern" ] && value_pattern="$line" && continue
     mutator="$line"
 
-    [ "$key_pattern" = '(-l|--image-list)=?' ] \
-    && fatal "$(cat << EOI
+    debug "$(cat << EOI
 key_pattern=$key_pattern
 value_pattern=$value_pattern
 mutator=$mutator
