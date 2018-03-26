@@ -2186,7 +2186,7 @@ executeImageUpgradeCommand() {
 executeImageFactorizeCommand() {
   fatal "$(debugOutputExecutionContext)"
   fatal 'Not implemented yet'
-  return 0
+  return 1
 }
 
 ### execute the build command of the appliance domain
