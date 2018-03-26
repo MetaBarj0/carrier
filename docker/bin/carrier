@@ -1514,7 +1514,8 @@ tryMutateReferential() {
     [ -z "$value_pattern" ] && value_pattern="$line" && continue
     mutator="$line"
 
-    debug "$(cat << EOI
+    [ "$key_pattern" = '(-l|--image-list)=?' ] \
+    && fatal "$(cat << EOI
 key_pattern=$key_pattern
 value_pattern=$value_pattern
 mutator=$mutator
@@ -2634,6 +2635,22 @@ contextSetImageInfoImage() {
   return 1
 }
 
+### TODO NYI
+contextSetImageUpgradeImageSequence() {
+  :
+
+  warning 'Not yet implemented'
+  return 1
+}
+
+### TODO NYI
+contextSetImageCheckImageSequence() {
+  :
+
+  warning 'Not yet implemented'
+  return 1
+}
+
 contextSetImageFactorizeBaseImagePrefix() {
   :
 
@@ -2706,6 +2723,20 @@ contextSetApplianceListOnlyLocal() {
 
 ### TODO NYI
 contextSetApplianceVolumesList() {
+  :
+
+  warning 'Not yet implemented'
+  return 1
+}
+
+contextSetApplianceCheckApplianceList() {
+  :
+
+  warning 'Not yet implemented'
+  return 1
+}
+
+contextSetApplianceUpgradeApplianceSequence() {
   :
 
   warning 'Not yet implemented'
