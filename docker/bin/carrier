@@ -3,6 +3,9 @@
 #### standalone mode, external utility functions not loaded yet ################
 set -e
 
+# disable this f*cking globbing
+set -f
+
 ### set up paths after calling this script
 initializePaths() {
   # get the full path of the called script
@@ -2183,8 +2186,8 @@ executeImageUpgradeCommand() {
 executeImageFactorizeCommand() {
   :
 
-  warning 'Not implemented yet'
-  return 1
+  fatal 'Not implemented yet'
+  return 0
 }
 
 ### execute the build command of the appliance domain
@@ -2675,7 +2678,7 @@ contextSetImageFactorizeImageSequence() {
   :
 
   fatal 'Not yet implemented'
-  return 1
+  return 0
 }
 
 contextSetImageFactorizeRemoveOriginalImages() {
