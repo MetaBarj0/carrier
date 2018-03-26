@@ -804,26 +804,31 @@ EOI
 
   DOMAIN_IMAGE_COMMAND_FACTORIZE_OPTIONS_REFERENTIAL="$(cat << EOI
 # options available when factorizing two or more images to extract a base that
-# contains all common files.
+# contains all common files. Factorizing images consists in taking 2 or more
+# images, extract all files that are common in all these images, create a brand
+# new image with these common files, and create new images with their
+# respective files without common extracted ones.
 
 # the name to give to the extracted base image. Note that the provided name
 # must be conform to the docker standart in term of naming.
-(-b|--base-image-name)=?
-.*
+(-n|--base-image-name)=?
+.+
 contextSetImageFactorizeBaseImageName
 
 # this is the prefix used to name the extracted base image. As a result, a
-# prefixed base image will look like : prefix/base-image-name when listing
+# prefixed base image will look like : prefix/base_image_name when listing
 # docker images
-(-p|--base-image-prefix)=?
+# if not specified, defaulted to 'base'
+(-b|--base-image-prefix)=?
 .*
 contextSetImageFactorizeBaseImagePrefix
 
-# suffix used on factorized images. If not specified, the 'factorized' string
-# will be used
-(-s|--factorized-image-suffix)=?
+# prefix used on factorized images. A prefixed factorized image will look like
+# prefix/factorize_image when listing docker images. If the prefix is not
+# specified, the prefixed base image name is used.
+(-f|--factorized-image-prefix)=?
 .+
-contextSetImageFactorizeFactorizedImageSuffix
+contextSetImageFactorizeFactorizedImagePrefix
 
 # the image list to factorize. At least 2 images have to be specified but
 # specifying more than 2 is perfectly valid. However, keep in mind that
@@ -831,6 +836,12 @@ contextSetImageFactorizeFactorizedImageSuffix
 (-l|--image-list)=?
 [^,]+(,[^,]+)+
 contextSetImageFactorizeImageSequence
+
+# indicates if original images must be removed after a successful
+# factorization. defaulted to 'no'
+(-r|--remove-original-images)=?
+--
+contextSetImageFactorizeRemoveOriginalImages
 EOI
   )"
 
@@ -1223,12 +1234,13 @@ initializeExecutionContext() {
   DOMAIN_IMAGE_COMMAND_UPGRADE_OPTION_IMAGE_SEQUENCE=
 
   # carrier image factorize \
-  #   -b dev_toolchains \
+  #   -n dev_toolchains \
   #   -l metabarj0/llvm,metabarj0/gcc
   DOMAIN_IMAGE_COMMAND_FACTORIZE_OPTION_BASE_IMAGE_NAME=
   DOMAIN_IMAGE_COMMAND_FACTORIZE_OPTION_BASE_IMAGE_PREFIX='base'
-  DOMAIN_IMAGE_COMMAND_FACTORIZE_OPTION_FACTORIZED_IMAGE_SUFFIX='factorized'
+  DOMAIN_IMAGE_COMMAND_FACTORIZE_OPTION_FACTORIZED_IMAGE_PREFIX=
   DOMAIN_IMAGE_COMMAND_FACTORIZE_OPTION_IMAGE_SEQUENCE=
+  DOMAIN_IMAGE_COMMAND_FACTORIZE_OPTION_REMOVE_ORIGINAL_IMAGES='no'
 
   # carrier appliance build devenv_cpp -r
   DOMAIN_APPLIANCE_COMMAND_BUILD_OPTION_REMOVE_EXISTING='no'
@@ -2619,7 +2631,7 @@ contextSetImageFactorizeBaseImagePrefix() {
   return 1
 }
 
-contextSetImageFactorizeFactorizedImageSuffix() {
+contextSetImageFactorizeFactorizedImagePrefix() {
   :
 
   warning 'Not yet implemented'
@@ -2634,6 +2646,13 @@ contextSetImageFactorizeBaseImageName() {
 }
 
 contextSetImageFactorizeImageSequence() {
+  :
+
+  warning 'Not yet implemented'
+  return 1
+}
+
+contextSetImageFactorizeRemoveOriginalImages() {
   :
 
   warning 'Not yet implemented'
