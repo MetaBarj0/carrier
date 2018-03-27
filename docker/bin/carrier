@@ -3,7 +3,8 @@
 #### standalone mode, external utility functions not loaded yet ################
 set -e
 
-# disable this f*cking globbing
+# disable globbing. Referential contains string with '*' that behave wrongly
+# when iterated by a for loop.
 set -f
 
 ### set up paths after calling this script
