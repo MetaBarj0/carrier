@@ -3439,7 +3439,7 @@ image_fillStagingArea() {
 
   # copy necessary lib files in the project directory in the staging area
   local image_name=$(basename $image_directory)
-  IMAGE_STAGING_DIRECTORY=${staging_directory}/$image_name
+  IMAGE_STAGING_DIRECTORY=${staging_directory}/build/$image_name
 
   cd $CARRIER_LIB_DIR
 
