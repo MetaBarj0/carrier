@@ -2210,6 +2210,8 @@ $DOMAIN_IMAGE_COMMAND_FACTORIZE_OPTION_IMAGE_SEQUENCE"
       ','
   )"
 
+  image_sequence="$(makeUnique "$image_sequence")"
+
   local common_files_sequence=
   local left_file_sequence=
   local right_file_sequence=
@@ -2230,7 +2232,10 @@ EOI
     if [ -z "$left_file_sequence" ]; then
       if [ -z "$common_files_sequence" ];then
         left_file_sequence="$(
-          docker run --rm "$image" cat /image.dist \
+          docker run \
+            --rm \
+            --entrypoint '' \
+            "$image" cat /image.dist \
           | sort \
           | uniq
         )"
@@ -2248,9 +2253,12 @@ image. Is that image well formed? Exiting..."
     # get the right file list
     else
       right_file_sequence="$(
-        docker run --rm "$image" cat /image.dist \
-        | sort \
-        | uniq
+          docker run \
+            --rm \
+            --entrypoint '' \
+            "$image" cat /image.dist \
+          | sort \
+          | uniq
       )"
 
       if [ -z "$right_file_sequence" ]; then
