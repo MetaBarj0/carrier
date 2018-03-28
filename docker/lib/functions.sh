@@ -592,3 +592,22 @@ splitSequence() {
 
   echo "$sequence" | sed -E 's/'"$src_separator"'/'"$dst_separator"'/g'
 }
+
+# indicates if a provided string at frst argument exactly matches the provided
+# pattern at second argument.
+# $1: string to test
+# $2: pattern to test string against
+# If both inputs are empty, returns true
+exactMatchWithPattern() {
+  local string="$1"
+  local pattern="$2"
+
+  if [ -z "$string" ] && [ -z "$pattern" ]; then
+    return 0
+  fi
+
+  #fatal 'printf -- '"$string"' | grep -Ex -- '"$pattern"' 1> /dev/null'
+  printf -- "$string" | grep -Ex -- "$pattern" 1> /dev/null
+
+  return $?
+}

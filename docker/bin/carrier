@@ -330,6 +330,10 @@ Image upgrade command options:
 $(removeIrrelevantDetailsFromReferentialOption \
     "$DOMAIN_IMAGE_COMMAND_UPGRADE_OPTIONS_REFERENTIAL")
 
+Image factorize command options:
+$(removeIrrelevantDetailsFromReferentialOption \
+    "$DOMAIN_IMAGE_COMMAND_FACTORIZE_OPTIONS_REFERENTIAL")
+
 Appliance domain commands:
 $(removeIrrelevantDetailsFromReferentialOption \
     "$DOMAIN_APPLIANCE_COMMANDS_REFERENTIAL")
@@ -831,7 +835,7 @@ contextSetImageFactorizeBaseImagePrefix
 # prefix/factorize_image when listing docker images. If the prefix is not
 # specified, the prefixed base image name is used.
 (-f|--factorized-image-prefix)=?
-.+
+.*
 contextSetImageFactorizeFactorizedImagePrefix
 
 # the image list to factorize. At least 2 images have to be specified but
@@ -1526,7 +1530,7 @@ EOI
     )"
 
     # test the provided key
-    echo "$key" | grep -Ex -- "$key_pattern" 1> /dev/null
+    exactMatchWithPattern "$key" "$key_pattern"
 
     if [ $? -ne 0 ]; then
       # the key do not match, test another entry in the referential
@@ -1545,7 +1549,7 @@ EOI
     # testing value if necessary, a '--' pattern indicating that the key has not
     # value associated in the referential
     if [ ! "$value_pattern" = '--' ]; then
-      echo "$value" | grep -Ex -- "$value_pattern" 1> /dev/null
+      exactMatchWithPattern "$value" "$value_pattern"
 
       if [ ! $? -eq 0 ]; then
         # the value do not match, test another entry in the referential
@@ -1553,7 +1557,7 @@ EOI
         key_pattern= ; value_pattern= ; mutator=
 
         warning "$(cat << EOI
-provided value: $value does not match the exploredi referential value
+provided value: $value does not match the explored referential value
 pattern: $value_pattern
 EOI
         )"
@@ -2000,18 +2004,18 @@ buildExecutionContextFromArguments() {
       
       continue
     else
-      if tryMutateExecutionContext "$extractedKeyFromArg" "$arg"; then
-        info 'key value args successfully altered the execution context'
-        extractedKeyFromArg=
-        continue
-      else
-        error "$(cat << EOI
+      tryMutateExecutionContext "$extractedKeyFromArg" "$arg"
+      extractedKeyFromArg=
+
+      local returnCode=$?
+
+      [ $returnCode -ne 0 ] \
+      && info 'key value args successfully altered the execution context' \
+      || info "$(cat << EOI
 Failed to modify the execution context with key: $extractedKeyFromArg and
 value: $arg
 EOI
         )"
-        return 1
-      fi
     fi
   done
 
@@ -2185,9 +2189,22 @@ executeImageUpgradeCommand() {
 
 ### execute the factorize command of the image domain
 executeImageFactorizeCommand() {
-  fatal "$(debugOutputExecutionContext)"
-  fatal 'Not implemented yet'
-  return 1
+  if [ ! "$DOMAIN" = 'image' ] \
+     || [ ! "$COMMAND" = 'factorize' ] \
+     || [ -z "$DOMAIN_IMAGE_COMMAND_FACTORIZE_OPTION_BASE_IMAGE_NAME" ] \
+     || [ -z "$DOMAIN_IMAGE_COMMAND_FACTORIZE_OPTION_IMAGE_SEQUENCE" ]; then
+    info "incomplete or incorrect execution context:
+incomplete or incorrect execution context:
+  DOMAIN=$DOMAIN
+  COMMAND=$COMMAND
+  DOMAIN_IMAGE_COMMAND_FACTORIZE_OPTION_BASE_IMAGE_NAME=\
+$DOMAIN_IMAGE_COMMAND_FACTORIZE_OPTION_BASE_IMAGE_NAME
+  DOMAIN_IMAGE_COMMAND_FACTORIZE_OPTION_IMAGE_SEQUENCE=\
+$DOMAIN_IMAGE_COMMAND_FACTORIZE_OPTION_IMAGE_SEQUENCE"
+    return 1
+  fi
+
+  return 0
 }
 
 ### execute the build command of the appliance domain
@@ -2638,6 +2655,14 @@ contextSetImageInfoImage() {
 }
 
 ### TODO NYI
+contextSetImageListOnlyNotBuilt() {
+  :
+
+  warning 'Not yet implemented'
+  return 1
+}
+
+### TODO NYI
 contextSetImageUpgradeImageSequence() {
   :
 
@@ -2790,6 +2815,22 @@ contextSetApplianceListOnlyLocal() {
 
 ### TODO NYI
 contextSetApplianceVolumesList() {
+  :
+
+  warning 'Not yet implemented'
+  return 1
+}
+
+### TODO NYI
+contextSetApplianceListOnlyNotBuilt() {
+  :
+
+  warning 'Not yet implemented'
+  return 1
+}
+
+### TODO NYI
+contextSetApplianceStartDontBuild() {
   :
 
   warning 'Not yet implemented'
