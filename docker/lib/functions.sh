@@ -4,6 +4,19 @@ getThreadCount() {
   echo $(cat /proc/cpuinfo | grep processor | wc -l)
 }
 
+# remove a directory only if it is empty otherwise does nothing
+removeDirectoryIfEmpty() {
+  if [ -z "$1" ]; then
+    return 0
+  fi
+
+  if [ -z "$(ls "$1")" ]; then
+    rm -r "$1"
+    return $?
+  fi
+
+}
+
 # wait an user input to put in a variable and echo this variable. If no
 # input is made by the user before an end-of-line character, the provided
 # default value is used. This function explicitely fails if no default value is

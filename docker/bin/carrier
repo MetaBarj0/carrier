@@ -2204,103 +2204,10 @@ $DOMAIN_IMAGE_COMMAND_FACTORIZE_OPTION_IMAGE_SEQUENCE"
     return 1
   fi
 
-  local image_sequence="$(
-    splitSequence \
-      "$DOMAIN_IMAGE_COMMAND_FACTORIZE_OPTION_IMAGE_SEQUENCE" \
-      ','
-  )"
+  # call the feature
+  image_factorize
 
-  image_sequence="$(makeUnique "$image_sequence")"
-
-  local common_files_sequence=
-  local left_file_sequence=
-  local right_file_sequence=
-
-  local image=
-  for image in $image_sequence; do
-    # check image existence
-    id=$(docker image ls -q $image)
-    if [ -z $id ]; then
-      error "$(cat << EOI
-The specified image "$image" does not exist on the docker host...exiting...
-EOI
-      )"
-      return 1
-    fi
-
-    # get the left file list
-    if [ -z "$left_file_sequence" ]; then
-      if [ -z "$common_files_sequence" ];then
-        left_file_sequence="$(
-          docker run \
-            --rm \
-            --entrypoint '' \
-            "$image" cat /image.dist \
-          | sort \
-          | uniq
-        )"
-
-        if [ -z "$left_file_sequence" ]; then
-          fatal "Could not extract the image.dist file from the $image docker
-image. Is that image well formed? Exiting..."
-          return 1
-        fi
-      else
-        left_file_sequence="$common_files_sequence"
-      fi
-
-      continue
-    # get the right file list
-    else
-      right_file_sequence="$(
-          docker run \
-            --rm \
-            --entrypoint '' \
-            "$image" cat /image.dist \
-          | sort \
-          | uniq
-      )"
-
-      if [ -z "$right_file_sequence" ]; then
-        fatal "Could not extract the image.dist file from the $image docker
-image. Is that image well formed? Exiting..."
-        return 1
-      fi
-    fi
-
-    # extracting common files
-    echo "$left_file_sequence" > $CARRIER_TMP_DIR/left_file_sequence
-    echo "$right_file_sequence" > $CARRIER_TMP_DIR/right_file_sequence
-    common_files_sequence="$(
-      comm \
-        -1 -2 \
-        ${CARRIER_TMP_DIR}/left_file_sequence \
-        ${CARRIER_TMP_DIR}/right_file_sequence
-    )"
-
-    local returnCode=$?
-
-    if [ $returnCode -ne 0 ]; then
-      fatal 'could not extract common files...exiting'
-      return 1
-    fi
-
-    rm \
-      ${CARRIER_TMP_DIR}/left_file_sequence \
-      ${CARRIER_TMP_DIR}/right_file_sequence
-
-    # if common_files_sequence is empty, no more file in common, stopping
-    if [ -z "$common_files_sequence" ]; then
-      warning 'No more file in common found stopping factorization'
-      return 0
-    fi
-
-    left_file_sequence=
-  done
-
-  echo "$common_files_sequence"
-
-  return 0
+  return $?
 }
 
 ### execute the build command of the appliance domain
@@ -3199,10 +3106,181 @@ bootstrap_run() {
 
 #### image domain specific functions
 
-### factorization feature of the image domain
-### $1 is an image sequence ready to be iterated
-image_factorize() {
+### prepare a joined sequence of image to be factorized. The input is a
+### sequence joined with ','. The output will be a sequence of images space
+### separated.
+image_prepareImageSequenceForFactorization() {
+  local sequence="$(
+    splitSequence \
+      "$DOMAIN_IMAGE_COMMAND_FACTORIZE_OPTION_IMAGE_SEQUENCE" \
+      ','
+  )"
+
+  sequence="$(makeUnique "$sequence")"
+
+  echo "$sequence"
+}
+
+### check on the docker host if the image exists.
+### $1 image name
+image_checkIfExistsOnDockerHost() {
+    local id=$(docker image ls -q $image)
+
+    if [ -z $id ]; then
+      error "$(cat << EOI
+The specified image "$image" does not exist on the docker host...exiting...
+EOI
+      )"
+      return 1
+    fi
+
+    return 0
+}
+
+### extract the content of the image.dist file of the specified docker image.
+### The file list is sorted and deduped
+### $1 docker image name present on the docker host
+image_extractImageDistFileFromImage() {
+  local file_sequence="$(
+    docker run \
+      --rm \
+      --entrypoint '' \
+      "$1" cat /image.dist \
+    | sort \
+    | uniq
+  )"
+
+  if [ -z "$file_sequence" ]; then
+    fatal "Could not extract the image.dist file from the $1 docker
+image. Is that image well formed? Exiting..."
+    return 1
+  fi
+
+  echo "$file_sequence"
+
   return 0
+}
+
+### return the name of the staging directory for the factorize feature
+image_getFactorizeStagingDirectoryName() {
+  echo "${CARRIER_TMP_DIR}"/images/factorize
+}
+
+### create or overwrite files in staging directory for factorize feature
+### $1 file name to create/overwrite in staging directory
+### $1 content to put in the file
+image_addFileInFactorizeStagingArea() {
+  if [ -z "$1" ] || [ -z "$2" ]; then
+    return 1
+  fi
+
+  local staging_directory="$(image_getFactorizeStagingDirectoryName)"
+  mkdir -p "$staging_directory"
+
+  echo "$2" > "${staging_directory}"/"$1"
+}
+
+### remove temporary files created while factorizing images
+image_cleanupFactorizeTemporaryFiles() {
+  local staging_directory="$(image_getFactorizeStagingDirectoryName)"
+  rm -rf "$staging_directory"
+
+  removeDirectoryIfEmpty "${CARRIER_TMP_DIR}"/images
+}
+
+image_extractCommonFileSequenceFromFiles() {
+  local staging_directory="$(image_getFactorizeStagingDirectoryName)"
+
+  local common_files_sequence="$(
+    comm \
+      -1 -2 \
+      "${staging_directory}"/left_files_sequence.dist \
+      "${staging_directory}"/right_files_sequence.dist
+  )"
+
+  local returnCode=$?
+
+  if [ $returnCode -ne 0 ]; then
+    fatal 'could not extract common files...exiting'
+    return 1
+  fi
+
+  echo "$common_files_sequence"
+}
+
+### extract and exposes a common files list to factorize images
+image_extractCommonFileForFactorize() {
+  local image_sequence="$(image_prepareImageSequenceForFactorization)"
+
+  local common_files_sequence=
+
+  # comparable sequences of files
+  local left_files_sequence=
+  local right_files_sequence=
+
+  local image=
+  for image in $image_sequence; do
+    if ! image_checkIfExistsOnDockerHost "$image"; then
+      return 1
+    fi
+
+    # get the right fiel sequence
+    if ! right_files_sequence="$(
+      image_extractImageDistFileFromImage "$image"
+    )"; then
+      return 1
+    fi
+
+    # get the left file sequence
+    if [ -z "$left_files_sequence" ]; then
+      [ -z "$common_files_sequence" ] \
+      && left_files_sequence="$right_files_sequence" \
+      || left_files_sequence="$common_files_sequence"
+
+      continue
+    fi
+
+    # create physical files needed by the comm command in staging area
+    image_addFileInFactorizeStagingArea \
+      'left_files_sequence.dist' \
+      "$left_files_sequence"
+
+    image_addFileInFactorizeStagingArea \
+      'right_files_sequence.dist' \
+      "$right_files_sequence"
+
+    common_files_sequence="$(image_extractCommonFileSequenceFromFiles)"
+
+    # if common_files_sequence is empty, no more file in common, stopping
+    if [ -z "$common_files_sequence" ]; then
+      warning 'No more file in common found stopping factorization'
+      return 0
+    fi
+
+    left_files_sequence=
+  done
+
+  echo "$common_files_sequence"
+
+  return 0
+}
+
+### generate an unique name for the file containing a list of common files for
+### image factorization
+image_generateFactorizedFileListFileName() {
+  echo ${CARRIER_TMP_DIR}/common_files_"$(generateRandomString)".dist
+  return 0;
+}
+
+### factorization feature of the image domain
+image_factorize() {
+  # common files in all images
+  local common_files_sequence="$(image_extractCommonFileForFactorize)"
+
+  local common_files_file_name="$(image_generateFactorizedFileListFileName)"
+
+  # last step
+  image_cleanupFactorizeTemporaryFiles
 }
 
 ### checking image name or image's manifest file path.
@@ -3425,14 +3503,12 @@ image_buildImageAndDependencies() {
 }
 
 ### when the build is complete, cleanup the staging area
-image_cleanupStagingArea() {
+image_cleanupBuildStagingArea() {
   info 'cleaning up the staging area for images'
 
   rm -rf $IMAGE_STAGING_DIRECTORY
 
-  if [ -z "$(ls ${CARRIER_TMP_DIR}/images)" ]; then
-    rm -r ${CARRIER_TMP_DIR}/images
-  fi
+  removeDirectoryIfEmpty "${CARRIER_TMP_DIR}"/images
 
   return 0
 }
@@ -3445,7 +3521,7 @@ image_build() {
   && image_checkManifestPathOrName "$1" \
   && image_fillStagingArea \
   && image_buildImageAndDependencies \
-  && image_cleanupStagingArea
+  && image_cleanupBuildStagingArea
 
   local returnCode=$?
 
