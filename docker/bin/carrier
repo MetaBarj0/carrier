@@ -2204,6 +2204,94 @@ $DOMAIN_IMAGE_COMMAND_FACTORIZE_OPTION_IMAGE_SEQUENCE"
     return 1
   fi
 
+  local image_sequence="$(
+    splitSequence \
+      "$DOMAIN_IMAGE_COMMAND_FACTORIZE_OPTION_IMAGE_SEQUENCE" \
+      ','
+  )"
+
+  local common_files_sequence=
+  local left_file_sequence=
+  local right_file_sequence=
+
+  local image=
+  for image in $image_sequence; do
+    # check image existence
+    id=$(docker image ls -q $image)
+    if [ -z $id ]; then
+      error "$(cat << EOI
+The specified image "$image" does not exist on the docker host...exiting...
+EOI
+      )"
+      return 1
+    fi
+
+    # get the left file list
+    if [ -z "$left_file_sequence" ]; then
+      if [ -z "$common_files_sequence" ];then
+        left_file_sequence="$(
+          docker run --rm "$image" cat /image.dist \
+          | sort \
+          | uniq
+        )"
+
+        if [ -z "$left_file_sequence" ]; then
+          fatal "Could not extract the image.dist file from the $image docker
+image. Is that image well formed? Exiting..."
+          return 1
+        fi
+      else
+        left_file_sequence="$common_files_sequence"
+      fi
+
+      continue
+    # get the right file list
+    else
+      right_file_sequence="$(
+        docker run --rm "$image" cat /image.dist \
+        | sort \
+        | uniq
+      )"
+
+      if [ -z "$right_file_sequence" ]; then
+        fatal "Could not extract the image.dist file from the $image docker
+image. Is that image well formed? Exiting..."
+        return 1
+      fi
+    fi
+
+    # extracting common files
+    echo "$left_file_sequence" > $CARRIER_TMP_DIR/left_file_sequence
+    echo "$right_file_sequence" > $CARRIER_TMP_DIR/right_file_sequence
+    common_files_sequence="$(
+      comm \
+        -1 -2 \
+        ${CARRIER_TMP_DIR}/left_file_sequence \
+        ${CARRIER_TMP_DIR}/right_file_sequence
+    )"
+
+    local returnCode=$?
+
+    if [ $returnCode -ne 0 ]; then
+      fatal 'could not extract common files...exiting'
+      return 1
+    fi
+
+    rm \
+      ${CARRIER_TMP_DIR}/left_file_sequence \
+      ${CARRIER_TMP_DIR}/right_file_sequence
+
+    # if common_files_sequence is empty, no more file in common, stopping
+    if [ -z "$common_files_sequence" ]; then
+      warning 'No more file in common found stopping factorization'
+      return 0
+    fi
+
+    left_file_sequence=
+  done
+
+  echo "$common_files_sequence"
+
   return 0
 }
 
@@ -3102,6 +3190,12 @@ bootstrap_run() {
 #### End of bootstrap domain specific functions
 
 #### image domain specific functions
+
+### factorization feature of the image domain
+### $1 is an image sequence ready to be iterated
+image_factorize() {
+  return 0
+}
 
 ### checking image name or image's manifest file path.
 image_checkManifestPathOrName() {
