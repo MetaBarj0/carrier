@@ -3509,22 +3509,9 @@ image_getBuildStagingDirectory() {
 ### fill the staging area with file necessary to build the image and its
 ### dependencies
 image_fillBuildStagingArea() {
-  image_initializeBuildStagingDirectory
-
   local image_directory="$(dirname $MANIFEST_FILE_PATH)"
 
-  # create the intermediate images directory in the staging area if it does not
-  # already exist
   local staging_directory="$(image_getBuildStagingDirectory)"
-
-  # sanitize the satging area if this is this execution is the first (no
-  # recursion)
-  if [ -z "$FETCHED_MANIFEST" ]; then
-    info 'cleaning staging area '"$staging_directory"
-    rm -rf $staging_directory
-  fi
-
-  mkdir -p "$staging_directory"
 
   # copy the project in the staging area
   cp -a "$image_directory" "$staging_directory"
@@ -3538,7 +3525,7 @@ image_fillBuildStagingArea() {
   # copy necessary lib files in the project directory in the staging area
   local image_name=$(basename $image_directory)
   DOMAIN_IMAGE_COMMAND_BUILD_IMAGE_STAGING_DIRECTORY=\
-"${staging_directory}"/$image_name
+"${staging_directory}"/"$image_name"
 
   cd $CARRIER_LIB_DIR
 
@@ -3607,7 +3594,8 @@ image_buildImageAndDependencies() {
 image_cleanupBuildStagingArea() {
   info 'cleaning up the staging area for image build command'
 
-  rm -rf "$(image_getBuildStagingDirectory)"
+  rm -rf \
+    "$DOMAIN_IMAGE_COMMAND_BUILD_IMAGE_STAGING_DIRECTORY"
 
   removeDirectoryIfEmpty "$(image_getStagingRootDirectory)"
 
@@ -3620,6 +3608,7 @@ image_cleanupBuildStagingArea() {
 image_build() {
   image_checkBootstrapImages \
   && image_checkManifestPathOrName "$1" \
+  && image_initializeBuildStagingDirectory \
   && image_fillBuildStagingArea \
   && image_buildImageAndDependencies \
   && image_cleanupBuildStagingArea
