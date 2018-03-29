@@ -3191,7 +3191,7 @@ image_getFactorizeStagingDirectory() {
 ### create or overwrite files in staging directory for factorize feature
 ### $1 file name to create/overwrite in staging directory
 ### $1 content to put in the file
-image_addFileInFactorizeStagingArea() {
+image_addFileInFactorizeStagingAreaWithContent() {
   if [ -z "$1" ] || [ -z "$2" ]; then
     return 1
   fi
@@ -3215,6 +3215,8 @@ image_cleanupFactorizeStagingDirectory() {
 ### This common file sequence will be use then to refine the common file list
 ### in remaining images.
 image_getCommonFilesSequenceOfFirstTwoImages() {
+  image_initializeImageToFactorizeSequence
+
   local image=
   for image in $(image_getImageToFactorizeSequence); do
     [ -z "$first_image" ] \
@@ -3238,18 +3240,18 @@ image_getCommonFilesSequenceOfFirstTwoImages() {
     return 1
   fi
 
-  image_addFileInFactorizeStagingArea \
+  image_addFileInFactorizeStagingAreaWithContent \
     'first_files_sequence.dist' \
     "$first_files_sequence"
 
-  image_addFileInFactorizeStagingArea \
+  image_addFileInFactorizeStagingAreaWithContent \
     'second_files_sequence.dist' \
     "$second_files_sequence"
 
   local common_files_sequence="$(
     extractCommonLinesInTwoFiles \
-      "$(image_getStagingRootDirectory)"/first_files_sequence.dist \
-      "$(image_getStagingRootDirectory)"/second_files_sequence.dist)"
+      "$(image_getFactorizeStagingDirectory)"/first_files_sequence.dist \
+      "$(image_getFactorizeStagingDirectory)"/second_files_sequence.dist)"
 
   return 0
 }
@@ -3272,9 +3274,8 @@ image_getImageToFactorizeSequence() {
 }
 
 ### extract and exposes a common files list to factorize images
+### TODO : remove that
 image_extractCommonFileForFactorize() {
-  image_initializeImageToFactorizeSequence
-
   local common_files_sequence=
 
   # comparable sequences of files
@@ -3302,11 +3303,11 @@ image_extractCommonFileForFactorize() {
     fi
 
     # create physical files needed by the comm command in staging area
-    image_addFileInFactorizeStagingArea \
+    image_addFileInFactorizeStagingAreaWithContent \
       'left_files_sequence.dist' \
       "$left_files_sequence"
 
-    image_addFileInFactorizeStagingArea \
+    image_addFileInFactorizeStagingAreaWithContent \
       'right_files_sequence.dist' \
       "$right_files_sequence"
 
@@ -3338,7 +3339,7 @@ image_factorize() {
   image_initializeFactorizeStagingDirectory
 
   # common files in all images
-  local common_files_sequence="$(image_extractCommonFileForFactorize)"
+  local common_files_sequence="$(image_getCommonFilesSequenceOfFirstTwoImages)"
 
   local common_files_file_name="$(image_generateFactorizedFileListFileName)"
 
