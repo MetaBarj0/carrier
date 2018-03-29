@@ -645,3 +645,29 @@ exactMatchWithPattern() {
 
   return $?
 }
+
+# take a regular string and encode it in path64. path64 is the same thing as
+# base64 but '/' are replaced by '-'
+# $1 a path string
+path64Encode() {
+  if [ -z "$1" ]; then
+    return 0
+  fi
+
+  local encoded="$(printf "$1" | base64 | sed 's/\//-/g')"
+
+  echo "$encoded"
+}
+
+# take a path64 string and decode it. path64 is the same thing as base64 but
+# '/' are replaced by '-'
+# $1 a path string
+path64Decode() {
+  if [ -z "$1" ]; then
+    return 0
+  fi
+
+  local decoded="$(printf "$1" | sed 's/-/\//g' | base64 -d)"
+
+  echo "$decoded"
+}

@@ -3211,10 +3211,9 @@ image_cleanupFactorizeStagingDirectory() {
   removeDirectoryIfEmpty "$(image_getStagingRootDirectory)"
 }
 
-### get the common file we found on the first 2 images we have to factorize.
-### This common file sequence will be use then to refine the common file list
-### in remaining images.
-image_getCommonFilesSequenceOfFirstTwoImages() {
+### initialize the image.dist file of the base image. It will contains common
+### files found in the two very first image iterated
+image_initializeBaseImageDistFileInStagingArea() {
   image_initializeImageToFactorizeSequence
 
   local image=
@@ -3253,7 +3252,11 @@ image_getCommonFilesSequenceOfFirstTwoImages() {
       "$(image_getFactorizeStagingDirectory)"/first_files_sequence.dist \
       "$(image_getFactorizeStagingDirectory)"/second_files_sequence.dist)"
 
-  return 0
+  image_addFileInFactorizeStagingAreaWithContent \
+    'base.image.dist' \
+    "$common_files_sequence"
+
+  return $?
 }
 
 ### initialize the image sequence to factorize in a shell variable
@@ -3273,77 +3276,76 @@ image_getImageToFactorizeSequence() {
   echo "$DOMAIN_IMAGE_COMMAND_FACTORIZE_IMAGE_TO_FACTORIZE_SEQUENCE"
 }
 
-### extract and exposes a common files list to factorize images
-### TODO : remove that
-image_extractCommonFileForFactorize() {
-  local common_files_sequence=
+### finalize the image.dist file of the base image and all images to factorize.
+### A first version of base.image.dist file must be present in the staging area
+image_finalizeAllImageDistFileInStagingArea() {
+  local base_image_dist_file="$(
+    image_getFactorizeStagingDirectory)"/base.image.dist
 
-  # comparable sequences of files
-  local left_files_sequence=
-  local right_files_sequence=
+  if [ ! -f "$base_image_dist_file" ]; then
+    error 'Missing base.image.dist file in staging area...exiting...'
+    return 1
+  fi
 
   local image=
-  for image in $DOMAIN_IMAGE_COMMAND_FACTORIZE_OPTION_IMAGE_SEQUENCE; do
+  for image in $(image_getImageToFactorizeSequence); do
+    # preliminary check before continuing
     if ! image_checkIfExistsOnDockerHost "$image"; then
+      error "could not find image $image on your docker host...exiting..."
       return 1
     fi
 
-    if ! right_files_sequence="$(
+    local image_files_sequence=
+    if ! image_files_sequence="$(
       image_extractImageDistFileFromImage "$image"
     )"; then
+      error "could not extract files sequence in the image.dist file of the
+$image docker image. This image might be corrupted at some point...exiting..."
       return 1
     fi
 
-    if [ -z "$left_files_sequence" ]; then
-      [ -z "$common_files_sequence" ] \
-      && left_files_sequence="$right_files_sequence" \
-      || left_files_sequence="$common_files_sequence"
-
-      continue
-    fi
-
-    # create physical files needed by the comm command in staging area
     image_addFileInFactorizeStagingAreaWithContent \
-      'left_files_sequence.dist' \
-      "$left_files_sequence"
+      'image.dist' \
+      "$image_files_sequence"
+
+    local path64_image_dist_file_name="$(
+      path64Encode "$image")".dist
+
+    local image_dist_file="$(
+      image_getFactorizeStagingDirectory)"/'image.dist'
 
     image_addFileInFactorizeStagingAreaWithContent \
-      'right_files_sequence.dist' \
-      "$right_files_sequence"
+      "$path64_image_dist_file_name" \
+      "$(comm \
+          -1 -3 \
+          "$base_image_dist_file" \
+          "$image_dist_file")"
 
-    common_files_sequence="$(image_extractCommonFileSequenceFromFiles)"
-
-    # if common_files_sequence is empty, no more file in common, stopping
-    if [ -z "$common_files_sequence" ]; then
-      warning 'No more file in common found stopping factorization'
-      return 0
-    fi
-
-    left_files_sequence=
+    image_addFileInFactorizeStagingAreaWithContent \
+      'base.image.dist' \
+      "$(comm \
+          -1 -2 \
+          "$base_image_dist_file" \
+          "$image_dist_file")"
   done
-
-  echo "$common_files_sequence"
+  pause
 
   return 0
 }
 
-### generate an unique name for the file containing a list of common files for
-### image factorization
-image_generateFactorizedFileListFileName() {
-  echo ${CARRIER_TMP_DIR}/common_files_"$(generateRandomString)".dist
-  return 0;
+### create the image.dist file of the base image in the staging directory
+image_createImagesDistFileInStagingDirectory() {
+  image_initializeBaseImageDistFileInStagingArea \
+  && image_finalizeAllImageDistFileInStagingArea
+
+  return $?
 }
 
 ### factorization feature of the image domain
 image_factorize() {
-  image_initializeFactorizeStagingDirectory
+  image_initializeFactorizeStagingDirectory \
+    && image_createImagesDistFileInStagingDirectory
 
-  # common files in all images
-  local common_files_sequence="$(image_getCommonFilesSequenceOfFirstTwoImages)"
-
-  local common_files_file_name="$(image_generateFactorizedFileListFileName)"
-
-  # last step
   image_cleanupFactorizeStagingDirectory
 }
 
