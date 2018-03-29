@@ -414,13 +414,12 @@ EOI
 #
 # install: Install carrier to the specified location. Installation is a simple
 #          process consisting in creating a symbolic link to the specified
-#          location. If carrier is already installed somewhere or a symlink exist
-#          with the specified name, the process fails by default.
-#          Note: If a file (not a symlink) exists at the specified location the
-#          process will always fails even if forced.
-#          If a symlink exists and points on something existing other than a
-#          carrier installation, the process will always fails to preserve
-#          system integrity.
+#          location. If carrier is already installed somewhere or a symlink
+#          exist with the specified name, the process fails by default.  Note:
+#          If a file (not a symlink) exists at the specified location the
+#          process will always fails even if forced.  If a symlink exists and
+#          points on something existing other than a carrier installation, the
+#          process will always fails to preserve system integrity.
 #
 # pack: Packs carrier into a single executable file, easying its transportation
 #       and allowing it to be used on network-isolated systems (using specific
@@ -931,8 +930,8 @@ contextSetApplianceListOnlyRemote
 #   - l for local
 #   - r for remote
 # Note that local and remote are not exclusive though it is unlikely to have an
-# appliance flagged as remote that is not present on your local system (unless you
-# deliberatly removed it)
+# appliance flagged as remote that is not present on your local system (unless
+# you deliberatly removed it)
 # - pretty outputs a very nice table (default)
 (-f|--format)=?
 one-line|pretty
@@ -1036,7 +1035,8 @@ EOI
 contextSetApplianceStartBuild
 
 # do not attempt to build appliance service image if they are missing. If one
-# or more service images are missing this command will fail(not default behavior)
+# or more service images are missing this command will fail(not default
+# behavior)
 -n|--dont-build
 --
 contextSetApplianceStartDontBuild
@@ -1589,8 +1589,8 @@ EOI
   return 1
 }
 
-### specialized mutator designed to mutate global options settings. Provided with
-### 2 arguments with at least one that must be non empty.
+### specialized mutator designed to mutate global options settings. Provided
+### with 2 arguments with at least one that must be non empty.
 tryMutateGlobalOptions() {
   info 'attempting to mutate global options'
 
@@ -2990,8 +2990,8 @@ bootstrap_build() {
 ### ask for some configuration and run the bootstrap image to bootstrap the
 ### system
 bootstrap_run_image() {
-  # TODO : take into account some variable of the execution context (auto answer yes…)
-  # need some functions
+  # TODO : take into account some variable of the execution context (auto
+  # answer yes…) need some functions
   . "$CARRIER_TMP_DIR"/bootstrap/functions.sh
 
   cat << EOI
@@ -3161,9 +3161,31 @@ image. Is that image well formed? Exiting..."
   return 0
 }
 
-### return the name of the staging directory for the factorize feature
-image_getFactorizeStagingDirectoryName() {
-  echo "${CARRIER_TMP_DIR}"/images/factorize
+### initialize a shell variable containing a directory id for the factorize
+### command staging area
+image_initializeFactorizeStagingDirectory() {
+  if [ ! -z "$DOMAIN_IMAGE_COMMAND_FACTORIZE_STAGING_DIRECTORY" ]; then
+    return 0
+  fi
+
+  DOMAIN_IMAGE_COMMAND_FACTORIZE_STAGING_DIRECTORY="$(
+    image_getStagingRootDirectory
+  )"/factorize/"$(generateRandomString)"
+
+  mkdir -p "$DOMAIN_IMAGE_COMMAND_FACTORIZE_STAGING_DIRECTORY"
+  
+  return 0
+}
+
+### return the name of the staging directory for the build feature
+image_getFactorizeStagingDirectory() {
+  [ -z "$DOMAIN_IMAGE_COMMAND_FACTORIZE_STAGING_DIRECTORY" ] \
+    && error 'Image factorize staging directory has not been initialized' \
+    && return 1
+
+  echo "$DOMAIN_IMAGE_COMMAND_FACTORIZE_STAGING_DIRECTORY"
+
+  return 0
 }
 
 ### create or overwrite files in staging directory for factorize feature
@@ -3174,43 +3196,84 @@ image_addFileInFactorizeStagingArea() {
     return 1
   fi
 
-  local staging_directory="$(image_getFactorizeStagingDirectoryName)"
+  local staging_directory="$(image_getFactorizeStagingDirectory)"
   mkdir -p "$staging_directory"
 
   echo "$2" > "${staging_directory}"/"$1"
 }
 
 ### remove temporary files created while factorizing images
-image_cleanupFactorizeTemporaryFiles() {
-  local staging_directory="$(image_getFactorizeStagingDirectoryName)"
-  rm -rf "$staging_directory"
+image_cleanupFactorizeStagingDirectory() {
+  info 'cleaning up the staging area for image factorize command'
 
-  removeDirectoryIfEmpty "${CARRIER_TMP_DIR}"/images
+  rm -rf "$(image_getFactorizeStagingDirectory)"
+
+  removeDirectoryIfEmpty "$(image_getStagingRootDirectory)"
 }
 
-image_extractCommonFileSequenceFromFiles() {
-  local staging_directory="$(image_getFactorizeStagingDirectoryName)"
+### get the common file we found on the first 2 images we have to factorize.
+### This common file sequence will be use then to refine the common file list
+### in remaining images.
+image_getCommonFilesSequenceOfFirstTwoImages() {
+  local image=
+  for image in $(image_getImageToFactorizeSequence); do
+    [ -z "$first_image" ] \
+    && local first_image="$image" && continue \
+    || local second_image="$image" && break
+  done
 
-  local common_files_sequence="$(
-    comm \
-      -1 -2 \
-      "${staging_directory}"/left_files_sequence.dist \
-      "${staging_directory}"/right_files_sequence.dist
-  )"
+  # implementation detail : local must not be defined in the if control block
+  # as defining a local with a failing function always succeed
+  local first_files_sequence= ; local second_files_sequence= ;
 
-  local returnCode=$?
-
-  if [ $returnCode -ne 0 ]; then
-    fatal 'could not extract common files...exiting'
+  if ! first_files_sequence="$(
+    image_extractImageDistFileFromImage "$first_image"
+  )"; then
     return 1
   fi
 
-  echo "$common_files_sequence"
+  if ! second_files_sequence="$(
+    image_extractImageDistFileFromImage "$second_image"
+  )"; then
+    return 1
+  fi
+
+  image_addFileInFactorizeStagingArea \
+    'first_files_sequence.dist' \
+    "$first_files_sequence"
+
+  image_addFileInFactorizeStagingArea \
+    'second_files_sequence.dist' \
+    "$second_files_sequence"
+
+  local common_files_sequence="$(
+    extractCommonLinesInTwoFiles \
+      "$(image_getStagingRootDirectory)"/first_files_sequence.dist \
+      "$(image_getStagingRootDirectory)"/second_files_sequence.dist)"
+
+  return 0
+}
+
+### initialize the image sequence to factorize in a shell variable
+image_initializeImageToFactorizeSequence() {
+  if [ -z "$DOMAIN_IMAGE_COMMAND_FACTORIZE_IMAGE_TO_FACTORIZE_SEQUENCE" ]; then
+    DOMAIN_IMAGE_COMMAND_FACTORIZE_IMAGE_TO_FACTORIZE_SEQUENCE="$(
+      image_prepareImageSequenceForFactorization)"
+  fi
+}
+
+### get the image sequence to factorize. Must initialize it before
+image_getImageToFactorizeSequence() {
+  [ -z "$DOMAIN_IMAGE_COMMAND_FACTORIZE_IMAGE_TO_FACTORIZE_SEQUENCE" ] \
+    && error 'Image to factorize sequence is not initialized' \
+    && return 1
+
+  echo "$DOMAIN_IMAGE_COMMAND_FACTORIZE_IMAGE_TO_FACTORIZE_SEQUENCE"
 }
 
 ### extract and exposes a common files list to factorize images
 image_extractCommonFileForFactorize() {
-  local image_sequence="$(image_prepareImageSequenceForFactorization)"
+  image_initializeImageToFactorizeSequence
 
   local common_files_sequence=
 
@@ -3219,19 +3282,17 @@ image_extractCommonFileForFactorize() {
   local right_files_sequence=
 
   local image=
-  for image in $image_sequence; do
+  for image in $DOMAIN_IMAGE_COMMAND_FACTORIZE_OPTION_IMAGE_SEQUENCE; do
     if ! image_checkIfExistsOnDockerHost "$image"; then
       return 1
     fi
 
-    # get the right fiel sequence
     if ! right_files_sequence="$(
       image_extractImageDistFileFromImage "$image"
     )"; then
       return 1
     fi
 
-    # get the left file sequence
     if [ -z "$left_files_sequence" ]; then
       [ -z "$common_files_sequence" ] \
       && left_files_sequence="$right_files_sequence" \
@@ -3274,13 +3335,15 @@ image_generateFactorizedFileListFileName() {
 
 ### factorization feature of the image domain
 image_factorize() {
+  image_initializeFactorizeStagingDirectory
+
   # common files in all images
   local common_files_sequence="$(image_extractCommonFileForFactorize)"
 
   local common_files_file_name="$(image_generateFactorizedFileListFileName)"
 
   # last step
-  image_cleanupFactorizeTemporaryFiles
+  image_cleanupFactorizeStagingDirectory
 }
 
 ### checking image name or image's manifest file path.
@@ -3410,14 +3473,49 @@ image_buildDependencies() {
   return 0
 }
 
+### gives the root directory of staging area used for image domain commands
+image_getStagingRootDirectory() {
+  echo "${CARRIER_TMP_DIR}"/image
+  return 0
+}
+
+### initialize a shell variable containing a directory id for the build command
+### staging area
+image_initializeBuildStagingDirectory() {
+  if [ ! -z "$DOMAIN_IMAGE_COMMAND_BUILD_STAGING_DIRECTORY" ]; then
+    return 0
+  fi
+
+  DOMAIN_IMAGE_COMMAND_BUILD_STAGING_DIRECTORY="$(
+    image_getStagingRootDirectory
+  )"/build/"$(generateRandomString)"
+
+  mkdir -p "$DOMAIN_IMAGE_COMMAND_BUILD_STAGING_DIRECTORY"
+  
+  return 0
+}
+
+### return the name of the staging directory for the build feature
+image_getBuildStagingDirectory() {
+  [ -z "$DOMAIN_IMAGE_COMMAND_BUILD_STAGING_DIRECTORY" ] \
+    && error 'Image build staging directory has not been initialized' \
+    && return 1
+
+  echo "$DOMAIN_IMAGE_COMMAND_BUILD_STAGING_DIRECTORY"
+
+  return 0
+}
+
 ### fill the staging area with file necessary to build the image and its
 ### dependencies
-image_fillStagingArea() {
-  local image_directory=$(dirname $MANIFEST_FILE_PATH)
+image_fillBuildStagingArea() {
+  image_initializeBuildStagingDirectory
+
+  local image_directory="$(dirname $MANIFEST_FILE_PATH)"
 
   # create the intermediate images directory in the staging area if it does not
   # already exist
-  local staging_directory=${CARRIER_TMP_DIR}/images
+  local staging_directory="$(image_getBuildStagingDirectory)"
 
   # sanitize the satging area if this is this execution is the first (no
   # recursion)
@@ -3426,10 +3524,10 @@ image_fillStagingArea() {
     rm -rf $staging_directory
   fi
 
-  mkdir -p $staging_directory
+  mkdir -p "$staging_directory"
 
   # copy the project in the staging area
-  cp -a $image_directory $staging_directory
+  cp -a "$image_directory" "$staging_directory"
 
   local returnCode=$?
 
@@ -3439,7 +3537,8 @@ image_fillStagingArea() {
 
   # copy necessary lib files in the project directory in the staging area
   local image_name=$(basename $image_directory)
-  IMAGE_STAGING_DIRECTORY=${staging_directory}/build/$image_name
+  DOMAIN_IMAGE_COMMAND_BUILD_IMAGE_STAGING_DIRECTORY=\
+"${staging_directory}"/$image_name
 
   cd $CARRIER_LIB_DIR
 
@@ -3451,7 +3550,7 @@ image_fillStagingArea() {
     exportPackageTo \
     functions.sh \
     importPackageFrom \
-    $IMAGE_STAGING_DIRECTORY
+    $DOMAIN_IMAGE_COMMAND_BUILD_IMAGE_STAGING_DIRECTORY
 
   returnCode=$?
 
@@ -3474,16 +3573,18 @@ image_buildImageAndDependencies() {
   if [ ! -z "$REQUIRES" ]; then
     info 'fetching genuine carrier repository...'
 
-    fetchManifestImageContent $IMAGE_STAGING_DIRECTORY
+    fetchManifestImageContent \
+      $DOMAIN_IMAGE_COMMAND_BUILD_IMAGE_STAGING_DIRECTORY
+
     image_buildDependencies
   fi
 
   # rely on some variables extracted from the manifest file that was parsed
   (
     exec \
-      ${IMAGE_STAGING_DIRECTORY}/build.sh \
+      ${DOMAIN_IMAGE_COMMAND_BUILD_IMAGE_STAGING_DIRECTORY}/build.sh \
       $PROVIDES \
-      $IMAGE_STAGING_DIRECTORY \
+      $DOMAIN_IMAGE_COMMAND_BUILD_IMAGE_STAGING_DIRECTORY \
       "$SOURCES_FETCH_IMAGE" \
       "$SOURCES_FETCH_COMMAND" \
       "$SOURCES_TARBALL_NAME" \
@@ -3504,11 +3605,11 @@ image_buildImageAndDependencies() {
 
 ### when the build is complete, cleanup the staging area
 image_cleanupBuildStagingArea() {
-  info 'cleaning up the staging area for images'
+  info 'cleaning up the staging area for image build command'
 
-  rm -rf $IMAGE_STAGING_DIRECTORY
+  rm -rf "$(image_getBuildStagingDirectory)"
 
-  removeDirectoryIfEmpty "${CARRIER_TMP_DIR}"/images
+  removeDirectoryIfEmpty "$(image_getStagingRootDirectory)"
 
   return 0
 }
@@ -3519,7 +3620,7 @@ image_cleanupBuildStagingArea() {
 image_build() {
   image_checkBootstrapImages \
   && image_checkManifestPathOrName "$1" \
-  && image_fillStagingArea \
+  && image_fillBuildStagingArea \
   && image_buildImageAndDependencies \
   && image_cleanupBuildStagingArea
 

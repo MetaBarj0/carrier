@@ -10,11 +10,32 @@ removeDirectoryIfEmpty() {
     return 0
   fi
 
-  if [ -z "$(ls "$1")" ]; then
+  # empty means no file
+  if [ -z "$(find "$1" -type f)" ]; then
     rm -r "$1"
     return $?
   fi
 
+}
+
+# extract common line from files specified in arguments
+# $1 first file to compare
+# $2 second file to compare
+extractCommonLinesInTwoFiles() {
+  if [ ! -f "$1" ] || [ ! -f "$2" ]; then
+    error 'Extracting common lines requires two files'
+  fi
+
+  local common_lines="$(comm -1 -2 "$1" "$2")"
+
+  local returnCode=$?
+
+  if [ $returnCode -ne 0 ]; then
+    fatal 'could not extract common lines in '"$1"' and '"$2"
+    return 1
+  fi
+
+  echo "$common_lines"
 }
 
 # wait an user input to put in a variable and echo this variable. If no
@@ -462,7 +483,7 @@ EOI
   fi
 
   # change directory to the destination directory to work
-  cd $destination_directory
+  cd "$destination_directory"
 
   # background running of a manifest container
   local container_id=$(docker run --rm -d metabarj0/manifest)
@@ -480,10 +501,10 @@ EOI
 
   # indicates that the manifest image content has been fetched, used in
   # subsequent sub shell invocation if dependency images must be built
-  export FETCHED_MANIFEST=${destination_directory}/docker
+  export FETCHED_MANIFEST="${destination_directory}"/docker
 
   # return to the user directory
-  cd $USER_DIRECTORY
+  cd "$USER_DIRECTORY"
 }
 
 # utility function mapping image names with a build stage alias partially
