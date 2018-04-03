@@ -3016,8 +3016,8 @@ bootstrap_build() {
 bootstrap_run_image() {
   info 'running the bootstrap docker image'
 
-  # TODO : take into account some variable of the execution context (auto
-  # answer yes…) need some functions
+  # TODO : take into account some variable of the execution context (auto answer yes…)
+  # TODO: refacto, need some functions
 
   cat << EOI
 Specify the version of GCC you want to build. Note that today, only 7.2.0
@@ -3587,8 +3587,7 @@ image_getBuildStagingDirectory() {
 
 ### fill the staging area with file necessary to build the image and its
 ### dependencies
-# TODO rename to image_fillImageBuildStagingArea
-image_fillBuildStagingArea() {
+image_fillImageBuildStagingArea() {
   info 'filling image build staging area'
 
   local image_directory="$(dirname $MANIFEST_FILE_PATH)" \
@@ -3692,7 +3691,7 @@ image_build() {
   image_checkBootstrapImages \
   && image_checkManifestPathOrName "$1" \
   && image_initializeBuildStagingDirectory \
-  && image_fillBuildStagingArea \
+  && image_fillImageBuildStagingArea \
   && image_buildImageAndDependencies \
   && image_cleanupBuildStagingArea
 
