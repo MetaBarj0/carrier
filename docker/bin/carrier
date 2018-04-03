@@ -2253,9 +2253,7 @@ $DOMAIN_APPLIANCE_COMMAND_BUILD_OPTION_APPLIANCE_SEQUENCE"
   local appliance=
   for appliance in $sequence; do
     # the first appliance build failing return from that function
-    # TODO : remove first argument, useless as context execution contains the
-    # info, moreover, is sub-shell execution necessary?
-    ( appliance_manage 'build' "$appliance" )
+    ( appliance_manage "$appliance" )
 
     local returnCode=$?
 
@@ -2327,9 +2325,7 @@ $DOMAIN_APPLIANCE_COMMAND_START_OPTION_APPLIANCE_SEQUENCE"
   local appliance=
   for appliance in $sequence; do
     # the first appliance start failing return from that function
-    # TODO : remove first argument, useless as context execution contains the
-    # info, moreover, is sub-shell execution necessary?
-    ( appliance_manage 'start' "$appliance" )
+    ( appliance_manage "$appliance" )
 
     local returnCode=$?
 
@@ -2369,9 +2365,7 @@ $DOMAIN_APPLIANCE_COMMAND_STOP_OPTION_APPLIANCE_SEQUENCE"
   local appliance=
   for appliance in $sequence; do
     # the first appliance stop failing return from that function
-    # TODO : remove first argument, useless as context execution contains the
-    # info, moreover, is sub-shell execution necessary?
-    ( appliance_manage 'stop' "$appliance" )
+    ( appliance_manage "$appliance" )
 
     local returnCode=$?
 
@@ -3764,11 +3758,11 @@ appliance_checkArgument() {
   #    provided
   #  - testing directly the file path, useful if absolute path is provided
   # TODO : refactor that, same mechanics for image building
-  local manifest_arg="$2"
+  local manifest_arg="$1"
   if [ ! -f "${USER_DIRECTORY}"/"$manifest_arg" ] \
      && [ ! -f "$manifest_arg" ]; then
     # not a file path, testing the appliance name
-    manifest_arg="${CARRIER_SHARE_APPLIANCES_DIR}"/"$2"/manifest
+    manifest_arg="${CARRIER_SHARE_APPLIANCES_DIR}"/"$manifest_arg"/manifest
     if [ ! -f "${manifest_arg}" ]; then
       error 'invalid manifest file path or appliance name specified'
       return 1
@@ -4316,11 +4310,11 @@ appliance_executeRequestedCommand() {
   return $?
 }
 
-### main entrypoint to manage appliances (build, start, stop, …)
+### main entrypoint to manage appliances
 appliance_manage() {
-  info 'executing appliance command: '"$1"
+  info 'executing appliance command'
 
-  appliance_checkArgument "$1" "$2" \
+  appliance_checkArgument "$1" \
   && appliance_executeRequestedCommand
 
   return $?
