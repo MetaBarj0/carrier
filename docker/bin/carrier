@@ -3018,8 +3018,6 @@ bootstrap_run_image() {
 
   # TODO : take into account some variable of the execution context (auto
   # answer yes…) need some functions
-  # TODO: removing the source should be harmless
-  . "$CARRIER_TMP_DIR"/bootstrap/functions.sh
 
   cat << EOI
 Specify the version of GCC you want to build. Note that today, only 7.2.0
