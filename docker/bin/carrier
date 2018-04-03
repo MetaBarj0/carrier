@@ -3572,8 +3572,7 @@ image_initializeBuildStagingDirectory() {
 }
 
 ### return the name of the staging directory for the build feature
-# TODO: rename to image_getImageBuildStagingDirectory
-image_getBuildStagingDirectory() {
+image_getImageBuildStagingDirectory() {
   info 'getting image build staging directory'
 
   [ -z "$DOMAIN_IMAGE_COMMAND_BUILD_STAGING_DIRECTORY" ] \
@@ -3594,7 +3593,7 @@ image_fillImageBuildStagingArea() {
   || ( fatal 'Could not get the image directory name' \
        && return $? )
 
-  local staging_directory="$(image_getBuildStagingDirectory)" \
+  local staging_directory="$(image_getImageBuildStagingDirectory)" \
   || return $?
 
   # TODO: remove ...exiting... suffix
