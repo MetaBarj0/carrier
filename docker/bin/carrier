@@ -235,20 +235,18 @@ EOI
   return 0
 }
 
-### internal that remove unnecessary information from global options referential
-### specified in argument
+### internal function that remove unnecessary information from global options
+### referential specified in argument
 removeIrrelevantDetailsFromReferentialOption() {
   local referential="$1"
+
+  info 'removing irrelevant data from '"$referential"
 
   echo "$referential"\
   | sed -E '/^--$/d' \
   | sed -E '/contextSet.+/d'
 
   local returnCode=$?
-
-  [ $returnCode -eq 0 ] \
-  && debug 'removeIrrelevantDetailsFromReferentialOption() sucess' \
-  || debug 'removeIrrelevantDetailsFromReferentialOption() failed'
 
   [ "$returnCode" -ne 0 ] \
   && fatal 'could not purify the options referential to get detailed help'
@@ -258,6 +256,8 @@ removeIrrelevantDetailsFromReferentialOption() {
 
 ### Get a full help on usage
 usageFull() {
+  info 'printing full usage help'
+
   cat << EOI
 $(usage)
 
@@ -1309,6 +1309,8 @@ initializeExecutionContext() {
 
 ### internal function displyaing the content of the execution context
 debugOutputExecutionContext() {
+  info 'outputting current execution context'
+
   cat << EOI
   GLOBAL_OPTION_LOG_LEVEL=\
 $GLOBAL_OPTION_LOG_LEVEL
@@ -1512,6 +1514,10 @@ tryMutateReferential() {
   local key="$2";
   local value="$3";
 
+  debug "referential="$referential"
+key="$key"
+value="$value""
+
   # each 'entry' in a referential is made of 3 lines
   local key_pattern= ; local value_pattern= ; local mutator=
 
@@ -1537,7 +1543,7 @@ EOI
       # resetting patterns and mutator for another turn
       key_pattern= ; value_pattern= ; mutator=
 
-      warning "$(cat << EOI
+      debug "$(cat << EOI
 provided key: $key does not match the explored referential key
 pattern: $key_pattern
 EOI
@@ -1556,7 +1562,7 @@ EOI
         # resetting patterns and mutator for another turn
         key_pattern= ; value_pattern= ; mutator=
 
-        warning "$(cat << EOI
+        debug "$(cat << EOI
 provided value: $value does not match the explored referential value
 pattern: $value_pattern
 EOI
@@ -1566,6 +1572,10 @@ EOI
       fi
     fi
 
+    debug 'key is not associated with any value in the referential'
+
+    debug 'calling '"$mutator"' '"$key"' '"$value"
+
     # value matched the pattern, call the mutator with both key and value,
     # though value may be empty
     # echo m="$mutator" k="$key" v="$value"
@@ -1573,7 +1583,7 @@ EOI
     local returnCode=$?
 
     [ "$returnCode" -ne 0 ] \
-      && warning "$(cat << EOI
+      && debug "$(cat << EOI
 The mutator: $mutator failed to execute correctly with key: $key and
 value: $value
 EOI
@@ -1585,7 +1595,8 @@ EOI
   # failed to modify the execution context for this referential. unless it is
   # the most specialized referential (command options) it is not fatal as more
   # specialized referential will be explored for mutation
-  warning 'Could not modify the referential: '"$referential"
+  debug 'Could not modify the referential: '"$referential"
+
   return 1
 }
 
@@ -1608,7 +1619,7 @@ value=$value"
 
   local returnCode=$?
 
-  warning "$(cat << EOI
+  debug "$(cat << EOI
 could not mutate global options with key: $key and value: $value
 EOI
 )"
@@ -1633,7 +1644,7 @@ value=$value"
 
   local returnCode=$?
 
-  warning "$(cat << EOI
+  debug "$(cat << EOI
 could not mutate the domain with key: $key and value: $value
 EOI
   )"
@@ -1644,6 +1655,8 @@ EOI
 ### specialized mutator designed to mutate domain options settings. Provided
 ### with 2 arguments with at least one that must be non empty.
 tryMutateDomainOptions() {
+  debug 'Not Implemented Yet'
+
   # there is not any domain option that are supported so far
   return 1
 }
@@ -1665,7 +1678,7 @@ value=$value"
 
   local returnCode=$?
 
-  warning "$(cat << EOI
+  debug "$(cat << EOI
 could not mutate the command with key: $key and value: $value
 EOI
 )"
@@ -1702,7 +1715,7 @@ value=$value"
 
   local returnCode=$?
 
-  warning "$(cat << EOI
+  debug "$(cat << EOI
 could not mutate the domain command with key: $key and value: $value
 EOI
 )"
@@ -1756,7 +1769,7 @@ value=$value"
 
   local returnCode=$?
 
-  warning "$(cat << EOI
+  debug "$(cat << EOI
 could not mutate the global command with key: $key and value: $value
 EOI
 )"
@@ -1856,7 +1869,7 @@ value=$value"
 
   local returnCode=$?
 
-  warning "$(cat << EOI
+  debug "$(cat << EOI
 could not mutate the domain command options with key: $key and
 value: $value
 EOI
@@ -1926,7 +1939,7 @@ value=$value"
 
   local returnCode=$?
 
-  warning "$(cat << EOI
+  debug "$(cat << EOI
 could not mutate the execution context with key: $key and value: $value
 EOI
 )"
@@ -1938,7 +1951,7 @@ EOI
 ### argument of the form key=value
 tryMutateExecutionContextWithKeyEqualsValueArg() {
   if ! isPair "$1"; then
-    warning 'A pair is needed here. '"$1"' is not a pair'
+    debug 'A pair is needed here. '"$1"' is not a pair'
     return 1
   fi
 
@@ -1952,7 +1965,7 @@ value=$value"
 
   local returnCode=$?
 
-  warning "$(cat << EOI
+  debug "$(cat << EOI
 could not mutate the domain command with key: $key and value: $value
 EOI
 )"
@@ -1962,6 +1975,8 @@ EOI
 
 ### build the final execution context regarding provided arguments
 buildExecutionContextFromArguments() {
+  info 'attempting to mutate the execution context with provided arguments'
+
   # the arguments provided could take 2 different forms :
   # - simple switch
   # - key-value pair
@@ -1990,16 +2005,16 @@ buildExecutionContextFromArguments() {
 
     if [ -z "$extractedKeyFromArg" ]; then
       if tryMutateExecutionContextWithKeyEqualsValueArg "$arg"; then
-        info 'key=value args successfully altered the execution context'
+        debug 'key=value args successfully altered the execution context'
         continue
       fi
 
       if tryMutateExecutionContext "$arg"; then
-        info 'single arg successfully altered the execution context'
+        debug 'single arg successfully altered the execution context'
         continue
       fi
 
-      info 'mutation failed with arg: '"$arg"' continuing...'
+      debug 'mutation failed with arg: '"$arg"' continuing...'
       extractedKeyFromArg="$arg"
       
       continue
@@ -2010,8 +2025,8 @@ buildExecutionContextFromArguments() {
       local returnCode=$?
 
       [ $returnCode -ne 0 ] \
-      && info 'key value args successfully altered the execution context' \
-      || info "$(cat << EOI
+      && debug 'key value args successfully altered the execution context' \
+      || debug "$(cat << EOI
 Failed to modify the execution context with key: $extractedKeyFromArg and
 value: $arg
 EOI
@@ -2039,7 +2054,7 @@ executeHelpCommand() {
       usage
     fi
   else
-    warning 'help was not the requested command'
+    info 'help was not the requested command'
     return 1
   fi
 
@@ -2050,7 +2065,7 @@ executeHelpCommand() {
 executeInfoCommand() {
   :
 
-  warning 'Not implemented yet'
+  debug 'Not Implemented Yet'
   return 1
 }
 
@@ -2058,7 +2073,7 @@ executeInfoCommand() {
 executeInstallCommand() {
   :
 
-  warning 'Not implemented yet'
+  debug 'Not Implemented Yet'
   return 1
 }
 
@@ -2066,7 +2081,7 @@ executeInstallCommand() {
 executePackCommand() {
   :
 
-  warning 'Not implemented yet'
+  debug 'Not Implemented Yet'
   return 1
 }
 
@@ -2074,7 +2089,7 @@ executePackCommand() {
 executeUnpackCommand() {
   :
 
-  warning 'Not implemented yet'
+  debug 'Not Implemented Yet'
   return 1
 }
 
@@ -2082,7 +2097,7 @@ executeUnpackCommand() {
 executeVagrantCommand() {
   :
 
-  warning 'Not implemented yet'
+  debug 'Not Implemented Yet'
   return 1
 }
 
@@ -2090,7 +2105,7 @@ executeVagrantCommand() {
 executeBootstrapCheckCommand() {
   :
 
-  warning 'Not implemented yet'
+  debug 'Not Implemented Yet'
   return 1
 }
 
@@ -2108,11 +2123,6 @@ executeBootstrapRunCommand() {
     [ $returnCode -ne 0 ] \
     && error 'could not bootstrap the system.'
   fi
-
-  debug 'executeBootstrapRunCommand() Result'
-  [ $returnCode -eq 0 ] \
-  && debug 'execution succeeded' \
-  || debug 'execution failed'
 
   return $returnCode
 }
@@ -2138,10 +2148,14 @@ $DOMAIN_IMAGE_COMMAND_BUILD_OPTION_IMAGE_SEQUENCE"
     ','
   )"
 
+  debug 'image sequence to build :'"$sequence"
+
   # build each image in the sequence, calling the right script in a subshell
   local image=
   local returnCode=1
   for image in $sequence; do
+    debug 'calling image_build '"$image"
+
     # the first image build failing return from that function
     image_build "$image"
     local returnCode=$?
@@ -2159,7 +2173,7 @@ $DOMAIN_IMAGE_COMMAND_BUILD_OPTION_IMAGE_SEQUENCE"
 executeImageListCommand() {
   :
 
-  warning 'Not implemented yet'
+  debug 'Not Implemented Yet'
   return 1
 }
 
@@ -2167,7 +2181,7 @@ executeImageListCommand() {
 executeImageCheckCommand() {
   :
 
-  warning 'Not implemented yet'
+  debug 'Not Implemented Yet'
   return 1
 }
 
@@ -2175,7 +2189,7 @@ executeImageCheckCommand() {
 executeImageInfoCommand() {
   :
 
-  warning 'Not implemented yet'
+  debug 'Not Implemented Yet'
   return 1
 }
 
@@ -2183,7 +2197,7 @@ executeImageInfoCommand() {
 executeImageUpgradeCommand() {
   :
 
-  warning 'Not implemented yet'
+  debug 'Not Implemented Yet'
   return 1
 }
 
@@ -2203,6 +2217,8 @@ $DOMAIN_IMAGE_COMMAND_FACTORIZE_OPTION_BASE_IMAGE_NAME
 $DOMAIN_IMAGE_COMMAND_FACTORIZE_OPTION_IMAGE_SEQUENCE"
     return 1
   fi
+
+  debug 'calling image_factorize'
 
   # call the feature
   image_factorize
@@ -2231,10 +2247,14 @@ $DOMAIN_APPLIANCE_COMMAND_BUILD_OPTION_APPLIANCE_SEQUENCE"
     ','
   )"
 
+  debug 'appliance sequence to build: '"$sequence"
+
   # build each appliance in the sequence, calling the right script in a subshell
   local appliance=
   for appliance in $sequence; do
     # the first appliance build failing return from that function
+    # TODO : remove first argument, useless as context execution contains the
+    # info, moreover, is sub-shell execution necessary?
     ( appliance_manage 'build' "$appliance" )
 
     local returnCode=$?
@@ -2252,7 +2272,7 @@ $DOMAIN_APPLIANCE_COMMAND_BUILD_OPTION_APPLIANCE_SEQUENCE"
 executeApplianceListCommand() {
   :
 
-  warning 'Not implemented yet'
+  debug 'Not Implemented Yet'
   return 1
 }
 
@@ -2260,7 +2280,7 @@ executeApplianceListCommand() {
 executeApplianceCheckCommand() {
   :
 
-  warning 'Not implemented yet'
+  debug 'Not Implemented Yet'
   return 1
 }
 
@@ -2268,7 +2288,7 @@ executeApplianceCheckCommand() {
 executeApplianceInfoCommand() {
   :
 
-  warning 'Not implemented yet'
+  debug 'Not Implemented Yet'
   return 1
 }
 
@@ -2276,7 +2296,7 @@ executeApplianceInfoCommand() {
 executeApplianceUpgradeCommand() {
   :
 
-  warning 'Not implemented yet'
+  debug 'Not Implemented Yet'
   return 1
 }
 
@@ -2301,16 +2321,20 @@ $DOMAIN_APPLIANCE_COMMAND_START_OPTION_APPLIANCE_SEQUENCE"
     ','
   )"
 
+  debug 'appliance sequence to start: '"$sequence"
+
   # build each appliance in the sequence, calling the right script in a subshell
   local appliance=
   for appliance in $sequence; do
-    # the first appliance build failing return from that function
+    # the first appliance start failing return from that function
+    # TODO : remove first argument, useless as context execution contains the
+    # info, moreover, is sub-shell execution necessary?
     ( appliance_manage 'start' "$appliance" )
 
     local returnCode=$?
 
     if [ $returnCode -ne 0 ]; then
-      warning 'Failed to start the requested '"$appliance"' appliance.'
+      error 'Failed to start the requested '"$appliance"' appliance.'
       return $returnCode
     fi
   done
@@ -2339,10 +2363,14 @@ $DOMAIN_APPLIANCE_COMMAND_STOP_OPTION_APPLIANCE_SEQUENCE"
     ','
   )"
 
+  debug 'appliance sequence to stop: '"$sequence"
+
   # build each appliance in the sequence, calling the right script in a subshell
   local appliance=
   for appliance in $sequence; do
-    # the first appliance build failing return from that function
+    # the first appliance stop failing return from that function
+    # TODO : remove first argument, useless as context execution contains the
+    # info, moreover, is sub-shell execution necessary?
     ( appliance_manage 'stop' "$appliance" )
 
     local returnCode=$?
@@ -2360,7 +2388,7 @@ $DOMAIN_APPLIANCE_COMMAND_STOP_OPTION_APPLIANCE_SEQUENCE"
 executeApplianceVolumesCommand() {
   :
 
-  warning 'Not implemented yet'
+  debug 'Not Implemented Yet'
   return 1
 }
 
@@ -2373,10 +2401,8 @@ executeBootstrapCommand() {
 
   local returnCode=$?
 
-  debug 'executeBootstrapCommand() Result'
-  [ $returnCode -eq 0 ] \
-  && debug 'execution succeeded' \
-  || debug 'execution failed'
+  [ $returnCode -ne 0 ] \
+    && debug 'failed to execute executeBootstrapCommand'
 
   return $returnCode
 }
@@ -2394,10 +2420,8 @@ executeImageCommand() {
 
   local returnCode=$?
 
-  debug 'executeImageCommand() Result'
-  [ $returnCode -eq 0 ] \
-  && debug 'execution succeeded' \
-  || debug 'execution failed'
+  [ $returnCode -ne 0 ] \
+    && debug 'failed to execute executeImageCommand'
 
   return $returnCode
 }
@@ -2417,10 +2441,8 @@ executeApplianceCommand() {
 
   local returnCode=$?
 
-  debug 'executeApplianceCommand() Result'
-  [ $returnCode -eq 0 ] \
-  && debug 'execution succeeded' \
-  || debug 'execution failed'
+  [ $returnCode -ne 0 ] \
+    && debug 'failed to execute executeApplianceCommand'
 
   return $returnCode
 }
@@ -2438,10 +2460,8 @@ executeGlobalCommand() {
 
   local returnCode=$?
 
-  debug 'executeGlobalCommand() Result'
-  [ $returnCode -eq 0 ] \
-  && debug 'execution succeeded' \
-  || debug 'execution failed'
+  [ $returnCode -ne 0 ] \
+    && debug 'failed to execute executeGlobalCommand'
 
   return $returnCode
 }
@@ -2456,10 +2476,8 @@ executeDomainCommand() {
 
   local returnCode=$?
 
-  debug 'executeDomainCommand() Result'
-  [ $returnCode -eq 0 ] \
-  && debug 'execution succeeded' \
-  || debug 'execution failed'
+  [ $returnCode -ne 0 ] \
+    && debug 'failed to execute executeDomainCommand'
 
   return $returnCode
 }
@@ -2488,6 +2506,8 @@ executeWithTraceIfRequested() {
 ### Once the execution context is set, execute the script using it. As the
 ### execution context is verified when set, one function must succeed
 executeWithContext() {
+  info 'executing carrier with setup context'
+
   debug "Execution Context:
 $(debugOutputExecutionContext)"
 
@@ -2496,10 +2516,9 @@ $(debugOutputExecutionContext)"
 
   local returnCode=$?
 
-  debug 'executeWithContext() Result'
-  [ $returnCode -eq 0 ] \
-  && debug 'execution succeeded' \
-  || debug 'execution failed'
+  [ $returnCode -ne 0 ] \
+  && fatal 'Failed to execute carrier with current execution context' \
+  && return $returnCode
 
   return $returnCode
 }
@@ -2508,18 +2527,20 @@ $(debugOutputExecutionContext)"
 
 ### Mutator to set the log level. Valid call in any circumstances
 contextSetLogLevel() {
+  info 'setting log level global option'
+
   # key/value pair
   GLOBAL_OPTION_LOG_LEVEL="$2"
-  debug 'GLOBAL_OPTION_LOG_LEVEL='"$2"
 
   return 0
 }
 
 ### Mutator to set the log output. Valid call in any circumstances
 contextSetLogOutput() {
+  info 'setting log output global option'
+
   # key/value pair
   GLOBAL_OPTION_LOG_OUTPUT="$2"
-  debug 'GLOBAL_OPTION_LOG_OUTPUT='"$2"
 
   return 0
 }
@@ -2527,6 +2548,8 @@ contextSetLogOutput() {
 ### Mutator to set a global command. Valid call if:
 ### - no domain specified
 contextSetGlobalCommand() {
+  info 'setting global command'
+
   if [ ! -z "$DOMAIN" ]; then
     info 'A domain name must not be specified to set the '"$1"' global command'
     return 1
@@ -2534,7 +2557,6 @@ contextSetGlobalCommand() {
 
   # the key specified (first argument) is the command
   COMMAND="$1"
-  debug 'COMMAND='"$1"
 
   return 0
 }
@@ -2542,6 +2564,8 @@ contextSetGlobalCommand() {
 ### mutator to set the help mode. Valid call if:
 ### - command is 'help'
 contextSetHelpMode() {
+  info 'setting help mode'
+
   if [ ! "$COMMAND" = 'help' ]; then
     info "$(cat << EOI
 contextSetHelpMode() can only be used when specified command is help
@@ -2553,7 +2577,6 @@ EOI
 
   # the key (first value) is the help mode
   GLOBAL_COMMAND_HELP_OPTION_MODE="$1"
-  debug 'GLOBAL_COMMAND_HELP_OPTION_MODE='"$1"
 
   return 0
 }
@@ -2561,6 +2584,8 @@ EOI
 ### mutator to set the domain. Valid call if:
 ### - no global command specified sooner
 contextSetDomain() {
+  info 'setting domain'
+
   # empty domain and non empty command denotes a global command specified sooner
   if [ -z "$DOMAIN" ] \
      && [ ! -z "$COMMAND" ]; then
@@ -2575,7 +2600,6 @@ EOI
 
   # the specified key (first arg) is the domain
   DOMAIN="$1"
-  debug 'DOMAIN='"$1"
 
   return 0
 }
@@ -2583,6 +2607,8 @@ EOI
 ### mutator to setup the bootstrap command. Valid call if:
 ### - domain is bootstrap
 contextSetBootstrapCommand() {
+  info 'setting bootstrap command'
+
   if [ ! "$DOMAIN" = 'bootstrap' ]; then
     info "$(cat << EOI
 contextSetBootstrapCommand() can only be called if DOMAIN is bootstrap
@@ -2594,7 +2620,6 @@ EOI
 
   # the specified key (first arg) is the bootstrap command
   COMMAND="$1"
-  debug 'COMMAND='"$1"
 
   return 0
 }
@@ -2602,6 +2627,8 @@ EOI
 ### mutator to setup the image command. Valid call if:
 ### - domain is image
 contextSetImageCommand() {
+  info 'setting image command'
+
   if [ ! "$DOMAIN" = 'image' ]; then
     info "$(cat << EOI
 contextSetImageCommand() can only be called if domain is image
@@ -2613,7 +2640,6 @@ EOI
 
   # the specified key (first arg) is the image command
   COMMAND="$1"
-  debug 'COMMAND='"$1"
 
   return 0
 }
@@ -2622,6 +2648,8 @@ EOI
 ### - domain is image
 ### - command is build
 contextSetImageBuildImageSequence() {
+  info 'setting image build image sequence'
+
   if [ ! "$DOMAIN" = 'image' ] \
      || [ ! "$COMMAND" = 'build' ]; then
   info "$(cat << EOI
@@ -2636,7 +2664,6 @@ EOI
 
   # the key (first arg) is the image sequence
   DOMAIN_IMAGE_COMMAND_BUILD_OPTION_IMAGE_SEQUENCE="$1"
-  debug 'DOMAIN_IMAGE_COMMAND_BUILD_OPTION_IMAGE_SEQUENCE='"$1"
 
   return 0
 }
@@ -2645,7 +2672,7 @@ EOI
 contextSetImageListOnlyLocal() {
   :
 
-  warning 'Not yet implemented'
+  debug 'Not Implemented Yet'
   return 1
 }
 
@@ -2653,7 +2680,7 @@ contextSetImageListOnlyLocal() {
 contextSetImageInfoImage() {
   :
 
-  warning 'Not yet implemented'
+  debug 'Not Implemented Yet'
   return 1
 }
 
@@ -2661,7 +2688,7 @@ contextSetImageInfoImage() {
 contextSetImageListOnlyNotBuilt() {
   :
 
-  warning 'Not yet implemented'
+  debug 'Not Implemented Yet'
   return 1
 }
 
@@ -2669,7 +2696,7 @@ contextSetImageListOnlyNotBuilt() {
 contextSetImageUpgradeImageSequence() {
   :
 
-  warning 'Not yet implemented'
+  debug 'Not Implemented Yet'
   return 1
 }
 
@@ -2677,11 +2704,13 @@ contextSetImageUpgradeImageSequence() {
 contextSetImageCheckImageSequence() {
   :
 
-  warning 'Not yet implemented'
+  debug 'Not Implemented Yet'
   return 1
 }
 
 contextSetImageFactorizeBaseImagePrefix() {
+  info 'setting image factorize base image prefix'
+
   if [ ! "$DOMAIN" = 'image' ] \
      || [ ! "$COMMAND" = 'factorize' ]; then
   info "$(cat << EOI
@@ -2696,12 +2725,13 @@ EOI
 
   # the prefix is the second argument
   DOMAIN_IMAGE_COMMAND_FACTORIZE_OPTION_BASE_IMAGE_PREFIX="$2"
-  debug 'DOMAIN_IMAGE_COMMAND_FACTORIZE_OPTION_BASE_IMAGE_PREFIX='"$2"
 
   return 0
 }
 
 contextSetImageFactorizeFactorizedImagePrefix() {
+  info 'setting image factorize factorized image prefix'
+
   if [ ! "$DOMAIN" = 'image' ] \
      || [ ! "$COMMAND" = 'factorize' ]; then
   info "$(cat << EOI
@@ -2716,12 +2746,13 @@ EOI
 
   # the prefix is the second argument
   DOMAIN_IMAGE_COMMAND_FACTORIZE_OPTION_FACTORIZED_IMAGE_PREFIX="$2"
-  debug 'DOMAIN_IMAGE_COMMAND_FACTORIZE_OPTION_FACTORIZED_IMAGE_PREFIX='"$2"
 
   return 0
 }
 
 contextSetImageFactorizeBaseImageName() {
+  info 'setting image factorize base image name'
+
   if [ ! "$DOMAIN" = 'image' ] \
      || [ ! "$COMMAND" = 'factorize' ]; then
   info "$(cat << EOI
@@ -2736,12 +2767,13 @@ EOI
 
   # the image name is the second argument
   DOMAIN_IMAGE_COMMAND_FACTORIZE_OPTION_BASE_IMAGE_NAME="$2"
-  debug 'DOMAIN_IMAGE_COMMAND_FACTORIZE_OPTION_BASE_IMAGE_NAME='"$2"
 
   return 0
 }
 
 contextSetImageFactorizeImageSequence() {
+  info 'setting image factorize image sequence'
+
   if [ ! "$DOMAIN" = 'image' ] \
      || [ ! "$COMMAND" = 'factorize' ]; then
   info "$(cat << EOI
@@ -2756,12 +2788,13 @@ EOI
 
   # the image sequence is the second argument
   DOMAIN_IMAGE_COMMAND_FACTORIZE_OPTION_IMAGE_SEQUENCE="$2"
-  debug 'DOMAIN_IMAGE_COMMAND_FACTORIZE_OPTION_IMAGE_SEQUENCE='"$2"
 
   return 0
 }
 
 contextSetImageFactorizeRemoveOriginalImages() {
+  info 'setting image factorize remove original images flag'
+
   if [ ! "$DOMAIN" = 'image' ] \
      || [ ! "$COMMAND" = 'factorize' ]; then
   info "$(cat << EOI
@@ -2776,7 +2809,6 @@ EOI
 
   # no value here
   DOMAIN_IMAGE_COMMAND_FACTORIZE_OPTION_REMOVE_ORIGINAL_IMAGES='yes'
-  debug 'DOMAIN_IMAGE_COMMAND_FACTORIZE_OPTION_REMOVE_ORIGINAL_IMAGES=yes'
 
   return 0
 }
@@ -2784,6 +2816,8 @@ EOI
 ### mutator to setup the appliance command. Valid call if:
 ### - domain is appliance
 contextSetApplianceCommand() {
+  info 'setting appliance command'
+
   if [ ! "$DOMAIN" = 'appliance' ]; then
     info "$(cat << EOI
 contextSetApplianceCommand() can only be called if domain is appliance
@@ -2795,7 +2829,6 @@ EOI
 
   # the specified key (first arg) is the appliance command
   COMMAND="$1"
-  debug 'COMMAND='"$1"
 
   return 0
 }
@@ -2804,7 +2837,7 @@ EOI
 contextSetApplianceInfoAppliance() {
   :
 
-  warning 'Not yet implemented'
+  debug 'Not Implemented Yet'
   return 1
 }
 
@@ -2812,7 +2845,7 @@ contextSetApplianceInfoAppliance() {
 contextSetApplianceListOnlyLocal() {
   :
 
-  warning 'Not yet implemented'
+  debug 'Not Implemented Yet'
   return 1
 }
 
@@ -2820,7 +2853,7 @@ contextSetApplianceListOnlyLocal() {
 contextSetApplianceVolumesList() {
   :
 
-  warning 'Not yet implemented'
+  debug 'Not Implemented Yet'
   return 1
 }
 
@@ -2828,7 +2861,7 @@ contextSetApplianceVolumesList() {
 contextSetApplianceListOnlyNotBuilt() {
   :
 
-  warning 'Not yet implemented'
+  debug 'Not Implemented Yet'
   return 1
 }
 
@@ -2836,21 +2869,21 @@ contextSetApplianceListOnlyNotBuilt() {
 contextSetApplianceStartDontBuild() {
   :
 
-  warning 'Not yet implemented'
+  debug 'Not Implemented Yet'
   return 1
 }
 
 contextSetApplianceCheckApplianceList() {
   :
 
-  warning 'Not yet implemented'
+  debug 'Not Implemented Yet'
   return 1
 }
 
 contextSetApplianceUpgradeApplianceSequence() {
   :
 
-  warning 'Not yet implemented'
+  debug 'Not Implemented Yet'
   return 1
 }
 
@@ -2858,6 +2891,8 @@ contextSetApplianceUpgradeApplianceSequence() {
 ### - domain is appliance
 ### - command is build
 contextSetApplianceBuildApplianceSequence() {
+  info 'setting appliance build appliance sequence'
+
   if [ ! "$DOMAIN" = 'appliance' ] \
      || [ ! "$COMMAND" = 'build' ]; then
     info "$(cat << EOI
@@ -2872,7 +2907,6 @@ EOI
 
   # the key (first arg) is the appliance sequence
   DOMAIN_APPLIANCE_COMMAND_BUILD_OPTION_APPLIANCE_SEQUENCE="$1"
-  debug 'DOMAIN_APPLIANCE_COMMAND_BUILD_OPTION_APPLIANCE_SEQUENCE='"$1"
 
   return 0
 }
@@ -2881,6 +2915,8 @@ EOI
 ### - domain is appliance
 ### - command is start
 contextSetApplianceStartApplianceSequence() {
+  info 'setting appliance start appliance sequence'
+
   if [ ! "$DOMAIN" = 'appliance' ] \
      || [ ! "$COMMAND" = 'start' ]; then
     info "$(cat << EOI
@@ -2895,7 +2931,6 @@ EOI
 
   # the key (first arg) is the appliance sequence
   DOMAIN_APPLIANCE_COMMAND_START_OPTION_APPLIANCE_SEQUENCE="$1"
-  debug 'DOMAIN_APPLIANCE_COMMAND_START_OPTION_APPLIANCE_SEQUENCE='"$1"
 
   return 0
 }
@@ -2904,6 +2939,8 @@ EOI
 ### - domain is appliance
 ### - command is start
 contextSetApplianceStopApplianceSequence() {
+  info 'setting appliance stop appliance sequence'
+
   if [ ! "$DOMAIN" = 'appliance' ] \
      || [ ! "$COMMAND" = 'stop' ]; then
     info "$(cat << EOI
@@ -2918,7 +2955,6 @@ EOI
 
   # the key (first arg) is the appliance sequence
   DOMAIN_APPLIANCE_COMMAND_STOP_OPTION_APPLIANCE_SEQUENCE="$1"
-  debug 'DOMAIN_APPLIANCE_COMMAND_STOP_OPTION_APPLIANCE_SEQUENCE='"$1"
 
   return 0
 }
@@ -2928,7 +2964,10 @@ EOI
 #### bootstrap domain specific functions
 
 ### simply copy the bootstrap dir from share to a temporary staging area
+# TODO : uniform staging area for bootstrap
 bootstrap_fetchInStagingArea() {
+  info 'Copying bootstrap files in bootstrap staging area...'
+
   cp -r "$CARRIER_SHARE_BOOTSTRAP_DIR" "$CARRIER_TMP_DIR"
 
   local returnCode=$?
@@ -2936,17 +2975,15 @@ bootstrap_fetchInStagingArea() {
   [ $returnCode -ne 0 ] \
   && fatal 'Unabled to copy bootstrap files in staging area.'
 
-  debug 'bootstrap_fetchInStagingArea() Result'
-  [ $returnCode -eq 0 ] \
-  && debug 'execution succeeded' \
-  || debug 'execution failed'
-
   return $returnCode
 }
 
 ### copy useful lib script to the temporary staging area where bootstrap file
 ### reside
+# TODO : uniform staging area for bootstrap
 bootstrap_fetchLibInStagingArea() {
+  info 'Fetching utility file in bootstrap staging area'
+
   cp "$CARRIER_LIB_DIR"/exportPackageTo \
      "$CARRIER_LIB_DIR"/importPackageFrom \
      "$CARRIER_LIB_DIR"/functions.sh \
@@ -2957,16 +2994,13 @@ bootstrap_fetchLibInStagingArea() {
   [ $returnCode -ne 0 ] \
   && fatal 'Unabled to copy utilities files in staging area.'
 
-  debug 'bootstrap_fetchLibInStagingArea() Result'
-  [ $returnCode -eq 0 ] \
-  && debug 'execution succeeded' \
-  || debug 'execution failed'
-
   return $returnCode
 }
 
 ### build the bootstrap docker image responsible to bootstrap the system
 bootstrap_build() {
+  info 'building bootstrap docker image'
+
   cd "$CARRIER_TMP_DIR"/bootstrap
 
   docker build --squash -t metabarj0/bootstrap . \
@@ -2975,12 +3009,8 @@ bootstrap_build() {
   local returnCode=$?
 
   [ $returnCode -ne 0 ] \
-  && fatal 'bootstrap image build failed.'
-
-  debug 'bootstrap_build() Result'
-  [ $returnCode -eq 0 ] \
-  && debug 'execution succeeded' \
-  || debug 'execution failed'
+  && fatal 'bootstrap image build failed.' \
+  && return $returnCode
 
   cd - 1>/dev/null 2>&1
 
@@ -2990,8 +3020,11 @@ bootstrap_build() {
 ### ask for some configuration and run the bootstrap image to bootstrap the
 ### system
 bootstrap_run_image() {
+  info 'running the bootstrap docker image'
+
   # TODO : take into account some variable of the execution context (auto
   # answer yes…) need some functions
+  # TODO: removing the source should be harmless
   . "$CARRIER_TMP_DIR"/bootstrap/functions.sh
 
   cat << EOI
@@ -3055,27 +3088,20 @@ EOI
     return $returnCode
   fi
 
-  debug 'bootstrap_run_image() Result'
-  [ $returnCode -eq 0 ] \
-  && debug 'execution succeeded' \
-  || debug 'execution failed'
-
   return $returnCode
 }
 
 ### once the system is bootstrapped, clean the staging area
+# TODO: uniform staging area mechanics for bootstrap
 bootstrap_cleanupStagingArea() {
+  info 'cleaning up the bootstrap staging area'
+
   rm -rf "$CARRIER_TMP_DIR"/bootstrap
 
   local returnCode=$?
 
   [ $returnCode -ne 0 ] \
   && fatal 'Unabled to swipe bootstrap files in staging area.'
-
-  debug 'bootstrap_cleanupStagingArea() Result'
-  [ $returnCode -eq 0 ] \
-  && debug 'execution succeeded' \
-  || debug 'execution failed'
 
   return $?
 }
@@ -3095,11 +3121,6 @@ bootstrap_run() {
   [ $returnCode -ne 0 ] \
   && fatal 'bootstrap procedure failed at some point'
 
-  debug 'bootstrap_run() Result'
-  [ $returnCode -eq 0 ] \
-  && debug 'execution succeeded' \
-  || debug 'execution failed'
-
   return $returnCode
 }
 #### End of bootstrap domain specific functions
@@ -3110,6 +3131,8 @@ bootstrap_run() {
 ### sequence joined with ','. The output will be a sequence of images space
 ### separated.
 image_prepareImageSequenceForFactorization() {
+  info 'Preparing image sequence value argument'
+
   local sequence="$(
     splitSequence \
       "$DOMAIN_IMAGE_COMMAND_FACTORIZE_OPTION_IMAGE_SEQUENCE" \
@@ -3118,29 +3141,43 @@ image_prepareImageSequenceForFactorization() {
 
   sequence="$(makeUnique "$sequence")"
 
+  local returnCode=$?
+
+  [ $returnCode -ne 0 ] \
+  && fatal 'Could not craft the image sequence to factorize' \
+  && return $returnCode
+
   echo "$sequence"
+
+  return 0
 }
 
 ### check on the docker host if the image exists.
 ### $1 image name
 image_checkIfExistsOnDockerHost() {
-    local id=$(docker image ls -q $image)
+  local image="$1"
 
-    if [ -z $id ]; then
-      error "$(cat << EOI
+  info 'checking if image '"$image"' exists on the docker host'
+
+  local id=$(docker image ls -q "$image")
+
+  if [ -z $id ]; then
+    error "$(cat << EOI
 The specified image "$image" does not exist on the docker host...exiting...
 EOI
-      )"
-      return 1
-    fi
+    )"
+    return 1
+  fi
 
-    return 0
+  return 0
 }
 
 ### extract the content of the image.dist file of the specified docker image.
 ### The file list is sorted and deduped
 ### $1 docker image name present on the docker host
 image_extractImageDistFileFromImage() {
+  info 'Extracting image.dist file content of '"$1"
+
   local file_sequence="$(
     docker run \
       --rm \
@@ -3151,7 +3188,7 @@ image_extractImageDistFileFromImage() {
   )"
 
   if [ -z "$file_sequence" ]; then
-    fatal "Could not extract the image.dist file from the $1 docker
+    fatal "Could not extract the image.dist file from the "$1" docker
 image. Is that image well formed? Exiting..."
     return 1
   fi
@@ -3163,43 +3200,61 @@ image. Is that image well formed? Exiting..."
 
 ### initialize a shell variable containing a directory id for the factorize
 ### command staging area
+# TODO: gloabl reread call my function failed must return using || operator
 image_initializeFactorizeStagingDirectory() {
+  info 'Initializing image factorize staging area'
+
   if [ ! -z "$DOMAIN_IMAGE_COMMAND_FACTORIZE_STAGING_DIRECTORY" ]; then
+    warning 'image factorize staging area is alerady initialized'
     return 0
   fi
 
   DOMAIN_IMAGE_COMMAND_FACTORIZE_STAGING_DIRECTORY="$(
     image_getStagingRootDirectory
-  )"/factorize/"$(generateRandomString)"
+  )"/factorize/"$(generateRandomString)" \
+  || return $?
 
-  mkdir -p "$DOMAIN_IMAGE_COMMAND_FACTORIZE_STAGING_DIRECTORY"
+  mkdir -p "$DOMAIN_IMAGE_COMMAND_FACTORIZE_STAGING_DIRECTORY" \
+  || fatal 'Could not create image factorize staging directory'
   
-  return 0
+  return $?
 }
 
 ### return the name of the staging directory for the build feature
 image_getFactorizeStagingDirectory() {
+  info 'getting image factorize staging area directory'
+
   [ -z "$DOMAIN_IMAGE_COMMAND_FACTORIZE_STAGING_DIRECTORY" ] \
     && error 'Image factorize staging directory has not been initialized' \
     && return 1
 
   echo "$DOMAIN_IMAGE_COMMAND_FACTORIZE_STAGING_DIRECTORY"
 
-  return 0
+  return $?
 }
 
 ### create or overwrite files in staging directory for factorize feature
 ### $1 file name to create/overwrite in staging directory
 ### $1 content to put in the file
 image_addFileInFactorizeStagingAreaWithContent() {
+  info 'adding a file in image factorize staging area'
+
   if [ -z "$1" ] || [ -z "$2" ]; then
+    error 'Missing file informations (name or content)'
     return 1
   fi
 
-  local staging_directory="$(image_getFactorizeStagingDirectory)"
-  mkdir -p "$staging_directory"
+  local staging_directory="$(image_getFactorizeStagingDirectory)" \
+  && mkdir -p "$staging_directory" \
+  && echo "$2" > "${staging_directory}"/"$1"
 
-  echo "$2" > "${staging_directory}"/"$1"
+  local returnCode=$?
+
+  [ $returnCode -ne 0 ] \
+    && fatal 'could not add file in factorize staging area' \
+    && return $returnCode
+
+  return $returnCode
 }
 
 ### remove temporary files created while factorizing images
@@ -3208,13 +3263,26 @@ image_cleanupFactorizeStagingDirectory() {
 
   rm -rf "$(image_getFactorizeStagingDirectory)"
 
+  local returnCode=$?
+
+  [ $returnCode -ne 0 ] \
+    && fatal 'could not clean up the fatctorize staging directory' \
+    && return $returnCode
+
   removeDirectoryIfEmpty "$(image_getStagingRootDirectory)"
+
+  return $?
 }
 
 ### initialize the image.dist file of the base image. It will contains common
 ### files found in the two very first image iterated
+# TODO : that one is to refactor
+# TODO : global reread, don't log my functions call that are alredy logging errors
 image_initializeBaseImageDistFileInStagingArea() {
-  image_initializeImageToFactorizeSequence
+  info 'Initializing tha base image of factorization'
+
+  image_initializeImageToFactorizeSequence \
+  || return $?
 
   local image=
   for image in $(image_getImageToFactorizeSequence); do
@@ -3223,64 +3291,71 @@ image_initializeBaseImageDistFileInStagingArea() {
     || local second_image="$image" && break
   done
 
-  # implementation detail : local must not be defined in the if control block
-  # as defining a local with a failing function always succeed
-  local first_files_sequence= ; local second_files_sequence= ;
-
-  if ! first_files_sequence="$(
+  local first_files_sequence="$(
     image_extractImageDistFileFromImage "$first_image"
-  )"; then
-    return 1
-  fi
+  )" \
+  || return $?
 
-  if ! second_files_sequence="$(
+  # TODO: replace return numeric values with $? when applicable
+  local second_files_sequence="$(
     image_extractImageDistFileFromImage "$second_image"
-  )"; then
-    return 1
-  fi
+  )" \
+  ||  return $?
 
   image_addFileInFactorizeStagingAreaWithContent \
     'first_files_sequence.dist' \
-    "$first_files_sequence"
-
-  image_addFileInFactorizeStagingAreaWithContent \
+    "$first_files_sequence" \
+  && image_addFileInFactorizeStagingAreaWithContent \
     'second_files_sequence.dist' \
-    "$second_files_sequence"
+    "$second_files_sequence" \
+  || return $?
 
   local common_files_sequence="$(
     extractCommonLinesInTwoFiles \
       "$(image_getFactorizeStagingDirectory)"/first_files_sequence.dist \
-      "$(image_getFactorizeStagingDirectory)"/second_files_sequence.dist)"
-
-  image_addFileInFactorizeStagingAreaWithContent \
+      "$(image_getFactorizeStagingDirectory)"/second_files_sequence.dist)" \
+  && image_addFileInFactorizeStagingAreaWithContent \
     'base.image.dist' \
-    "$common_files_sequence"
+    "$common_files_sequence" \
+  || return $?
 
   return $?
 }
 
 ### initialize the image sequence to factorize in a shell variable
 image_initializeImageToFactorizeSequence() {
+  info 'initializing image to factorize sequence'
+
   if [ -z "$DOMAIN_IMAGE_COMMAND_FACTORIZE_IMAGE_TO_FACTORIZE_SEQUENCE" ]; then
     DOMAIN_IMAGE_COMMAND_FACTORIZE_IMAGE_TO_FACTORIZE_SEQUENCE="$(
       image_prepareImageSequenceForFactorization)"
   fi
+
+  return $?
 }
 
 ### get the image sequence to factorize. Must initialize it before
 image_getImageToFactorizeSequence() {
+  info 'getting image to factorize sequence'
+
   [ -z "$DOMAIN_IMAGE_COMMAND_FACTORIZE_IMAGE_TO_FACTORIZE_SEQUENCE" ] \
     && error 'Image to factorize sequence is not initialized' \
     && return 1
 
   echo "$DOMAIN_IMAGE_COMMAND_FACTORIZE_IMAGE_TO_FACTORIZE_SEQUENCE"
+
+  return $?
 }
 
 ### finalize the image.dist file of the base image and all images to factorize.
 ### A first version of base.image.dist file must be present in the staging area
+# TODO : refactor that one
 image_finalizeAllImageDistFileInStagingArea() {
+  info 'finalizing image.dist files'
+
   local base_image_dist_file="$(
-    image_getFactorizeStagingDirectory)"/base.image.dist
+    image_getFactorizeStagingDirectory)"/base.image.dist \
+  || return $?
 
   if [ ! -f "$base_image_dist_file" ]; then
     error 'Missing base.image.dist file in staging area...exiting...'
@@ -3289,44 +3364,30 @@ image_finalizeAllImageDistFileInStagingArea() {
 
   local image=
   for image in $(image_getImageToFactorizeSequence); do
-    # preliminary check before continuing
-    if ! image_checkIfExistsOnDockerHost "$image"; then
-      error "could not find image $image on your docker host...exiting..."
-      return 1
-    fi
-
-    local image_files_sequence=
-    if ! image_files_sequence="$(
+    image_checkIfExistsOnDockerHost "$image" \
+    && local image_files_sequence="$(
       image_extractImageDistFileFromImage "$image"
-    )"; then
-      error "could not extract files sequence in the image.dist file of the
-$image docker image. This image might be corrupted at some point...exiting..."
-      return 1
-    fi
-
-    image_addFileInFactorizeStagingAreaWithContent \
+    )" \
+    && image_addFileInFactorizeStagingAreaWithContent \
       'image.dist' \
-      "$image_files_sequence"
-
-    local path64_image_dist_file_name="$(
-      path64Encode "$image")".dist
-
-    local image_dist_file="$(
-      image_getFactorizeStagingDirectory)"/'image.dist'
-
-    image_addFileInFactorizeStagingAreaWithContent \
+      "$image_files_sequence" \
+    && local path64_image_dist_file_name="$(
+      path64Encode "$image")".dist \
+    && local image_dist_file="$(
+      image_getFactorizeStagingDirectory)"/'image.dist' \
+    && image_addFileInFactorizeStagingAreaWithContent \
       "$path64_image_dist_file_name" \
       "$(comm \
           -1 -3 \
           "$base_image_dist_file" \
-          "$image_dist_file")"
-
-    image_addFileInFactorizeStagingAreaWithContent \
+          "$image_dist_file")" \
+    && image_addFileInFactorizeStagingAreaWithContent \
       'base.image.dist' \
       "$(comm \
           -1 -2 \
           "$base_image_dist_file" \
-          "$image_dist_file")"
+          "$image_dist_file")" \
+    || return $?
   done
   pause
 
@@ -3335,6 +3396,8 @@ $image docker image. This image might be corrupted at some point...exiting..."
 
 ### create the image.dist file of the base image in the staging directory
 image_createImagesDistFileInStagingDirectory() {
+  info 'Creating image dist files in image factorize staging directory'
+
   image_initializeBaseImageDistFileInStagingArea \
   && image_finalizeAllImageDistFileInStagingArea
 
@@ -3343,14 +3406,19 @@ image_createImagesDistFileInStagingDirectory() {
 
 ### factorization feature of the image domain
 image_factorize() {
-  image_initializeFactorizeStagingDirectory \
-    && image_createImagesDistFileInStagingDirectory
+  info 'factorizing images'
 
-  image_cleanupFactorizeStagingDirectory
+  image_initializeFactorizeStagingDirectory \
+  && image_createImagesDistFileInStagingDirectory \
+  && image_cleanupFactorizeStagingDirectory
+
+  return $?
 }
 
 ### checking image name or image's manifest file path.
 image_checkManifestPathOrName() {
+  info 'checking manifest file path or name'
+
   local argument_error_message="$(
   cat << EOI
 Error: Bad argument specified.
@@ -3394,12 +3462,15 @@ EOI
   # OK, valid argument, exposing the manifest file absolute path
   MANIFEST_FILE_PATH=${manifest_arg}
 
-  return 0
+  # TODO : change all return 0 by return $?
+  return $?
 }
 
 ### look for the existence of foundation images on the docker host. If this
 ### check fails, no build is possible.
 image_checkBootstrapImages() {
+  info 'checking all bootstrap built images'
+
   # first, verify if bootstrap has built all necessary foundation images, that
   # is metabarj0/manifest, metabarj0/gcc, metabarj0/make and
   # metabarj0/docker-cli and alpine/wget
@@ -3426,12 +3497,14 @@ EOI
     fi
   done
 
-  return 0
+  return $?
 }
 
 ### check for the existence of zll dependencies of the image requested to be
 ### built and attempt to build them if they are not present on the docker host.
 image_buildDependencies() {
+  info 'image build building dependencies'
+
   # browse all dependencies
   for dep in $REQUIRES; do
     # first, check on the host if the image exists; if so, continue without
@@ -3469,70 +3542,85 @@ image_buildDependencies() {
     local returnCode=$?
 
     [ $returnCode -ne 0 ] \
-    && error 'Failed to build image targetd by '"$dependency_manifest" \
+    && error 'Failed to build image targeted by '"$dependency_manifest" \
     && return $returnCode
   done
 
-  return 0
+  return $?
 }
 
 ### gives the root directory of staging area used for image domain commands
 image_getStagingRootDirectory() {
+  info 'getting root staging directory'
+
   echo "${CARRIER_TMP_DIR}"/image
-  return 0
+  return $?
 }
 
 ### initialize a shell variable containing a directory id for the build command
 ### staging area
+# TODO: rename to image_initializeiImageBuildStagingDirectory
 image_initializeBuildStagingDirectory() {
+  info 'initializing image build staging directory'
+
   if [ ! -z "$DOMAIN_IMAGE_COMMAND_BUILD_STAGING_DIRECTORY" ]; then
+    warning 'image build staging already initialized'
     return 0
   fi
 
   DOMAIN_IMAGE_COMMAND_BUILD_STAGING_DIRECTORY="$(
     image_getStagingRootDirectory
-  )"/build/"$(generateRandomString)"
+  )"/build/"$(generateRandomString)" \
+  || return $?
 
-  mkdir -p "$DOMAIN_IMAGE_COMMAND_BUILD_STAGING_DIRECTORY"
+  mkdir -p "$DOMAIN_IMAGE_COMMAND_BUILD_STAGING_DIRECTORY" \
+  || fatal 'Could not create image build staging directory'
   
-  return 0
+  return $?
 }
 
 ### return the name of the staging directory for the build feature
+# TODO: rename to image_getImageBuildStagingDirectory
 image_getBuildStagingDirectory() {
+  info 'getting image build staging directory'
+
   [ -z "$DOMAIN_IMAGE_COMMAND_BUILD_STAGING_DIRECTORY" ] \
     && error 'Image build staging directory has not been initialized' \
     && return 1
 
   echo "$DOMAIN_IMAGE_COMMAND_BUILD_STAGING_DIRECTORY"
 
-  return 0
+  return $?
 }
 
 ### fill the staging area with file necessary to build the image and its
 ### dependencies
+# TODO rename to image_fillImageBuildStagingArea
 image_fillBuildStagingArea() {
-  local image_directory="$(dirname $MANIFEST_FILE_PATH)"
+  info 'filling image build staging area'
 
-  local staging_directory="$(image_getBuildStagingDirectory)"
+  local image_directory="$(dirname $MANIFEST_FILE_PATH)" \
+  || ( fatal 'Could not get the image directory name' \
+       && return $? )
 
+  local staging_directory="$(image_getBuildStagingDirectory)" \
+  || return $?
+
+  # TODO: remove ...exiting... suffix
   # copy the project in the staging area
-  cp -a "$image_directory" "$staging_directory"
-
-  local returnCode=$?
-
-  [ $returnCode -ne 0 ] \
-  && fatal 'could not copy image files to staging area...exiting...' \
-  && return 1
+  cp -a "$image_directory" "$staging_directory" \
+  || ( fatal 'could not copy image files to staging area' \
+       && return 1 )
 
   # copy necessary lib files in the project directory in the staging area
   local image_name=$(basename $image_directory)
   DOMAIN_IMAGE_COMMAND_BUILD_IMAGE_STAGING_DIRECTORY=\
-"${staging_directory}"/"$image_name"
+"${staging_directory}"/"$image_name" \
+  || ( fatal 'Could not get the image name' \
+       && return $? )
 
-  cd $CARRIER_LIB_DIR
-
-  cp \
+  cd $CARRIER_LIB_DIR \
+  && cp \
     .dockerignore \
     build-image.sh \
     build.sh \
@@ -3540,15 +3628,13 @@ image_fillBuildStagingArea() {
     exportPackageTo \
     functions.sh \
     importPackageFrom \
-    $DOMAIN_IMAGE_COMMAND_BUILD_IMAGE_STAGING_DIRECTORY
+    $DOMAIN_IMAGE_COMMAND_BUILD_IMAGE_STAGING_DIRECTORY \
+  && cd $USER_DIRECTORY
 
   returnCode=$?
 
   [ $returnCode -ne 0 ] \
-  && fatal 'could not copy utility files to staging area...exiting...' \
-  && return 1
-
-  cd $USER_DIRECTORY
+  && fatal 'could not copy utility files to staging area...exiting...'
 
   return 0
 }
@@ -3609,6 +3695,8 @@ image_cleanupBuildStagingArea() {
 ### dependency image building
 ### accept an image name or a manifest file path
 image_build() {
+  info 'building image'
+
   image_checkBootstrapImages \
   && image_checkManifestPathOrName "$1" \
   && image_initializeBuildStagingDirectory \
@@ -3618,12 +3706,10 @@ image_build() {
 
   local returnCode=$?
 
-  debug 'image_build() Result'
-  [ $returnCode -eq 0 ] \
-  && debug 'execution succeeded' \
-  || debug 'execution failed'
+  [ $returnCode -ne 0 ] \
+  && error 'image build failed at some point'
 
-  return 0
+  return $returnCode
 }
 #### End of image domain specific functions
 
@@ -3633,13 +3719,14 @@ image_build() {
 ### all mandatory variables are set. This is not a deep validation, this
 ### functions only verify the exposition of a global variable.
 appliance_shallowValidateManifestFile() {
+  info 'quick validating appliance manifest file'
+
   # first, source the manifest file
   . "$MANIFEST_FILE_PATH"
 
   # then, testing mandatory variables existence
   if [ -z "$COMPOSE_BUILD_CONTEXT" ]; then
-    error "$(
-    cat << EOI
+    error "$(cat << EOI
 The appliance's manifest file is ill formed as it lacks one mandatory variable
 values.
 In order to build an appliance, you must provide a value for the following
@@ -3661,60 +3748,16 @@ EOI
 
   # shallow validation complete, the appliance name is gotten, assuming all is
   # OK so far
-  APPLIANCE_NAME="$(basename "$(dirname "$MANIFEST_FILE_PATH")")"
+  APPLIANCE_NAME="$(basename "$(dirname "$MANIFEST_FILE_PATH")")" \
+  || fatal 'could not get the appliance name'
 
-  return 0
-}
-
-### help message on how to use the appliance management system.
-appliance_showUsage() {
-  error "$(
-  cat << EOI
-Invalid arguments specified. Usage :
-
-  manage-appliance <command> <appliance> where
-
-<command> is either :
-
-  build
-  start
-  stop
-
-and <appliance> is either :
-- an absolute path to a manifest file of an appliance
-- a relative path of a manifest file of an appliance
-- an appliance name
-
-Example :
-
-  manage-appliance start devenv_cpp
-
-will attempt to start the devenv_cpp appliance.
-
-Notes :
-- If an appliance is asked for starting and is not built beforehand, the system
-  will attempt to build it first automatically.
-- Attempting to stop an appliance that is not started does nothing.
-EOI
-  )"
-
-  return 0
+  return $?
 }
 
 ### check the argument provided by the user to this script. Ensure that
 ### arguments are correct before going any further
 appliance_checkArgument() {
-  # TODO : the command should be known, no necessary to cheack here, has been
-  # checked before
-  COMMAND="$1"
-
-  # verify the command specified, if invalid, returns 1
-  if [ "$COMMAND" != 'build' ] \
-     && [ "$COMMAND" != 'start' ] \
-     && [ "$COMMAND" != 'stop' ]; then
-    appliance_showUsage
-    return 1
-  fi
+  info 'checking argument of the appliance domain invocation'
 
   # try to resolve the manifest file path by:
   #  - appending it to the current user directory, useful if relative path is
@@ -3727,7 +3770,7 @@ appliance_checkArgument() {
     # not a file path, testing the appliance name
     manifest_arg="${CARRIER_SHARE_APPLIANCES_DIR}"/"$2"/manifest
     if [ ! -f "${manifest_arg}" ]; then
-      appliance_showUsage
+      error 'invalid manifest file path or appliance name specified'
       return 1
     fi
   fi
@@ -3735,56 +3778,50 @@ appliance_checkArgument() {
   # OK, valid argument, exposing the manifest file absolute path
   MANIFEST_FILE_PATH="${manifest_arg}"
 
-  return 0
+  return $?
 }
 
 ### put all necessary files intor the being built appliance staging directory.
 appliance_fillStagingArea() {
-  # TODO : take a look at filling staging area in the image build feature to
-  #        see if a refacto could be done
-  local appliance_directory="$(dirname "$MANIFEST_FILE_PATH")"
+  # TODO : take a look at filling staging area in the image build feature to see if a refacto could be done
+  info 'filling appliance staging area'
 
   # create the intermediate appliance directory in the staging area if it does
   # not already exist
-  local staging_directory=${CARRIER_TMP_DIR}/appliances
-  APPLIANCE_STAGING_DIRECTORY="${staging_directory}"/"$APPLIANCE_NAME"
+  local appliance_directory="$(dirname "$MANIFEST_FILE_PATH")" \
+  && local staging_directory=${CARRIER_TMP_DIR}/appliances \
+  && APPLIANCE_STAGING_DIRECTORY="${staging_directory}"/"$APPLIANCE_NAME" \
+  || ( error 'Could not setup appliance staging directory' \
+       && return 1 )
 
   # sanitize the staging area if it does already exist
-  rm -rf "$APPLIANCE_STAGING_DIRECTORY"
-  mkdir -p "$staging_directory"
-  cp -a "$appliance_directory" "$staging_directory"
-
-  local returnCode=$?
-
-  [ $returnCode -ne 0 ] \
-  && fatal 'could not copy appliance files into staging area...exiting...' \
-  && return $returnCode
+  rm -rf "$APPLIANCE_STAGING_DIRECTORY" \
+  && mkdir -p "$staging_directory" \
+  && cp -a "$appliance_directory" "$staging_directory" \
+  || ( error 'could not copy appliance files into staging area' \
+       && return 1 )
 
   # copy necessary lib files in the project directory in the staging area
-  cd "$CARRIER_LIB_DIR"
-
-  cp \
+  cd "$CARRIER_LIB_DIR" \
+  && cp \
     .dockerignore \
     exportPackageTo \
     functions.sh \
     importPackageFrom \
-    "$APPLIANCE_STAGING_DIRECTORY"
+    "$APPLIANCE_STAGING_DIRECTORY" \
+  && cd "$USER_DIRECTORY" \
+  || fatal 'could not copy utility files into staging area...exiting...'
 
-  returnCode=$?
-
-  [ $returnCode -ne 0 ] \
-  && fatal 'could not copy utility files into staging area...exiting...' \
-  && return $returnCode
-
-  cd "$USER_DIRECTORY"
-
-  return 0
+  return $?
 }
 
 ### fetch a copy of the master branch of the carrier directory then, copy the
 ### entire docker directory into the staging directory. This manifest is used
 ### to build various dependencies and serve as a genuine repository.
+# TODO: refacto!
 appliance_fetchManifest() {
+  info 'fetching manifest for appliance command execution'
+
   # use the metabarj0/manifest docker image that MUST exist
   local manifest_image="$(
     docker image ls --format='{{.Repository}}' metabarj0/manifest)"
@@ -3813,13 +3850,8 @@ EOI
   fi
 
   # call to a functions.sh's utility
-  fetchManifestImageContent "$APPLIANCE_STAGING_DIRECTORY"
-
-  returnCode=$?
-
-  [ $returnCode -ne 0 ] \
-  && fatal 'could not fetch genuine carrier copy' \
-  && return $returnCode
+  fetchManifestImageContent "$APPLIANCE_STAGING_DIRECTORY" \
+  || return $?
 
   return 0
 }
@@ -3827,15 +3859,12 @@ EOI
 ### build an image that is required for the appliance and that was not found on
 ### the docker host. Relies on the image build system.
 appliance_buildDependentImage() {
+  info 'building appliance dependent images'
+
   # uses the metabarj0/manifest container to build required images. It'll result
   # in the creation of a docker directory inside the appliance staging directory
-  appliance_fetchManifest
-
-  local returnCode=$?
-
-  [ $returnCode -ne 0 ] \
-  && error 'could not fetch genuine carrier copy' \
-  && return $returnCode
+  appliance_fetchManifest \
+  || return $?
 
   local required_image_name="$1"
 
@@ -3876,15 +3905,10 @@ EOI
 
   # I've the absolute path of the required image's manifest file, let's build it
   # in a new sub-shell
-  # TODO : using carrier directly here; check if it breaks something
-  ( ${CARRIER_BIN_DIR}/carrier image build "$image_manifest_path" )
-
-  local returnCode=$?
-
-  [ $returnCode -ne 0 ] \
-  && error 'could not build the dependent image targeted by '\
+  ( ${CARRIER_BIN_DIR}/carrier image build "$image_manifest_path" ) \
+  || ( error 'could not build the dependent image targeted by '\
 "$image_manifest_path" \
-  && return $returnCode
+       && return 1 )
 
   return 0
 }
@@ -3892,6 +3916,8 @@ EOI
 ### enumerates all required images needed by the appliance and build them if
 ### they are not on the docker host
 appliance_checkRequiredImages() {
+  info 'Checking required image for appliance'
+
   # manifest file read and validated, check existing images and attempt build
   # them if necessary
   local image=
@@ -3906,7 +3932,8 @@ appliance_checkRequiredImages() {
 
     # image does not exist on the docker host
     if [ -z "$image_name" ]; then
-      appliance_buildDependentImage "$image"
+      appliance_buildDependentImage "$image" \
+      || return $?
     fi
   done
 
@@ -3917,12 +3944,15 @@ appliance_checkRequiredImages() {
 ### content of the manifest file and values computed by the process of
 ### appliance building.
 appliance_compileDockerfile() {
+  info 'compiling appliance docker file'
+
   # TODO refactor this function by breaking it in more atomic parts
   # create a map between image used in build stages and their alias that will be
   # used later
   local names_aliases_map="$(
     mapImageNamesAndBuildStageAliases "$REQUIRED_IMAGES"
-    )"
+    )" \
+    || return $?
 
   # create a Dockerfile in the appliance staging directory. Using required image
   # specified in the manifest as well as other variables :
@@ -3933,8 +3963,8 @@ appliance_compileDockerfile() {
   local alias=
   for pair in $names_aliases_map; do
     # extract image name and build stage alias
-    name="$(keyOf "$pair")"
-    alias="$(valueOf "$pair")"
+    name="$(keyOf "$pair")" \
+    && alias="$(valueOf "$pair")"
 
     # instruction to export the dependency image package
     build_stage="$(cat << EOI
@@ -3949,7 +3979,8 @@ EOI
       append "$dependencies_build_stages" \
              "$build_stage" \
              $'\n'
-    )"
+    )" \
+    || return $?
   done
 
   # copy tooling to extract dependencies' packages
@@ -3979,7 +4010,8 @@ EOI
       append "$appliance_image_imports" \
              "$dependency_import" \
              $'\n'
-    )"
+      )" \
+      || return $?
   done
 
   # final step, create the Dockerfile and appending the
@@ -3992,27 +4024,28 @@ RUN rm /usr/local/bin/importPackageFrom
 $EXTRA_DOCKERFILE_COMMANDS
 EOI
 
-  return 0
+  return $?
 }
 
 ### create the service's docker image on the docker host using the generated
 ### Dockerfile
 appliance_buildServiceImage() {
+  info 'Building appliance service image'
+
   # now we have a dockerfile, we just have to use it to build the appliance
   # image, go to the build context
-  cd "$APPLIANCE_STAGING_DIRECTORY"
 
   # build a squashed image, docker compose can't do that yet
   # then cleanup intermediate images, docker compose don't do that yet
-  docker build --squash -t "$IMAGE_NAME" . \
-  && docker image prune -f
+  cd "$APPLIANCE_STAGING_DIRECTORY" \
+  && docker build --squash -t "$IMAGE_NAME" . \
+  && docker image prune -f \
+  && cd "$USER_DIRECTORY"
 
   local returnCode=$?
   [ $returnCode -ne 0 ] \
   && fatal 'could not build service '"$IMAGE_NAME" \
   && return $returnCode
-
-  cd "$USER_DIRECTORY"
 
   return 0
 }
@@ -4020,20 +4053,26 @@ appliance_buildServiceImage() {
 ### cleanup the appliance staging area when the build is complete
 appliance_cleanupStagingArea() {
   if [ -d "$APPLIANCE_STAGING_DIRECTORY" ]; then
-    rm -rf "$APPLIANCE_STAGING_DIRECTORY"
+    rm -rf "$APPLIANCE_STAGING_DIRECTORY" \
+    || ( error 'could not remove appliance staging directory' \
+         && return $? )
   fi
 
   if [ -z "$(ls "${CARRIER_TMP_DIR}"/appliances)" ]; then
-    rm -r "${CARRIER_TMP_DIR}"/appliances
+    rm -r "${CARRIER_TMP_DIR}"/appliances \
+    || ( error 'could not remove appliance staging directory' \
+         && return $? )
   fi
 
   return 0
 }
 
-### source the specified function, exposing glabal variables useful to build a
+### source the specified function, exposing global variables useful to build a
 ### service image.
 ### $1 : function name
 appliance_callBuildContextFunction() {
+  info 'calling build context function '"$1"
+
   # execute the function
   "$1"
 
@@ -4069,18 +4108,23 @@ EOI
 
 ### unset global variables exposed by one of the manifest's function call
 appliance_unsetBuildContextVariables() {
+  info 'unsetting build context'
+
   unset IMAGE_NAME
   unset BASE_IMAGE
   unset REQUIRED_IMAGES
   unset EXTRA_DOCKERFILE_COMMANDS
 
-  return 0
+  return $?
 }
 
 ### this function will build each and every image that are needed to build each
 ### service of the appliance. It relies on the content of the manifest file
 ### that has been source and roughly validated
+# TODO: Refacto!
 appliance_buildServiceImages() {
+  info 'building appliance service image'
+
   # a common part of an error message
   local part_error_message="$(cat << EOI
 Make sure that the COMPOSE_BUILD_CONTEXT variable is defined like following :
@@ -4143,6 +4187,8 @@ EOI
     && return $returnCode
 
     if [ ! -z "$repository_id" ]; then
+      info 'appliance service '"$IMAGE_NAME"' already exists'
+
       # some global variable have been set, rollback context
       IMAGE_NAME=
       function_name=
@@ -4178,6 +4224,8 @@ EOI
 ### entrypoint of the build command. In finality, create the appliance's docker
 ### image on the docker host.
 appliance_build() {
+  info 'building appliance'
+
   appliance_fillStagingArea \
   && appliance_buildServiceImages \
   && appliance_cleanupStagingArea
@@ -4194,6 +4242,8 @@ appliance_build() {
 ### entrypoint of the start command. If the appliance requested to start has
 ### not been built yet, the system will attempt to build it first.
 appliance_start() {
+  info 'starting appliance'
+
   # if some image are not yet built, build them
   appliance_build \
   && appliance_fillStagingArea
@@ -4204,15 +4254,14 @@ appliance_start() {
   && error 'error when preparing appliance to start' \
   && return $returnCode
 
-  cd "$APPLIANCE_STAGING_DIRECTORY"
-
   # crafting the docker-compose command, inhibiting image creation that is
   # handled by this script and forcing container recreation, containers being
   # ephemeral
   local command='docker-compose up --no-build -d'
 
-  # execute the docker-compose command
-  eval "$command"
+  cd "$APPLIANCE_STAGING_DIRECTORY" \
+  && eval "$command" \
+  && cd "$USER_DIRECTORY"
 
   returnCode=$?
 
@@ -4220,52 +4269,33 @@ appliance_start() {
   && fatal 'could not start up the appliance. command was '"$command" \
   return $returnCode
 
-  cd "$USER_DIRECTORY"
-
-  appliance_cleanupStagingArea
-
-  returnCode=$?
-
-  [ $returnCode -ne 0 ] \
-  && error 'could not cleanup the staging area after appliance start' \
-  && return $returnCode
-
-  info 'Appliance '"$APPLIANCE_NAME"' successfully started.'
+  appliance_cleanupStagingArea \
+  || return $?
 
   return 0
 }
 
 ### entrypoint for the stop command. If the appliance is running, stops it.
 appliance_stop() {
-  appliance_fillStagingArea
+  info 'stopping appliance'
 
-  local returnCode=$?
-
-  [ $returnCode -ne 0 ] \
-  && error 'error when preparing appliance to stop' \
-  && return $returnCode
-
-  cd "$APPLIANCE_STAGING_DIRECTORY"
+  appliance_fillStagingArea \
+  || return $?
 
   # crafting the docker-compose command, removing ephemeral containers
   local command='docker-compose rm -sf'
 
   # execute the docker-compose command
-  eval "$command"
+  cd "$APPLIANCE_STAGING_DIRECTORY" \
+  && eval "$command" \
+  && cd "$USER_DIRECTORY"
 
-  [ $returnCode -ne 0 ] \
+  [ $? -ne 0 ] \
   && fatal 'could not stop the appliance. command was '"$command" \
-  return $returnCode
-
-  cd "$USER_DIRECTORY"
-
-  appliance_cleanupStagingArea
-
-  [ $returnCode -ne 0 ] \
-  && error 'could not cleanup the staging area after appliance stop' \
   && return $returnCode
 
-  info 'Appliance '"$APPLIANCE_NAME"' successfully stopped.'
+  appliance_cleanupStagingArea \
+  || return $?
 
   return 0
 }
@@ -4274,42 +4304,26 @@ appliance_stop() {
 ### provided. The name of the function to call is built appending the command
 ### name and 'Appliance'
 appliance_executeRequestedCommand() {
+  info 'executing appliance '"$COMMAND"' command'
+
   # build the function name according to the provided command
   local function_name=appliance_${COMMAND}
 
   # make sure the manifest file is well formed and contains mandatory stuff
-  appliance_shallowValidateManifestFile
+  appliance_shallowValidateManifestFile \
+  && $function_name
 
-  local returnCode=$?
-
-  [ $returnCode -ne 0 ] \
-    && error 'Could not validate the manifest file of the appliance' \
-    return $returnCode
-
-  # simply call the function
-  $function_name
-
-  returnCode=$?
-
-  [ $returnCode -ne 0 ] \
-  && error 'Could not execute the requested appliance command' \
-  && return $returnCode
-
-  return 0
+  return $?
 }
 
 ### main entrypoint to manage appliances (build, start, stop, …)
 appliance_manage() {
+  info 'executing appliance command: '"$1"
+
   appliance_checkArgument "$1" "$2" \
   && appliance_executeRequestedCommand
 
-  local returnCode=$?
-
-  [ $returnCode -ne 0 ] \
-  && error 'Appliance command execution failed at some point' \
-  && return $returnCode
-
-  return 0
+  return $?
 }
 
 #### End of appliance domain specific functions
@@ -4318,7 +4332,9 @@ appliance_manage() {
 run() {
   info 'starting carrier execution'
 
-  executeWithTraceIfRequested
+  executeWithTraceIfRequested \
+  || ( error 'could not restart in trace mode' \
+       && return 1 )
 
   info "building arguments referential, initializing execution context and
 building the final execution context from provided arguments"
@@ -4327,23 +4343,14 @@ building the final execution context from provided arguments"
   && initializeExecutionContext \
   && buildExecutionContextFromArguments "$@"
 
-  local returnCode=$?
+  [ $? -ne 0 ] \
+  && error 'Failed to initialize carrier' \
+  && return 1
 
-  if [ "$returnCode" -ne 0 ]; then
-    error 'Failed to initialize carrier'
-    return 1
-  else
-    executeWithContext
+  executeWithContext \
+  || ( usage && return 1 )
 
-    returnCode=$?
-
-    if [ "$returnCode" -ne 0 ]; then
-      usage
-      return 1
-    fi
-  fi
-
-  return 0
+  return $?
 }
 
 #### The script starts here once the standalone mode has passed
