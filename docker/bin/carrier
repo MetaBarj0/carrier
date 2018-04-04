@@ -1615,16 +1615,10 @@ value=$value"
   # clean referential, removing all comments
   local referential="$(deleteCommentLines "$GLOBAL_OPTIONS_REFERENTIAL")"
 
-  tryMutateReferential "$referential" "$key" "$value"
+  tryMutateReferential "$referential" "$key" "$value" \
+  || return $?
 
-  local returnCode=$?
-
-  debug "$(cat << EOI
-could not mutate global options with key: $key and value: $value
-EOI
-)"
-
-  return $returnCode
+  return 0
 }
 
 ### specialized mutator designed to mutate the domain. Provided with
@@ -1640,16 +1634,10 @@ value=$value"
   # clean referential, removing all comments
   local referential="$(deleteCommentLines "$DOMAINS_REFERENTIAL")"
 
-  tryMutateReferential "$referential" "$key" "$value"
+  tryMutateReferential "$referential" "$key" "$value" \
+  || return $?
 
-  local returnCode=$?
-
-  debug "$(cat << EOI
-could not mutate the domain with key: $key and value: $value
-EOI
-  )"
-
-  return $returnCode
+  return 0
 }
 
 ### specialized mutator designed to mutate domain options settings. Provided
@@ -1674,16 +1662,10 @@ value=$value"
   # clean referential, removing all comments
   local referential="$(deleteCommentLines "$GLOBAL_COMMANDS_REFERENTIAL")"
 
-  tryMutateReferential "$referential" "$key" "$value"
+  tryMutateReferential "$referential" "$key" "$value" \
+  || return $?
 
-  local returnCode=$?
-
-  debug "$(cat << EOI
-could not mutate the command with key: $key and value: $value
-EOI
-)"
-
-  return $returnCode
+  return 0
 }
 
 ### attempt to mutate a domain command. Test all domains command in chain. if
@@ -1711,16 +1693,10 @@ value=$value"
 
   tryMutateReferential "$bootstrap_referential" "$key" "$value" \
   || tryMutateReferential "$image_referential" "$key" "$value" \
-  || tryMutateReferential "$appliance_referential" "$key" "$value"
+  || tryMutateReferential "$appliance_referential" "$key" "$value" \
+  || return $?
 
-  local returnCode=$?
-
-  debug "$(cat << EOI
-could not mutate the domain command with key: $key and value: $value
-EOI
-)"
-
-  return $returnCode
+  return 0
 }
 
 ### attempt to modify the execution context related to options of global
@@ -1765,16 +1741,10 @@ value=$value"
   || tryMutateReferential "$install_referential" "$key" "$value" \
   || tryMutateReferential "$pack_referential" "$key" "$value" \
   || tryMutateReferential "$unpack_referential" "$key" "$value" \
-  || tryMutateReferential "$vagrant_referential" "$key" "$value"
+  || tryMutateReferential "$vagrant_referential" "$key" "$value" \
+  || return $?
 
-  local returnCode=$?
-
-  debug "$(cat << EOI
-could not mutate the global command with key: $key and value: $value
-EOI
-)"
-
-  return $returnCode
+  return 0
 }
 
 tryMutateDomainCommandOptions() {
@@ -1865,17 +1835,10 @@ value=$value"
   || tryMutateReferential "$appliance_upgrade_referential" "$key" "$value" \
   || tryMutateReferential "$appliance_start_referential" "$key" "$value" \
   || tryMutateReferential "$appliance_stop_referential" "$key" "$value" \
-  || tryMutateReferential "$appliance_volumes_referential" "$key" "$value"
+  || tryMutateReferential "$appliance_volumes_referential" "$key" "$value" \
+  || return $?
 
-  local returnCode=$?
-
-  debug "$(cat << EOI
-could not mutate the domain command options with key: $key and
-value: $value
-EOI
-)"
-
-  return $returnCode
+  return 0
 }
 
 ### mutates the execution context with a key and a value as arguments
@@ -1935,16 +1898,10 @@ value=$value"
   || tryMutateGlobalCommand "$key" "$value" \
   || tryMutateDomainCommand "$key" "$value" \
   || tryMutateGlobalCommandOptions "$key" "$value" \
-  || tryMutateDomainCommandOptions "$key" "$value"
+  || tryMutateDomainCommandOptions "$key" "$value" \
+  || return $?
 
-  local returnCode=$?
-
-  debug "$(cat << EOI
-could not mutate the execution context with key: $key and value: $value
-EOI
-)"
-
-  return $returnCode
+  return 0
 }
 
 ### internal function attempting to mutate the execution context with a provided
@@ -1961,16 +1918,10 @@ tryMutateExecutionContextWithKeyEqualsValueArg() {
   debug "key=$key
 value=$value"
 
-  tryMutateExecutionContext "$key" "$value"
+  tryMutateExecutionContext "$key" "$value" \
+  || return $?
 
-  local returnCode=$?
-
-  debug "$(cat << EOI
-could not mutate the domain command with key: $key and value: $value
-EOI
-)"
-
-  return $returnCode
+  return 0
 }
 
 ### build the final execution context regarding provided arguments
@@ -1997,6 +1948,7 @@ buildExecutionContextFromArguments() {
   # argument and consider it as the value of the previous one (that is the key
   # therefore)
 
+  local result=1
   local extractedKeyFromArg=
 
   local arg=
@@ -2006,35 +1958,42 @@ buildExecutionContextFromArguments() {
     if [ -z "$extractedKeyFromArg" ]; then
       if tryMutateExecutionContextWithKeyEqualsValueArg "$arg"; then
         debug 'key=value args successfully altered the execution context'
+
+        result=0
         continue
       fi
 
       if tryMutateExecutionContext "$arg"; then
         debug 'single arg successfully altered the execution context'
+
+        result=0
         continue
       fi
 
       debug 'mutation failed with arg: '"$arg"' continuing...'
       extractedKeyFromArg="$arg"
-      
-      continue
+
+      result=1
     else
-      tryMutateExecutionContext "$extractedKeyFromArg" "$arg"
-      extractedKeyFromArg=
+      if tryMutateExecutionContext "$extractedKeyFromArg" "$arg"; then
+        debug 'key value args successfully altered the execution context'
 
-      local returnCode=$?
-
-      [ $returnCode -ne 0 ] \
-      && debug 'key value args successfully altered the execution context' \
-      || debug "$(cat << EOI
+        result=0
+      else
+        debug "$(cat << EOI
 Failed to modify the execution context with key: $extractedKeyFromArg and
 value: $arg
 EOI
         )"
+
+        result=1
+      fi
+
+      extractedKeyFromArg=
     fi
   done
 
-  return 0
+  return $result
 }
 
 ### helper function executing the help command with its options if required
@@ -2112,19 +2071,16 @@ executeBootstrapCheckCommand() {
 ### execute the check command of the bootstrap domain
 executeBootstrapRunCommand() {
   # TODO handle options, draft version
-  local returnCode=1
-
   if [ "$DOMAIN" = 'bootstrap' ] \
      && [ "$COMMAND" = 'run' ]; then
     info 'bootstrap run requested'
-    bootstrap_run
-    returnCode=$?
+    bootstrap_run \
+    || return $?
 
-    [ $returnCode -ne 0 ] \
-    && error 'could not bootstrap the system.'
+    return 0
   fi
 
-  return $returnCode
+  return 1
 }
 
 ### execute the build command of the image domain
@@ -2146,7 +2102,8 @@ $DOMAIN_IMAGE_COMMAND_BUILD_OPTION_IMAGE_SEQUENCE"
     splitSequence \
     "$DOMAIN_IMAGE_COMMAND_BUILD_OPTION_IMAGE_SEQUENCE" \
     ','
-  )"
+  )" \
+  || return $?
 
   debug 'image sequence to build :'"$sequence"
 
@@ -2157,13 +2114,8 @@ $DOMAIN_IMAGE_COMMAND_BUILD_OPTION_IMAGE_SEQUENCE"
     debug 'calling image_build '"$image"
 
     # the first image build failing return from that function
-    image_build "$image"
-    local returnCode=$?
-
-    if [ $returnCode -ne 0 ]; then
-      error 'Failed to build the requested '"$image"' image.'
-      return $returnCode
-    fi
+    image_build "$image" \
+    || return $?
   done
 
   return 0
@@ -2218,8 +2170,6 @@ $DOMAIN_IMAGE_COMMAND_FACTORIZE_OPTION_IMAGE_SEQUENCE"
     return 1
   fi
 
-  debug 'calling image_factorize'
-
   # call the feature
   image_factorize
 
@@ -2245,7 +2195,8 @@ $DOMAIN_APPLIANCE_COMMAND_BUILD_OPTION_APPLIANCE_SEQUENCE"
     splitSequence \
     "$DOMAIN_APPLIANCE_COMMAND_BUILD_OPTION_APPLIANCE_SEQUENCE" \
     ','
-  )"
+  )" \
+  || return $?
 
   debug 'appliance sequence to build: '"$sequence"
 
@@ -2253,14 +2204,8 @@ $DOMAIN_APPLIANCE_COMMAND_BUILD_OPTION_APPLIANCE_SEQUENCE"
   local appliance=
   for appliance in $sequence; do
     # the first appliance build failing return from that function
-    ( appliance_manage "$appliance" )
-
-    local returnCode=$?
-
-    if [ $returnCode -ne 0 ]; then
-      error 'Failed to build the requested '"$appliance"' appliance.'
-      return $returnCode
-    fi
+    ( appliance_manage "$appliance" ) \
+    || return $?
   done
 
   return 0
@@ -2317,7 +2262,8 @@ $DOMAIN_APPLIANCE_COMMAND_START_OPTION_APPLIANCE_SEQUENCE"
     splitSequence \
     "$DOMAIN_APPLIANCE_COMMAND_START_OPTION_APPLIANCE_SEQUENCE" \
     ','
-  )"
+  )" \
+  || return $?
 
   debug 'appliance sequence to start: '"$sequence"
 
@@ -2325,14 +2271,8 @@ $DOMAIN_APPLIANCE_COMMAND_START_OPTION_APPLIANCE_SEQUENCE"
   local appliance=
   for appliance in $sequence; do
     # the first appliance start failing return from that function
-    ( appliance_manage "$appliance" )
-
-    local returnCode=$?
-
-    if [ $returnCode -ne 0 ]; then
-      error 'Failed to start the requested '"$appliance"' appliance.'
-      return $returnCode
-    fi
+    ( appliance_manage "$appliance" ) \
+    || return $?
   done
 
   return 0
@@ -2357,7 +2297,8 @@ $DOMAIN_APPLIANCE_COMMAND_STOP_OPTION_APPLIANCE_SEQUENCE"
     splitSequence \
     "$DOMAIN_APPLIANCE_COMMAND_STOP_OPTION_APPLIANCE_SEQUENCE" \
     ','
-  )"
+  )" \
+  || return $?
 
   debug 'appliance sequence to stop: '"$sequence"
 
@@ -2365,14 +2306,8 @@ $DOMAIN_APPLIANCE_COMMAND_STOP_OPTION_APPLIANCE_SEQUENCE"
   local appliance=
   for appliance in $sequence; do
     # the first appliance stop failing return from that function
-    ( appliance_manage "$appliance" )
-
-    local returnCode=$?
-
-    if [ $returnCode -ne 0 ]; then
-      error 'Failed to stop the requested '"$appliance"' appliance.'
-      return $returnCode
-    fi
+    ( appliance_manage "$appliance" ) \
+    || return $?
   done
 
   return 0
@@ -2396,7 +2331,7 @@ executeBootstrapCommand() {
   local returnCode=$?
 
   [ $returnCode -ne 0 ] \
-    && debug 'failed to execute executeBootstrapCommand'
+  && info 'failed to execute bootstrap command'
 
   return $returnCode
 }
@@ -2415,7 +2350,7 @@ executeImageCommand() {
   local returnCode=$?
 
   [ $returnCode -ne 0 ] \
-    && debug 'failed to execute executeImageCommand'
+    && info 'failed to execute image command'
 
   return $returnCode
 }
@@ -2436,7 +2371,7 @@ executeApplianceCommand() {
   local returnCode=$?
 
   [ $returnCode -ne 0 ] \
-    && debug 'failed to execute executeApplianceCommand'
+  && info 'failed to execute appliance command'
 
   return $returnCode
 }
@@ -2455,7 +2390,7 @@ executeGlobalCommand() {
   local returnCode=$?
 
   [ $returnCode -ne 0 ] \
-    && debug 'failed to execute executeGlobalCommand'
+    && info 'failed to execute global command'
 
   return $returnCode
 }
@@ -2471,7 +2406,7 @@ executeDomainCommand() {
   local returnCode=$?
 
   [ $returnCode -ne 0 ] \
-    && debug 'failed to execute executeDomainCommand'
+  && info 'failed to execute executeDomainCommand'
 
   return $returnCode
 }
@@ -2479,6 +2414,8 @@ executeDomainCommand() {
 ### Helper function activating the trace mode if requested (--log-level=trace)
 ### and executing this script from its very start
 executeWithTraceIfRequested() {
+  info 'restarting in trac mode'
+
   if isTraceLogLevel \
      && [ ! ${TRACE_ENABLED+0} ]; then
     debug 'trace enabled; restarting script...'
@@ -2511,8 +2448,7 @@ $(debugOutputExecutionContext)"
   local returnCode=$?
 
   [ $returnCode -ne 0 ] \
-  && fatal 'Failed to execute carrier with current execution context' \
-  && return $returnCode
+  && error 'Failed to execute carrier with current execution context'
 
   return $returnCode
 }
@@ -2962,14 +2898,11 @@ EOI
 bootstrap_fetchInStagingArea() {
   info 'Copying bootstrap files in bootstrap staging area...'
 
-  cp -r "$CARRIER_SHARE_BOOTSTRAP_DIR" "$CARRIER_TMP_DIR"
+  cp -r "$CARRIER_SHARE_BOOTSTRAP_DIR" "$CARRIER_TMP_DIR" \
+  || ( fatal 'Unabled to copy bootstrap files in staging area.' \
+       && return 1 )
 
-  local returnCode=$?
-
-  [ $returnCode -ne 0 ] \
-  && fatal 'Unabled to copy bootstrap files in staging area.'
-
-  return $returnCode
+  return $?
 }
 
 ### copy useful lib script to the temporary staging area where bootstrap file
@@ -2981,34 +2914,25 @@ bootstrap_fetchLibInStagingArea() {
   cp "$CARRIER_LIB_DIR"/exportPackageTo \
      "$CARRIER_LIB_DIR"/importPackageFrom \
      "$CARRIER_LIB_DIR"/functions.sh \
-     "$CARRIER_TMP_DIR"/bootstrap
+     "$CARRIER_TMP_DIR"/bootstrap \
+  || ( fatal 'Unabled to copy utilities files in staging area.' \
+       && return 1 )
 
-  local returnCode=$?
-
-  [ $returnCode -ne 0 ] \
-  && fatal 'Unabled to copy utilities files in staging area.'
-
-  return $returnCode
+  return $?
 }
 
 ### build the bootstrap docker image responsible to bootstrap the system
 bootstrap_build() {
   info 'building bootstrap docker image'
 
-  cd "$CARRIER_TMP_DIR"/bootstrap
+  cd "$CARRIER_TMP_DIR"/bootstrap \
+  && docker build --squash -t metabarj0/bootstrap . \
+  && docker image prune -f \
+  && cd - 1>/dev/null 2>&1 \
+  || ( fatal 'bootstrap image build failed.' \
+       && return 1 )
 
-  docker build --squash -t metabarj0/bootstrap . \
-  && docker image prune -f
-
-  local returnCode=$?
-
-  [ $returnCode -ne 0 ] \
-  && fatal 'bootstrap image build failed.' \
-  && return $returnCode
-
-  cd - 1>/dev/null 2>&1
-
-  return $returnCode
+  return $?
 }
 
 ### ask for some configuration and run the bootstrap image to bootstrap the
@@ -3035,7 +2959,7 @@ EOI
 
   cat << EOI
 Specify the version of Kernel headers you want to use. Note that for GCC 7.3.0
-the 4.14.3 version works perfectly well. Moreover, only version 4+ is
+the 4.14.14 version works perfectly well. Moreover, only version 4+ is
 supported : [4.14.14]
 EOI
 
@@ -3077,7 +3001,7 @@ EOI
 
     [ $returnCode -ne 0 ] \
     && fatal 'Unabled to remove the bootstrap image.' \
-    return $returnCode
+    && return $returnCode
   fi
 
   return $returnCode
@@ -3095,7 +3019,7 @@ bootstrap_cleanupStagingArea() {
   [ $returnCode -ne 0 ] \
   && fatal 'Unabled to swipe bootstrap files in staging area.'
 
-  return $?
+  return $returnCode
 }
 
 ### run the full bootstrap procedure
@@ -3129,19 +3053,13 @@ image_prepareImageSequenceForFactorization() {
     splitSequence \
       "$DOMAIN_IMAGE_COMMAND_FACTORIZE_OPTION_IMAGE_SEQUENCE" \
       ','
-  )"
-
-  sequence="$(makeUnique "$sequence")"
-
-  local returnCode=$?
-
-  [ $returnCode -ne 0 ] \
-  && fatal 'Could not craft the image sequence to factorize' \
-  && return $returnCode
+  )" \
+  && sequence="$(makeUnique "$sequence")" \
+  || return $?
 
   echo "$sequence"
 
-  return 0
+  return $?
 }
 
 ### check on the docker host if the image exists.
@@ -3151,7 +3069,9 @@ image_checkIfExistsOnDockerHost() {
 
   info 'checking if image '"$image"' exists on the docker host'
 
-  local id=$(docker image ls -q "$image")
+  local id=$(docker image ls -q "$image") \
+  || ( fatal 'Could not request image' \
+       && return 1 )
 
   if [ -z $id ]; then
     error "$(cat << EOI
@@ -3177,11 +3097,12 @@ image_extractImageDistFileFromImage() {
       "$1" cat /image.dist \
     | sort \
     | uniq
-  )"
+  )" \
+  || return $?
 
   if [ -z "$file_sequence" ]; then
     fatal "Could not extract the image.dist file from the "$1" docker
-image. Is that image well formed? Exiting..."
+image. Is that image well formed?"
     return 1
   fi
 
@@ -3192,7 +3113,6 @@ image. Is that image well formed? Exiting..."
 
 ### initialize a shell variable containing a directory id for the factorize
 ### command staging area
-# TODO: gloabl reread call my function failed must return using || operator
 image_initializeFactorizeStagingDirectory() {
   info 'Initializing image factorize staging area'
 
@@ -3589,6 +3509,7 @@ image_getImageBuildStagingDirectory() {
 image_fillImageBuildStagingArea() {
   info 'filling image build staging area'
 
+  # TODO: fix return value in case of fail, from $? to 1
   local image_directory="$(dirname $MANIFEST_FILE_PATH)" \
   || ( fatal 'Could not get the image directory name' \
        && return $? )
