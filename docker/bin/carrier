@@ -127,7 +127,7 @@ EOI
   # source stuff!
   . "$functions_sh_path"
 
-  return 0
+  return $?
 }
 
 initializePaths
@@ -371,7 +371,7 @@ $(removeIrrelevantDetailsFromReferentialOption \
     "$DOMAIN_APPLIANCE_COMMAND_UPGRADE_OPTIONS_REFERENTIAL")
 EOI
 
-  return 0
+  return $?
 }
 
 ### built the argument referential, sort of description and constraints about
@@ -606,7 +606,7 @@ contextSetImageBuildRemoveExisting
 # - relative path of the image manifest file
 # - absolute path of the image manifest file
 # - a mix of all three
-[^,]+(,[^,]+)?
+[^,]+(,[^,]+)*
 --
 contextSetImageBuildImageSequence
 EOI
@@ -887,7 +887,7 @@ contextSetApplianceBuildTagExisting
 
 # the appliance list to build. Has the form:
 # appliance1,appliance2...
-[^,]+(,[^,]+)?
+[^,]+(,[^,]+)*
 --
 contextSetApplianceBuildApplianceSequence
 EOI
@@ -1140,7 +1140,7 @@ contextSetApplianceUpgradeApplianceSequence
 EOI
   )"
 
-  return 0
+  return $?
 }
 
 ### initialize the execution context of carrier, dictating what to do with
@@ -1304,7 +1304,7 @@ initializeExecutionContext() {
   DOMAIN_APPLIANCE_COMMAND_UPGRADE_OPTION_IGNORE_DEPENDENCY_DEFECTS='no'
   DOMAIN_APPLIANCE_COMMAND_UPGRADE_OPTION_APPLIANCE_SEQUENCE=
 
-  return 0
+  return $?
 }
 
 ### internal function displyaing the content of the execution context
@@ -1502,7 +1502,7 @@ $DOMAIN_APPLIANCE_COMMAND_UPGRADE_OPTION_IGNORE_DEPENDENCY_DEFECTS
 $DOMAIN_APPLIANCE_COMMAND_UPGRADE_OPTION_APPLIANCE_SEQUENCE
 EOI
 
-  return 0
+  return $?
 }
 
 ### utility function mutating the execution context provided with a referential
@@ -1614,10 +1614,9 @@ value=$value"
 
   # clean referential, removing all comments
   local referential="$(deleteCommentLines "$GLOBAL_OPTIONS_REFERENTIAL")" \
-  && tryMutateReferential "$referential" "$key" "$value" \
-  || return $?
+  && tryMutateReferential "$referential" "$key" "$value"
 
-  return 0
+  return $?
 }
 
 ### specialized mutator designed to mutate the domain. Provided with
@@ -1633,10 +1632,9 @@ value=$value"
   # clean referential, removing all comments
   local referential="$(deleteCommentLines "$DOMAINS_REFERENTIAL")"
 
-  tryMutateReferential "$referential" "$key" "$value" \
-  || return $?
+  tryMutateReferential "$referential" "$key" "$value"
 
-  return 0
+  return $?
 }
 
 ### specialized mutator designed to mutate domain options settings. Provided
@@ -1661,10 +1659,9 @@ value=$value"
   # clean referential, removing all comments
   local referential="$(deleteCommentLines "$GLOBAL_COMMANDS_REFERENTIAL")"
 
-  tryMutateReferential "$referential" "$key" "$value" \
-  || return $?
+  tryMutateReferential "$referential" "$key" "$value"
 
-  return 0
+  return $?
 }
 
 ### attempt to mutate a domain command. Test all domains command in chain. if
@@ -1692,10 +1689,9 @@ value=$value"
 
   tryMutateReferential "$bootstrap_referential" "$key" "$value" \
   || tryMutateReferential "$image_referential" "$key" "$value" \
-  || tryMutateReferential "$appliance_referential" "$key" "$value" \
-  || return $?
+  || tryMutateReferential "$appliance_referential" "$key" "$value"
 
-  return 0
+  return $?
 }
 
 ### attempt to modify the execution context related to options of global
@@ -1740,10 +1736,9 @@ value=$value"
   || tryMutateReferential "$install_referential" "$key" "$value" \
   || tryMutateReferential "$pack_referential" "$key" "$value" \
   || tryMutateReferential "$unpack_referential" "$key" "$value" \
-  || tryMutateReferential "$vagrant_referential" "$key" "$value" \
-  || return $?
+  || tryMutateReferential "$vagrant_referential" "$key" "$value"
 
-  return 0
+  return $?
 }
 
 tryMutateDomainCommandOptions() {
@@ -1834,10 +1829,9 @@ value=$value"
   || tryMutateReferential "$appliance_upgrade_referential" "$key" "$value" \
   || tryMutateReferential "$appliance_start_referential" "$key" "$value" \
   || tryMutateReferential "$appliance_stop_referential" "$key" "$value" \
-  || tryMutateReferential "$appliance_volumes_referential" "$key" "$value" \
-  || return $?
+  || tryMutateReferential "$appliance_volumes_referential" "$key" "$value"
 
-  return 0
+  return $?
 }
 
 ### mutates the execution context with a key and a value as arguments
@@ -1897,10 +1891,9 @@ value=$value"
   || tryMutateGlobalCommand "$key" "$value" \
   || tryMutateDomainCommand "$key" "$value" \
   || tryMutateGlobalCommandOptions "$key" "$value" \
-  || tryMutateDomainCommandOptions "$key" "$value" \
-  || return $?
+  || tryMutateDomainCommandOptions "$key" "$value"
 
-  return 0
+  return $?
 }
 
 ### internal function attempting to mutate the execution context with a provided
@@ -1917,10 +1910,9 @@ tryMutateExecutionContextWithKeyEqualsValueArg() {
   debug "key=$key
 value=$value"
 
-  tryMutateExecutionContext "$key" "$value" \
-  || return $?
+  tryMutateExecutionContext "$key" "$value"
 
-  return 0
+  return $?
 }
 
 ### build the final execution context regarding provided arguments
@@ -2102,6 +2094,7 @@ $DOMAIN_IMAGE_COMMAND_BUILD_OPTION_IMAGE_SEQUENCE"
     "$DOMAIN_IMAGE_COMMAND_BUILD_OPTION_IMAGE_SEQUENCE" \
     ','
   )" \
+  && sequence="$(makeUnique "$sequence")" \
   || return $?
 
   debug 'image sequence to build :'"$sequence"
@@ -2112,9 +2105,8 @@ $DOMAIN_IMAGE_COMMAND_BUILD_OPTION_IMAGE_SEQUENCE"
   for image in $sequence; do
     debug 'calling image_build '"$image"
 
-    image_build "$image"
-
-    return $?
+    image_build "$image" \
+    || return $?
   done
 
   return 0
@@ -2195,6 +2187,7 @@ $DOMAIN_APPLIANCE_COMMAND_BUILD_OPTION_APPLIANCE_SEQUENCE"
     "$DOMAIN_APPLIANCE_COMMAND_BUILD_OPTION_APPLIANCE_SEQUENCE" \
     ','
   )" \
+  && sequence="$(makeUnique "$sequence")" \
   || return $?
 
   debug 'appliance sequence to build: '"$sequence"
@@ -2262,6 +2255,7 @@ $DOMAIN_APPLIANCE_COMMAND_START_OPTION_APPLIANCE_SEQUENCE"
     "$DOMAIN_APPLIANCE_COMMAND_START_OPTION_APPLIANCE_SEQUENCE" \
     ','
   )" \
+  && sequence="$(makeUnique "$sequence")" \
   || return $?
 
   debug 'appliance sequence to start: '"$sequence"
@@ -2293,11 +2287,13 @@ $DOMAIN_APPLIANCE_COMMAND_STOP_OPTION_APPLIANCE_SEQUENCE"
   fi
 
   # the sequence is comma separated, get it space separated
+  # TODO: refactorize sequence management, code identical for images and appliance commands
   local sequence="$(
     splitSequence \
     "$DOMAIN_APPLIANCE_COMMAND_STOP_OPTION_APPLIANCE_SEQUENCE" \
     ','
   )" \
+  && sequence="$(makeUnique "$sequence")" \
   || return $?
 
   debug 'appliance sequence to stop: '"$sequence"
@@ -3217,7 +3213,6 @@ image_initializeBaseImageDistFileInStagingArea() {
   )" \
   || return $?
 
-  # TODO: replace return numeric values with $? when applicable
   local second_files_sequence="$(
     image_extractImageDistFileFromImage "$second_image"
   )" \
@@ -3260,8 +3255,8 @@ image_getImageToFactorizeSequence() {
   info 'getting image to factorize sequence'
 
   [ -z "$DOMAIN_IMAGE_COMMAND_FACTORIZE_IMAGE_TO_FACTORIZE_SEQUENCE" ] \
-    && error 'Image to factorize sequence is not initialized' \
-    && return 1
+  && error 'Image to factorize sequence is not initialized' \
+  && return 1
 
   echo "$DOMAIN_IMAGE_COMMAND_FACTORIZE_IMAGE_TO_FACTORIZE_SEQUENCE"
 
@@ -3503,8 +3498,8 @@ image_getImageBuildStagingDirectory() {
   info 'getting image build staging directory'
 
   [ -z "$DOMAIN_IMAGE_COMMAND_BUILD_STAGING_DIRECTORY" ] \
-    && error 'Image build staging directory has not been initialized' \
-    && return 1
+  && error 'Image build staging directory has not been initialized' \
+  && return 1
 
   echo "$DOMAIN_IMAGE_COMMAND_BUILD_STAGING_DIRECTORY"
 
@@ -3778,10 +3773,9 @@ EOI
   fi
 
   # call to a functions.sh's utility
-  fetchManifestImageContent "$APPLIANCE_STAGING_DIRECTORY" \
-  || return $?
+  fetchManifestImageContent "$APPLIANCE_STAGING_DIRECTORY"
 
-  return 0
+  return $?
 }
 
 ### build an image that is required for the appliance and that was not found on
@@ -3845,7 +3839,7 @@ EOI
 ### enumerates all required images needed by the appliance and build them if
 ### they are not on the docker host
 appliance_checkRequiredImages() {
-  info 'Checking required image for appliance'
+  info 'Checking required images for appliance'
 
   # manifest file read and validated, check existing images and attempt build
   # them if necessary
@@ -4202,10 +4196,9 @@ appliance_start() {
   && fatal 'could not start up the appliance. command was '"$command" \
   return $returnCode
 
-  appliance_cleanupStagingArea \
-  || return $?
+  appliance_cleanupStagingArea
 
-  return 0
+  return $?
 }
 
 ### entrypoint for the stop command. If the appliance is running, stops it.
@@ -4227,10 +4220,9 @@ appliance_stop() {
   && fatal 'could not stop the appliance. command was '"$command" \
   && return $returnCode
 
-  appliance_cleanupStagingArea \
-  || return $?
+  appliance_cleanupStagingArea
 
-  return 0
+  return $?
 }
 
 ### generic function executing the right function depending on the command

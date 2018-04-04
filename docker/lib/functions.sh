@@ -511,15 +511,8 @@ EOI
 # randomly generated. used in appliance's Dockerfile generation system as well
 # as in the image's Dockerfile generation build system
 mapImageNamesAndBuildStageAliases() {
-  # first argument are a sequence of docker images
-  if [ -z "$1" ]; then
-    error "$(cat << EOI
-Error: No image specified...exiting...
-EOI
-    )"
-
-    return 1
-  fi
+  # first argument are a sequence of docker images, or not
+  [ -z "$1" ] && return 0
 
   local required_images="$1"
   local map=
