@@ -3479,8 +3479,7 @@ image_getStagingRootDirectory() {
 
 ### initialize a shell variable containing a directory id for the build command
 ### staging area
-# TODO: rename to image_initializeiImageBuildStagingDirectory
-image_initializeBuildStagingDirectory() {
+image_initializeImageBuildStagingDirectory() {
   info 'initializing image build staging directory'
 
   if [ ! -z "$DOMAIN_IMAGE_COMMAND_BUILD_STAGING_DIRECTORY" ]; then
@@ -3625,7 +3624,7 @@ image_build() {
 
   image_checkBootstrapImages \
   && image_checkManifestPathOrName "$1" \
-  && image_initializeBuildStagingDirectory \
+  && image_initializeImageBuildStagingDirectory \
   && image_fillImageBuildStagingArea \
   && image_buildImageAndDependencies \
   && image_cleanupBuildStagingArea
