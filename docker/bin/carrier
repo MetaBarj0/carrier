@@ -24,7 +24,7 @@ initializePaths() {
 
   # if the carrier script has been renammed, not supported => error
   if [ ! "$(basename "$CARRIER_SCRIPT_PATH")" = 'carrier' ]; then
-    echo '`carrier` script has been renammed, not supported...exiting' 1>&2
+    echo '`carrier` script has been renammed, not supported' 1>&2
     return 1
   fi
 
@@ -34,7 +34,7 @@ initializePaths() {
   if [ ! "$(basename "$CARRIER_BIN_DIR")" = 'bin' ]; then
     cat << EOI 1>&2
 The \`carrier\` script must reside in the \`bin/\` directory.
-Not supported...exiting...
+Not supported
 EOI
   return 1
   fi
@@ -53,7 +53,7 @@ EOI
   if [ ! -d "$relative_carrier_lib_dir" ]; then
     cat << EOI 1>&2
 Fatal: $relative_carrier_lib_dir does not exist. Your \`carrier\` package seems
-broken or corrupted. Not supported...exiting...
+broken or corrupted. Not supported.
 EOI
   return 1
   fi
@@ -61,7 +61,7 @@ EOI
   if [ ! -d "$relative_carrier_share_dir" ]; then
     cat << EOI 1>&2
 Fatal: $relative_carrier_share_dir does not exist. Your \`carrier\` package
-seems broken or corrupted. Not supported...exiting...
+seems broken or corrupted. Not supported.
 EOI
   return 1
   fi
@@ -69,7 +69,7 @@ EOI
   if [ ! -d "$relative_carrier_share_bootstrap_dir" ]; then
     cat << EOI 1>&2
 Fatal: $relative_carrier_share_bootstrap_dir does not exist. Your \`carrier\`
-package seems broken or corrupted. Not supported...exiting...
+package seems broken or corrupted. Not supported.
 EOI
   return 1
   fi
@@ -77,7 +77,7 @@ EOI
   if [ ! -d "$relative_carrier_share_images_dir" ]; then
     cat << EOI 1>&2
 Fatal: $relative_carrier_share_images_dir does not exist. Your \`carrier\`
-package seems broken or corrupted. Not supported...exiting...
+package seems broken or corrupted. Not supported.
 EOI
   return 1
   fi
@@ -85,7 +85,7 @@ EOI
   if [ ! -d "$relative_carrier_share_appliances_dir" ]; then
     cat << EOI 1>&2
 Fatal: $relative_carrier_share_appliances_dir does not exist. Your \`carrier\`
-package seems broken or corrupted. Not supported...exiting...
+package seems broken or corrupted. Not supported.
 EOI
   return 1
   fi
@@ -93,7 +93,7 @@ EOI
   if [ ! -d "$relative_carrier_src_dir" ]; then
     cat << EOI 1>&2
 Fatal: $relative_carrier_src_dir does not exist. Your \`carrier\` package seems
-broken or corrupted. Not supported...exiting...
+broken or corrupted. Not supported.
 EOI
   return 1
   fi
@@ -3081,7 +3081,7 @@ image_checkIfExistsOnDockerHost() {
 
   if [ -z $id ]; then
     error "$(cat << EOI
-The specified image "$image" does not exist on the docker host...exiting...
+The specified image "$image" does not exist on the docker host
 EOI
     )"
     return 1
@@ -3274,7 +3274,7 @@ image_finalizeAllImageDistFileInStagingArea() {
   || return $?
 
   if [ ! -f "$base_image_dist_file" ]; then
-    error 'Missing base.image.dist file in staging area...exiting...'
+    error 'Missing base.image.dist file in staging area'
     return 1
   fi
 
@@ -3347,7 +3347,7 @@ Expected is either :
   located in the docker/share/images directory
 
 Taking theses remarks into account should help you to resolve your
-problem...exiting...
+problem
 EOI
   )"
 
@@ -3405,7 +3405,7 @@ EOI
       error "$(cat << EOI
 Error: the mandatory image "$i" has not been found on your docker host. Make
 sure you have properly bootstrapped your docker host before attempting any
-image build...exiting...
+image build
 EOI
 )"
       return 1
@@ -3520,7 +3520,6 @@ image_fillImageBuildStagingArea() {
   local staging_directory="$(image_getImageBuildStagingDirectory)" \
   || return $?
 
-  # TODO: remove ...exiting... suffix
   # copy the project in the staging area
   cp -a "$image_directory" "$staging_directory" \
   || ( returnCode=$? \
@@ -3660,7 +3659,7 @@ appliance management system will be able to generate a Dockerfile for each
 service of your appliance and build this image.
 
 Taking into account this remark should help you to resolve your
-problem...exiting...
+problem
 EOI
     )"
     return 1
@@ -3733,7 +3732,7 @@ appliance_fillStagingArea() {
     importPackageFrom \
     "$APPLIANCE_STAGING_DIRECTORY" \
   && cd "$USER_DIRECTORY" \
-  || fatal 'could not copy utility files into staging area...exiting...'
+  || fatal 'could not copy utility files into staging area'
 
   return $?
 }
@@ -3766,7 +3765,7 @@ Possible causes are :
     image.
 
 Taking these remarks into account should help you to resolve your
-problem...exiting...
+problem
 EOI
     )"
     return 1
@@ -3818,7 +3817,7 @@ Possible causes are :
     unique line (use the '\\' character after '=' for instance).
 
 Taking these remarks into account should help you to solve you
-problem...exiting
+problem
 EOI
     )"
 
@@ -4024,7 +4023,7 @@ Note that this variable must be global as a local variable has no definition
 outside its function scope.
 
 Taking this remark into account should help you to resolve your
-problem...exiting...
+problem
 EOI
     )"
     return 1
@@ -4061,7 +4060,7 @@ image_name2 function_name2
 image_name3 function_name3" and so on...
 
 Taking this remark into account should help you to resolve your
-problem...exiting
+problem
 EOI
 )"
 
