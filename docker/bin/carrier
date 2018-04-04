@@ -1583,7 +1583,7 @@ EOI
     local returnCode=$?
 
     [ "$returnCode" -ne 0 ] \
-      && debug "$(cat << EOI
+    && debug "$(cat << EOI
 The mutator: $mutator failed to execute correctly with key: $key and
 value: $value
 EOI
@@ -1613,9 +1613,8 @@ tryMutateGlobalOptions() {
 value=$value"
 
   # clean referential, removing all comments
-  local referential="$(deleteCommentLines "$GLOBAL_OPTIONS_REFERENTIAL")"
-
-  tryMutateReferential "$referential" "$key" "$value" \
+  local referential="$(deleteCommentLines "$GLOBAL_OPTIONS_REFERENTIAL")" \
+  && tryMutateReferential "$referential" "$key" "$value" \
   || return $?
 
   return 0
@@ -2074,10 +2073,10 @@ executeBootstrapRunCommand() {
   if [ "$DOMAIN" = 'bootstrap' ] \
      && [ "$COMMAND" = 'run' ]; then
     info 'bootstrap run requested'
-    bootstrap_run \
-    || return $?
 
-    return 0
+    bootstrap_run
+
+    return $?
   fi
 
   return 1
@@ -2113,9 +2112,9 @@ $DOMAIN_IMAGE_COMMAND_BUILD_OPTION_IMAGE_SEQUENCE"
   for image in $sequence; do
     debug 'calling image_build '"$image"
 
-    # the first image build failing return from that function
-    image_build "$image" \
-    || return $?
+    image_build "$image"
+
+    return $?
   done
 
   return 0
@@ -2203,9 +2202,9 @@ $DOMAIN_APPLIANCE_COMMAND_BUILD_OPTION_APPLIANCE_SEQUENCE"
   # build each appliance in the sequence, calling the right script in a subshell
   local appliance=
   for appliance in $sequence; do
-    # the first appliance build failing return from that function
-    ( appliance_manage "$appliance" ) \
-    || return $?
+    ( appliance_manage "$appliance" )
+
+    return $?
   done
 
   return 0
@@ -2271,8 +2270,9 @@ $DOMAIN_APPLIANCE_COMMAND_START_OPTION_APPLIANCE_SEQUENCE"
   local appliance=
   for appliance in $sequence; do
     # the first appliance start failing return from that function
-    ( appliance_manage "$appliance" ) \
-    || return $?
+    ( appliance_manage "$appliance" )
+
+    return $?
   done
 
   return 0
@@ -2306,8 +2306,9 @@ $DOMAIN_APPLIANCE_COMMAND_STOP_OPTION_APPLIANCE_SEQUENCE"
   local appliance=
   for appliance in $sequence; do
     # the first appliance stop failing return from that function
-    ( appliance_manage "$appliance" ) \
-    || return $?
+    ( appliance_manage "$appliance" )
+
+    return $?
   done
 
   return 0
@@ -2413,18 +2414,22 @@ executeDomainCommand() {
 
 ### Helper function activating the trace mode if requested (--log-level=trace)
 ### and executing this script from its very start
+# TODO: repair trace mode
 executeWithTraceIfRequested() {
-  info 'restarting in trac mode'
-
   if isTraceLogLevel \
      && [ ! ${TRACE_ENABLED+0} ]; then
     debug 'trace enabled; restarting script...'
 
-    local carrier_script="$(
-      sed '2i\set -x' ${CARRIER_SCRIPT_PATH}
+    local carrier_code="$(
+      sed '2i\set -x' "${CARRIER_SCRIPT_PATH}"
     )"
 
-    TRACE_ENABLED= eval "$carrier_script"
+    local carrier_script="${CARRIER_TMP_DIR}"/carrier
+
+    echo "$carrier_code" > "$carrier_script"
+    chmod +x "$carrier_script"
+
+    ( TRACE_ENABLED= exec "$carrier_script" "$@" )
 
     local returnCode=$?
     debug 'script execution finished, exiting with status code :'$returnCode
@@ -2899,8 +2904,9 @@ bootstrap_fetchInStagingArea() {
   info 'Copying bootstrap files in bootstrap staging area...'
 
   cp -r "$CARRIER_SHARE_BOOTSTRAP_DIR" "$CARRIER_TMP_DIR" \
-  || ( fatal 'Unabled to copy bootstrap files in staging area.' \
-       && return 1 )
+  || ( returnCode=$? \
+       && fatal 'Unabled to copy bootstrap files in staging area.' \
+       && return $returnCode )
 
   return $?
 }
@@ -2915,8 +2921,9 @@ bootstrap_fetchLibInStagingArea() {
      "$CARRIER_LIB_DIR"/importPackageFrom \
      "$CARRIER_LIB_DIR"/functions.sh \
      "$CARRIER_TMP_DIR"/bootstrap \
-  || ( fatal 'Unabled to copy utilities files in staging area.' \
-       && return 1 )
+  || ( returnCode=$? \
+       && fatal 'Unabled to copy utilities files in staging area.' \
+       && return $returnCode )
 
   return $?
 }
@@ -2929,8 +2936,9 @@ bootstrap_build() {
   && docker build --squash -t metabarj0/bootstrap . \
   && docker image prune -f \
   && cd - 1>/dev/null 2>&1 \
-  || ( fatal 'bootstrap image build failed.' \
-       && return 1 )
+  || ( returnCode=$? \
+       && fatal 'bootstrap image build failed.' \
+       && return $returnCode )
 
   return $?
 }
@@ -3070,8 +3078,10 @@ image_checkIfExistsOnDockerHost() {
   info 'checking if image '"$image"' exists on the docker host'
 
   local id=$(docker image ls -q "$image") \
-  || ( fatal 'Could not request image' \
-       && return 1 )
+  || ( returnCode=$? \
+       && fatal 'Could not request image' \
+       && return $returnCode ) \
+  || return $?
 
   if [ -z $id ]; then
     error "$(cat << EOI
@@ -3189,7 +3199,6 @@ image_cleanupFactorizeStagingDirectory() {
 ### initialize the image.dist file of the base image. It will contains common
 ### files found in the two very first image iterated
 # TODO : that one is to refactor
-# TODO : global reread, don't log my functions call that are alredy logging errors
 image_initializeBaseImageDistFileInStagingArea() {
   info 'Initializing tha base image of factorization'
 
@@ -3303,7 +3312,7 @@ image_finalizeAllImageDistFileInStagingArea() {
   done
   pause
 
-  return 0
+  return $?
 }
 
 ### create the image.dist file of the base image in the staging directory
@@ -3374,7 +3383,6 @@ EOI
   # OK, valid argument, exposing the manifest file absolute path
   MANIFEST_FILE_PATH=${manifest_arg}
 
-  # TODO : change all return 0 by return $?
   return $?
 }
 
@@ -3509,10 +3517,11 @@ image_getImageBuildStagingDirectory() {
 image_fillImageBuildStagingArea() {
   info 'filling image build staging area'
 
-  # TODO: fix return value in case of fail, from $? to 1
   local image_directory="$(dirname $MANIFEST_FILE_PATH)" \
-  || ( fatal 'Could not get the image directory name' \
-       && return $? )
+  || ( returnCode=$? \
+       && fatal 'Could not get the image directory name' \
+       && return $returnCode ) \
+  || return $?
 
   local staging_directory="$(image_getImageBuildStagingDirectory)" \
   || return $?
@@ -3520,15 +3529,19 @@ image_fillImageBuildStagingArea() {
   # TODO: remove ...exiting... suffix
   # copy the project in the staging area
   cp -a "$image_directory" "$staging_directory" \
-  || ( fatal 'could not copy image files to staging area' \
-       && return 1 )
+  || ( returnCode=$? \
+       && fatal 'could not copy image files to staging area' \
+       && return $returnCode ) \
+  || return $?
 
   # copy necessary lib files in the project directory in the staging area
   local image_name=$(basename $image_directory)
   DOMAIN_IMAGE_COMMAND_BUILD_IMAGE_STAGING_DIRECTORY=\
 "${staging_directory}"/"$image_name" \
-  || ( fatal 'Could not get the image name' \
-       && return $? )
+  || ( returnCode=$? \
+       && fatal 'Could not get the image name' \
+       && return $returnCode ) \
+  || return $?
 
   cd $CARRIER_LIB_DIR \
   && cp \
@@ -3540,14 +3553,12 @@ image_fillImageBuildStagingArea() {
     functions.sh \
     importPackageFrom \
     $DOMAIN_IMAGE_COMMAND_BUILD_IMAGE_STAGING_DIRECTORY \
-  && cd $USER_DIRECTORY
+  && cd $USER_DIRECTORY \
+  || ( returnCode=$? \
+       && fatal 'could not copy utility files to staging area' \
+       && return $returnCode )
 
-  returnCode=$?
-
-  [ $returnCode -ne 0 ] \
-  && fatal 'could not copy utility files to staging area...exiting...'
-
-  return 0
+  return $?
 }
 
 ### attempt to build the image and all of its dependencies
@@ -3561,9 +3572,9 @@ image_buildImageAndDependencies() {
     info 'fetching genuine carrier repository...'
 
     fetchManifestImageContent \
-      $DOMAIN_IMAGE_COMMAND_BUILD_IMAGE_STAGING_DIRECTORY
-
-    image_buildDependencies
+      $DOMAIN_IMAGE_COMMAND_BUILD_IMAGE_STAGING_DIRECTORY \
+    && image_buildDependencies \
+    || return $?
   fi
 
   # rely on some variables extracted from the manifest file that was parsed
@@ -3584,7 +3595,7 @@ image_buildImageAndDependencies() {
   local returnCode=$?
 
   [ $returnCode -ne 0 ] \
-  && error 'could not build image providing '"$PROVIDES"'...exiting...' \
+  && error 'could not build image providing '"$PROVIDES" \
   && return 1
 
   return 0
@@ -3595,11 +3606,15 @@ image_cleanupBuildStagingArea() {
   info 'cleaning up the staging area for image build command'
 
   rm -rf \
-    "$DOMAIN_IMAGE_COMMAND_BUILD_IMAGE_STAGING_DIRECTORY"
+    "$DOMAIN_IMAGE_COMMAND_BUILD_IMAGE_STAGING_DIRECTORY" \
+  || ( returnCode=$? \
+       && fatal 'could not clean image build staging area' \
+       && return $returnCode ) \
+  || return $?
 
   removeDirectoryIfEmpty "$(image_getStagingRootDirectory)"
 
-  return 0
+  return $?
 }
 
 ### entrypoint for carrier image build... may be called recursively in case of
@@ -3702,15 +3717,18 @@ appliance_fillStagingArea() {
   local appliance_directory="$(dirname "$MANIFEST_FILE_PATH")" \
   && local staging_directory=${CARRIER_TMP_DIR}/appliances \
   && APPLIANCE_STAGING_DIRECTORY="${staging_directory}"/"$APPLIANCE_NAME" \
-  || ( error 'Could not setup appliance staging directory' \
-       && return 1 )
+  || ( returnCode=$? \
+       && error 'Could not setup appliance staging directory' \
+       && return $returnCode ) \
+  || return $?
 
   # sanitize the staging area if it does already exist
   rm -rf "$APPLIANCE_STAGING_DIRECTORY" \
   && mkdir -p "$staging_directory" \
   && cp -a "$appliance_directory" "$staging_directory" \
-  || ( error 'could not copy appliance files into staging area' \
-       && return 1 )
+  || ( returnCode=$? \
+       && error 'could not copy appliance files into staging area' \
+       && return $returnCode )
 
   # copy necessary lib files in the project directory in the staging area
   cd "$CARRIER_LIB_DIR" \
@@ -3817,11 +3835,12 @@ EOI
   # I've the absolute path of the required image's manifest file, let's build it
   # in a new sub-shell
   ( ${CARRIER_BIN_DIR}/carrier image build "$image_manifest_path" ) \
-  || ( error 'could not build the dependent image targeted by '\
+  || ( returnCode=$? \
+       && error 'could not build the dependent image targeted by '\
 "$image_manifest_path" \
-       && return 1 )
+       && return $returnCode )
 
-  return 0
+  return $?
 }
 
 ### enumerates all required images needed by the appliance and build them if
@@ -3965,14 +3984,18 @@ appliance_buildServiceImage() {
 appliance_cleanupStagingArea() {
   if [ -d "$APPLIANCE_STAGING_DIRECTORY" ]; then
     rm -rf "$APPLIANCE_STAGING_DIRECTORY" \
-    || ( error 'could not remove appliance staging directory' \
-         && return $? )
+    || ( returnCode=$? \
+         && error 'could not remove appliance staging directory' \
+         && return $returnCode ) \
+    || return $?
   fi
 
   if [ -z "$(ls "${CARRIER_TMP_DIR}"/appliances)" ]; then
     rm -r "${CARRIER_TMP_DIR}"/appliances \
-    || ( error 'could not remove appliance staging directory' \
-         && return $? )
+    || ( returnCode=$? \
+         && error 'could not remove appliance staging directory' \
+         && return $returnCode ) \
+    || return $?
   fi
 
   return 0
@@ -4243,9 +4266,11 @@ appliance_manage() {
 run() {
   info 'starting carrier execution'
 
-  executeWithTraceIfRequested \
-  || ( error 'could not restart in trace mode' \
-       && return 1 )
+  executeWithTraceIfRequested "$@"\
+  || ( returnCode=$? \
+       && error 'could not restart in trace mode' \
+       && return $returnCode ) \
+  || return $?
 
   info "building arguments referential, initializing execution context and
 building the final execution context from provided arguments"
@@ -4259,7 +4284,9 @@ building the final execution context from provided arguments"
   && return 1
 
   executeWithContext \
-  || ( usage && return 1 )
+  || ( returnCode=$? \
+       && usage \
+       && return $returnCode )
 
   return $?
 }
