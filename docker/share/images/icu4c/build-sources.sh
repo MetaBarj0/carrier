@@ -6,7 +6,7 @@ if [ -z $REPOSITORY ]; then
 fi
 
 # extract sources and prepare for build
-tar -xf icu4c-59_1-src.tar.xz
+tar -xf icu4c-60_2-src.tar.xz
 cd icu/source
 mkdir build && cd build
 

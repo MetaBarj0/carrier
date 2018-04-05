@@ -6,8 +6,8 @@ if [ -z $REPOSITORY ]; then
 fi
 
 # extract sources and prepare for build
-tar -xf node-v8.9.4.tar.gz
-cd node-v8.9.4
+tar -xf node-v8.11.1.tar.gz
+cd node-v8.11.1
 
 PREFIX=/usr/local
 
