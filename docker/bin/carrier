@@ -2101,7 +2101,6 @@ $DOMAIN_IMAGE_COMMAND_BUILD_OPTION_IMAGE_SEQUENCE"
 
   # build each image in the sequence, calling the right script in a subshell
   local image=
-  local returnCode=1
   for image in $sequence; do
     debug 'calling image_build '"$image"
 
@@ -2195,9 +2194,10 @@ $DOMAIN_APPLIANCE_COMMAND_BUILD_OPTION_APPLIANCE_SEQUENCE"
   # build each appliance in the sequence, calling the right script in a subshell
   local appliance=
   for appliance in $sequence; do
-    ( appliance_manage "$appliance" )
+    debug 'calling appliance_manage '"$appliance"
 
-    return $?
+    ( appliance_manage "$appliance" ) \
+    || return $?
   done
 
   return 0
@@ -2263,10 +2263,10 @@ $DOMAIN_APPLIANCE_COMMAND_START_OPTION_APPLIANCE_SEQUENCE"
   # build each appliance in the sequence, calling the right script in a subshell
   local appliance=
   for appliance in $sequence; do
-    # the first appliance start failing return from that function
-    ( appliance_manage "$appliance" )
+    debug 'calling appliance_manage '"$appliance"
 
-    return $?
+    ( appliance_manage "$appliance" ) \
+    || return $?
   done
 
   return 0
@@ -2287,7 +2287,6 @@ $DOMAIN_APPLIANCE_COMMAND_STOP_OPTION_APPLIANCE_SEQUENCE"
   fi
 
   # the sequence is comma separated, get it space separated
-  # TODO: refactorize sequence management, code identical for images and appliance commands
   local sequence="$(
     splitSequence \
     "$DOMAIN_APPLIANCE_COMMAND_STOP_OPTION_APPLIANCE_SEQUENCE" \
@@ -2301,10 +2300,10 @@ $DOMAIN_APPLIANCE_COMMAND_STOP_OPTION_APPLIANCE_SEQUENCE"
   # build each appliance in the sequence, calling the right script in a subshell
   local appliance=
   for appliance in $sequence; do
-    # the first appliance stop failing return from that function
-    ( appliance_manage "$appliance" )
+    debug 'calling appliance_manage '"$appliance"
 
-    return $?
+    ( appliance_manage "$appliance" ) \
+    || return $?
   done
 
   return 0
