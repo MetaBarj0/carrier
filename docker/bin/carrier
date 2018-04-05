@@ -2469,6 +2469,13 @@ contextSetLogLevel() {
 contextSetLogOutput() {
   info 'setting log output global option'
 
+  [ "$2" = '&1' ] \
+    && warning "$(cat << EOI
+cannot set log output to standard output, defaulting to standard error
+EOI
+    )" \
+  && return 1
+
   # key/value pair
   GLOBAL_OPTION_LOG_OUTPUT="$2"
 
@@ -2509,6 +2516,14 @@ EOI
   GLOBAL_COMMAND_HELP_OPTION_MODE="$1"
 
   return 0
+}
+
+# TODO: NYI
+contextSetPackFetchOnly() {
+  :
+
+  debug 'Not Implemented Yet'
+  return 1
 }
 
 ### mutator to set the domain. Valid call if:
@@ -2894,7 +2909,6 @@ EOI
 #### bootstrap domain specific functions
 
 ### gives the root directory of staging area used for bootstrap domain commands
-# TODO: wrong place but check set log output that must not be stdout
 bootstrap_getStagingRootDirectory() {
   info 'getting root staging directory'
 
