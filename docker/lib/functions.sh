@@ -15,7 +15,6 @@ removeDirectoryIfEmpty() {
     rm -r "$1"
     return $?
   fi
-
 }
 
 # extract common line from files specified in arguments

@@ -2999,27 +2999,23 @@ bootstrap_build() {
   return $?
 }
 
-### ask for some configuration and run the bootstrap image to bootstrap the
-### system
-bootstrap_run_image() {
-  info 'running the bootstrap docker image'
-
-  # TODO : take into account some variable of the execution context (auto answer yes…)
-  # TODO: refacto, need some functions
+### setup environment for bootstrap image run
+bootstrap_setupEnvironmentForRun() {
+  info 'setting up environment for bootstrap image run'
 
   cat << EOI
 Specify the version of GCC you want to build. Note that today, only 7.2.0
 and 7.3.0 are supported : [7.3.0]
 EOI
 
-  local gcc_version="$(readValueWithDefault '7.3.0')"
+  GCC_VERSION="$(readValueWithDefault '7.3.0')"
 
   cat << EOI
 Specify the binutils version you want to build. Note that for GCC 7.3.0, 2.29
 is a working version : [2.29]
 EOI
 
-  local binutils_version="$(readValueWithDefault '2.29')"
+  BINUTILS_VERSION="$(readValueWithDefault '2.29')"
 
   cat << EOI
 Specify the version of Kernel headers you want to use. Note that for GCC 7.3.0
@@ -3027,30 +3023,20 @@ the 4.14.14 version works perfectly well. Moreover, only version 4+ is
 supported : [4.14.14]
 EOI
 
-  local kernel_version="$(readValueWithDefault '4.14.14')"
+  KERNEL_VERSION="$(readValueWithDefault '4.14.14')"
 
   cat << EOI
 Specify the make version you want to use. Note that version 4.2 is
 good : [4.2]
 EOI
 
-  local make_version="$(readValueWithDefault '4.2')"
+  MAKE_VERSION="$(readValueWithDefault '4.2')"
 
-  # run the bootstrap image
-  docker run --rm -it \
-    -v /var/run/docker.sock:/var/run/docker.sock \
-    -e GCC_VERSION="$gcc_version" \
-    -e BINUTILS_VERSION="$binutils_version" \
-    -e KERNEL_VERSION="$kernel_version" \
-    -e MAKE_VERSION="$make_version" \
-    metabarj0/bootstrap
+  return $?
+}
 
-  local returnCode=$?
-
-  [ $returnCode -ne 0 ] \
-  && fatal 'bootstrap image failed to run correctly.' \
-  && return $returnCode
-
+### remove the bootstrap image if asked
+bootstrap_removeBootstrapImageIfAsked() {
   cat << EOI
 Bootstrapping successfully done! Would you like to remove the
 metabarj0/bootstrap docker image? [Y/n]
@@ -3061,14 +3047,44 @@ EOI
   if [ $remove_bootstrap = 'Y' ] || [ $remove_bootstrap = 'y' ]; then
     docker rmi metabarj0/bootstrap
 
-    returnCode=$?
+    # TODO: check returnCode is ALWAYS a local
+    local returnCode=$?
 
     [ $returnCode -ne 0 ] \
     && fatal 'Unabled to remove the bootstrap image.' \
     && return $returnCode
   fi
 
-  return $returnCode
+  return 0
+}
+
+### ask for some configuration and run the bootstrap image to bootstrap the
+### system
+bootstrap_run_image() {
+  info 'running the bootstrap docker image'
+
+  # TODO : take into account some variable of the execution context (auto answer yes…)
+
+  bootstrap_setupEnvironmentForRun
+
+  # run the bootstrap image
+  docker run --rm -it \
+    -v /var/run/docker.sock:/var/run/docker.sock \
+    -e GCC_VERSION="$GCC_VERSION" \
+    -e BINUTILS_VERSION="$BINUTILS_VERSION" \
+    -e KERNEL_VERSION="$KERNEL_VERSION" \
+    -e MAKE_VERSION="$MAKE_VERSION" \
+    metabarj0/bootstrap
+
+  local returnCode=$?
+
+  [ $returnCode -ne 0 ] \
+  && fatal 'bootstrap image failed to run correctly.' \
+  && return $returnCode
+
+  bootstrap_removeBootstrapImageIfAsked
+
+  return $?
 }
 
 ### once the system is bootstrapped, clean the staging area
