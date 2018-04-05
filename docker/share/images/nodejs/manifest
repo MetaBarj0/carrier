@@ -9,8 +9,8 @@ PROVIDES=metabarj0/nodejs
 SOURCES_FETCH_IMAGE=metabarj0/wget
 SOURCES_FETCH_COMMAND=\
 'wget --no-check-certificate '\
-'https://nodejs.org/dist/v8.9.4/node-v8.9.4.tar.gz'
-SOURCES_TARBALL_NAME='node-v8.9.4.tar.gz'
+'https://nodejs.org/dist/v8.11.1/node-v8.11.1.tar.gz'
+SOURCES_TARBALL_NAME='node-v8.11.1.tar.gz'
 
 BUILD_EXTRA_DOCKERFILE_COMMANDS=\
 'ENV PKG_CONFIG_PATH=/usr/local/lib/pkgconfig/'

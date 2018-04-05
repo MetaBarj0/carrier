@@ -5,9 +5,9 @@ PROVIDES=metabarj0/icu4c
 SOURCES_FETCH_IMAGE=metabarj0/wget
 SOURCES_FETCH_COMMAND=\
 'wget --no-check-certificate '\
-'https://github.com/MetaBarj0/symmetrical-barnacle/raw/master/icu4c/59-1/'\
-'icu4c-59_1-src.tar.xz'
-SOURCES_TARBALL_NAME='icu4c-59_1-src.tar.xz'
+'https://github.com/MetaBarj0/symmetrical-barnacle/raw/master/icu4c/60-2/'\
+'icu4c-60_2-src.tar.xz'
+SOURCES_TARBALL_NAME='icu4c-60_2-src.tar.xz'
 
 BUILD_EXTRA_DOCKERFILE_COMMANDS=
 
