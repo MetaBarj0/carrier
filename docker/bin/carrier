@@ -2893,29 +2893,76 @@ EOI
 
 #### bootstrap domain specific functions
 
+### gives the root directory of staging area used for bootstrap domain commands
+# TODO: wrong place but check set log output that must not be stdout
+bootstrap_getStagingRootDirectory() {
+  info 'getting root staging directory'
+
+  echo "${CARRIER_TMP_DIR}"/bootstrap
+
+  return $?
+}
+
+### initialize a shell variable containing a directory id for the bootstrap
+### staging area
+bootstrap_initializeBootstrapStagingDirectory() {
+  info 'initializing bootstrap staging directory'
+
+  if [ ! -z "$DOMAIN_BOOTSTRAP_STAGING_DIRECTORY" ]; then
+    warning 'bootstrap staging already initialized'
+    return 0
+  fi
+
+  DOMAIN_BOOTSTRAP_STAGING_DIRECTORY="$(
+    bootstrap_getStagingRootDirectory
+  )"/"$(generateRandomString)" \
+  || return $?
+
+  mkdir -p "$DOMAIN_BOOTSTRAP_STAGING_DIRECTORY" \
+  || fatal 'Could not create bootstrap staging directory'
+  
+  return $?
+}
+
+### return the name of the staging directory for the bootstrap feature
+bootstrap_getBootstrapStagingDirectory() {
+  info 'getting bootstrap staging directory'
+
+  [ -z "$DOMAIN_BOOTSTRAP_STAGING_DIRECTORY" ] \
+  && error 'bootstrap staging directory has not been initialized' \
+  && return 1
+
+  echo "$DOMAIN_BOOTSTRAP_STAGING_DIRECTORY"
+
+  return $?
+}
+
 ### simply copy the bootstrap dir from share to a temporary staging area
-# TODO : uniform staging area for bootstrap
-bootstrap_fetchInStagingArea() {
+bootstrap_fillBootstrapStagingArea() {
   info 'Copying bootstrap files in bootstrap staging area...'
 
-  cp -r "$CARRIER_SHARE_BOOTSTRAP_DIR" "$CARRIER_TMP_DIR" \
+  find \
+    "$CARRIER_SHARE_BOOTSTRAP_DIR" \
+    ! -name '.' \
+    -exec cp -r {} "$(bootstrap_getBootstrapStagingDirectory)" \; \
   || ( returnCode=$? \
        && fatal 'Unabled to copy bootstrap files in staging area.' \
        && return $returnCode )
+
+  bootstrap_fetchLibInBootstrapStagingArea
 
   return $?
 }
 
 ### copy useful lib script to the temporary staging area where bootstrap file
 ### reside
-# TODO : uniform staging area for bootstrap
-bootstrap_fetchLibInStagingArea() {
+bootstrap_fetchLibInBootstrapStagingArea() {
   info 'Fetching utility file in bootstrap staging area'
 
   cp "$CARRIER_LIB_DIR"/exportPackageTo \
      "$CARRIER_LIB_DIR"/importPackageFrom \
      "$CARRIER_LIB_DIR"/functions.sh \
-     "$CARRIER_TMP_DIR"/bootstrap \
+     "$(bootstrap_getBootstrapStagingDirectory)" \
   || ( returnCode=$? \
        && fatal 'Unabled to copy utilities files in staging area.' \
        && return $returnCode )
@@ -2927,7 +2974,7 @@ bootstrap_fetchLibInStagingArea() {
 bootstrap_build() {
   info 'building bootstrap docker image'
 
-  cd "$CARRIER_TMP_DIR"/bootstrap \
+  cd "$(bootstrap_getBootstrapStagingDirectory)" \
   && docker build --squash -t metabarj0/bootstrap . \
   && docker image prune -f \
   && cd - 1>/dev/null 2>&1 \
@@ -3011,26 +3058,27 @@ EOI
 }
 
 ### once the system is bootstrapped, clean the staging area
-# TODO: uniform staging area mechanics for bootstrap
 bootstrap_cleanupStagingArea() {
   info 'cleaning up the bootstrap staging area'
 
-  rm -rf "$CARRIER_TMP_DIR"/bootstrap
+  rm -rf \
+    "$(bootstrap_getBootstrapStagingDirectory)" \
+  || ( returnCode=$? \
+       && fatal 'could not clean bootstrap staging area' \
+       && return $returnCode ) \
+  || return $?
 
-  local returnCode=$?
+  removeDirectoryIfEmpty "$(bootstrap_getStagingRootDirectory)"
 
-  [ $returnCode -ne 0 ] \
-  && fatal 'Unabled to swipe bootstrap files in staging area.'
-
-  return $returnCode
+  return $?
 }
 
 ### run the full bootstrap procedure
 bootstrap_run() {
   info 'Running the bootstrap procedure'
 
-  bootstrap_fetchInStagingArea \
-  && bootstrap_fetchLibInStagingArea \
+  bootstrap_initializeBootstrapStagingDirectory \
+  && bootstrap_fillBootstrapStagingArea \
   && bootstrap_build \
   && bootstrap_run_image \
   && bootstrap_cleanupStagingArea
@@ -3468,6 +3516,7 @@ image_getStagingRootDirectory() {
   info 'getting root staging directory'
 
   echo "${CARRIER_TMP_DIR}"/image
+
   return $?
 }
 
@@ -3507,6 +3556,7 @@ image_getImageBuildStagingDirectory() {
 
 ### fill the staging area with file necessary to build the image and its
 ### dependencies
+# TODO: refacto this function
 image_fillImageBuildStagingArea() {
   info 'filling image build staging area'
 

@@ -416,7 +416,7 @@ EOI
   REPOSITORY=$(docker images metabarj0/docker-cli -q)
 
   if [ $REPOSITORY ]; then
-    docker rmi docker-cli
+    docker rmi metabarj0/docker-cli
   fi
 
   docker build --squash -t metabarj0/docker-cli -f Dockerfile.docker-cli .
