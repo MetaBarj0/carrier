@@ -4166,10 +4166,33 @@ EOI
   return $?
 }
 
+### final operation of the service Dockerfile construction: write all section
+### to the Dockerfile plus some stuff
+### $1: build stages of all service dependencies
+### $2: appliance specific build stages
+### $3: service dependencies import build stages
+appliance_writeToServiceDockerfile() {
+  info 'writing the appliance service Dockerfile'
+
+  local dependencies_build_stages="$1"
+  local appliance_build_stage="$2"
+  local appliance_image_imports="$3"
+
+  cat << EOI > "${APPLIANCE_STAGING_DIRECTORY}"/Dockerfile
+$dependencies_build_stages
+$appliance_build_stage
+$appliance_image_imports
+RUN rm /usr/local/bin/importPackageFrom
+$EXTRA_DOCKERFILE_COMMANDS
+EOI
+
+  return $?
+}
+
 ### Generate the entire Dockerfile of an image of the appliance, relying on the
 ### content of the manifest file and values computed by the process of
 ### appliance building.
-appliance_compileDockerfile() {
+appliance_compileServiceDockerfile() {
   info 'compiling appliance docker file'
 
   # create a map between image used in build stages and their alias that will be
@@ -4187,17 +4210,10 @@ appliance_compileDockerfile() {
   && local appliance_image_imports="$(
     appliance_createDockerfileImportBuildStages \
       "$names_aliases_map")" \
-  || return $?
-
-  # final step, create the Dockerfile and appending the
-  # EXTRA_DOCKERFILE_COMMANDS
-  cat << EOI > "${APPLIANCE_STAGING_DIRECTORY}"/Dockerfile
-$dependencies_build_stages
-$appliance_build_stage
-$appliance_image_imports
-RUN rm /usr/local/bin/importPackageFrom
-$EXTRA_DOCKERFILE_COMMANDS
-EOI
+  && appliance_writeToServiceDockerfile \
+    "$dependencies_build_stages" \
+    "$appliance_build_stage" \
+    "$appliance_image_imports"
 
   return $?
 }
@@ -4383,7 +4399,7 @@ EOI
     # finally unset all global variables set by the build context function call
     appliance_callBuildContextFunction "$function_name" \
     && appliance_checkRequiredImages \
-    && appliance_compileDockerfile \
+    && appliance_compileServiceDockerfile \
     && appliance_buildServiceImage \
     && appliance_unsetBuildContextVariables
 
