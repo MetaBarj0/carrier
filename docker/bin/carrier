@@ -3706,7 +3706,6 @@ image_fillImageBuildStagingArea() {
 
 ### build current image dependent images after a genuine carrier repository
 ### fetch
-# TODO: look at appliance building if refacto is needed
 image_fetchAndBuildDependentImages() {
   info 'building image dependencies'
 
@@ -4108,18 +4107,14 @@ appliance_compileDockerfile() {
 
   # create a Dockerfile in the appliance staging directory. Using required image
   # specified in the manifest as well as other variables :
-  local dependencies_build_stages=
-  local build_stage=
   local pair=
-  local name=
-  local alias=
   for pair in $names_aliases_map; do
     # extract image name and build stage alias
-    name="$(keyOf "$pair")" \
-    && alias="$(valueOf "$pair")"
+    local name="$(keyOf "$pair")" \
+    && local alias="$(valueOf "$pair")"
 
     # instruction to export the dependency image package
-    build_stage="$(cat << EOI
+    local build_stage="$(cat << EOI
 FROM $name as $alias
 USER root:root
 RUN exportPackageTo /tmp/package
@@ -4127,7 +4122,7 @@ EOI
     )"
 
     # group these instructions together
-    dependencies_build_stages="$(
+    local dependencies_build_stages="$(
       append "$dependencies_build_stages" \
              "$build_stage" \
              $'\n'
