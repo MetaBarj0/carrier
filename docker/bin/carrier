@@ -3467,48 +3467,8 @@ image_factorize() {
 image_checkManifestPathOrName() {
   info 'checking manifest file path or name'
 
-  local argument_error_message="$(
-  cat << EOI
-Error: Bad argument specified.
-Expected is either :
-- an absolute path to a manifest file of a docker image project located in the
-  docker/share/images directory
-- a relative path from your current directory to a manifest file of a docker
-  image project located in the docker/share/images directory
-- the name of the directory of the docker image project you want to build,
-  located in the docker/share/images directory
-
-Taking theses remarks into account should help you to resolve your
-problem
-EOI
-  )"
-
-  # This script needs one argument: either
-  #  - an absolute path to a manifest file
-  #  - a relative path to a manifest file
-  #  - a valid docker image name which can be found in the share/image directory
-  if [ ! $# -eq 1 ]; then
-    error "$argument_error_message"
-    return 1
-  fi
-
-  # try to resolve the manifest file path by:
-  #  - appending it to the current user directory, useful if relative path is
-  #    provided
-  #  - testing directly the file path, useful if absolute path is provided
-  local manifest_arg="$1"
-  if [ ! -f ${USER_DIRECTORY}/"$manifest_arg" ] \
-     && [ ! -f "$manifest_arg" ]; then
-    # not a file path, testing the image name
-    manifest_arg=${CARRIER_SHARE_IMAGES_DIR}/"$1"/manifest
-    if [ ! -f ${manifest_arg} ]; then
-      error "$argument_error_message"
-      return 1
-    fi
-  fi
-
-  # OK, valid argument, exposing the manifest file absolute path
-  MANIFEST_FILE_PATH=${manifest_arg}
+  MANIFEST_FILE_PATH="$(
+    getManifestFileFullPath 'image' "$1")"
 
   return $?
 }
@@ -3749,7 +3709,6 @@ image_fillImageBuildStagingArea() {
 image_buildImageAndDependencies() {
   info 'building image and its dependencies if any'
 
-  return 0
   # source the content of the manifest file, that will initialize some useful
   # variables
   . $MANIFEST_FILE_PATH
@@ -3824,9 +3783,86 @@ image_build() {
 
   return $returnCode
 }
+
+### gets the full path of a manifest file for an image.
+### $1: may be either:
+###     - a full path to a manifest file
+###     - a relative path to a manifest file from where carrier was invoked
+###     - an image name
+image_getManifestFileFullPath() {
+  info 'getting the full path of an image manifest file'
+
+  # try to resolve the manifest file path by:
+  #  - appending it to the current user directory, useful if relative path is
+  #    provided
+  #  - testing directly the file path, useful if absolute path is provided
+  local manifest_arg="$1"
+  if [ ! -f "${USER_DIRECTORY}"/"$manifest_arg" ] \
+     && [ ! -f "$manifest_arg" ]; then
+    # not a file path, testing the image name
+    manifest_arg="${CARRIER_SHARE_IMAGES_DIR}"/"$manifest_arg"/manifest
+    if [ ! -f "${manifest_arg}" ]; then
+      error 'invalid manifest file path or image name specified'
+      return 1
+    fi
+  fi
+
+  echo "$manifest_arg"
+
+  return $?
+}
 #### End of image domain specific functions
 
+#### common between appliance and image domain specific functions
+
+### get the full manifest file path if the provided argument is correct
+### $1: type of manifest file path to reolve (appliance or image)
+### $2: may be either:
+###     - a full path to a manifest file
+###     - a relative path to a manifest file from where carrier was invoked
+###     - an image or an appliance name
+getManifestFileFullPath() {
+  info 'resolving a manifest file full path'
+
+  if [ "$1" = 'image' ]; then
+    echo "$(image_getManifestFileFullPath "$2")"
+    return $?
+  elif [ "$1" = 'appliance' ]; then
+    echo "$(appliance_getManifestFileFullPath "$2")"
+    return $?
+  fi
+}
+#### End of common between appliance and image domain specific functions
+
 #### appliance domain specific functions
+
+### gets the full path of a manifest file for an appliance.
+### $1: may be either:
+###     - a full path to a manifest file
+###     - a relative path to a manifest file from where carrier was invoked
+###     - an appliance name
+appliance_getManifestFileFullPath() {
+  info 'getting appliance manifest file full path'
+
+  # try to resolve the manifest file path by:
+  #  - appending it to the current user directory, useful if relative path is
+  #    provided
+  #  - testing directly the file path, useful if absolute path is provided
+  local manifest_arg="$1"
+  if [ ! -f "${USER_DIRECTORY}"/"$manifest_arg" ] \
+     && [ ! -f "$manifest_arg" ]; then
+    # not a file path, testing the appliance name
+    manifest_arg="${CARRIER_SHARE_APPLIANCES_DIR}"/"$manifest_arg"/manifest
+    if [ ! -f "${manifest_arg}" ]; then
+      error 'invalid manifest file path or appliance name specified'
+      return 1
+    fi
+  fi
+
+  echo "$manifest_arg"
+
+  return $?
+}
 
 ### source and validate (or invalidate) the appliance's manifest file. Ensure
 ### all mandatory variables are set. This is not a deep validation, this
@@ -3872,24 +3908,8 @@ EOI
 appliance_checkArgument() {
   info 'checking argument of the appliance domain invocation'
 
-  # try to resolve the manifest file path by:
-  #  - appending it to the current user directory, useful if relative path is
-  #    provided
-  #  - testing directly the file path, useful if absolute path is provided
-  # TODO : refactor that, same mechanics for image building
-  local manifest_arg="$1"
-  if [ ! -f "${USER_DIRECTORY}"/"$manifest_arg" ] \
-     && [ ! -f "$manifest_arg" ]; then
-    # not a file path, testing the appliance name
-    manifest_arg="${CARRIER_SHARE_APPLIANCES_DIR}"/"$manifest_arg"/manifest
-    if [ ! -f "${manifest_arg}" ]; then
-      error 'invalid manifest file path or appliance name specified'
-      return 1
-    fi
-  fi
-
-  # OK, valid argument, exposing the manifest file absolute path
-  MANIFEST_FILE_PATH="${manifest_arg}"
+  MANIFEST_FILE_PATH="$(
+    getManifestFileFullPath 'appliance' "$1")"
 
   return $?
 }
