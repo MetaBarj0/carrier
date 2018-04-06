@@ -3553,7 +3553,7 @@ image_buildDependencies() {
     && return $returnCode
   done
 
-  return $?
+  return 0
 }
 
 ### gives the root directory of staging area used for image domain commands
@@ -3741,10 +3741,9 @@ image_buildImageAndDependencies() {
   local returnCode=$?
 
   [ $returnCode -ne 0 ] \
-  && error 'could not build image providing '"$PROVIDES" \
-  && return 1
+  && error 'could not build image providing '"$PROVIDES"
 
-  return 0
+  return $returnCode
 }
 
 ### when the build is complete, cleanup the staging area
