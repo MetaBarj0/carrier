@@ -4125,6 +4125,19 @@ EOI
   return $?
 }
 
+### create this appliance specific build stages
+appliance_createOwnBuildStages() {
+  info 'creating appliance specific build stages'
+
+  cat << EOI
+FROM $BASE_IMAGE as final
+RUN mkdir -p /usr/local/bin/
+COPY importPackageFrom /usr/local/bin
+EOI
+
+  return $?
+}
+
 ### Generate the entire Dockerfile of an image of the appliance, relying on the
 ### content of the manifest file and values computed by the process of
 ### appliance building.
@@ -4140,15 +4153,10 @@ appliance_compileDockerfile() {
     appliance_createDockerfileDependenciesBuildStages \
       "$names_aliases_map"
     )" \
+  && local appliance_build_stage="$(
+    appliance_createOwnBuildStages
+    )" \
   || return $?
-
-  # copy tooling to extract dependencies' packages
-  local appliance_build_stage="$(cat << EOI
-FROM $BASE_IMAGE as final
-RUN mkdir -p /usr/local/bin/
-COPY importPackageFrom /usr/local/bin
-EOI
-  )"
 
   # import each dependency image package
   local appliance_image_imports=
