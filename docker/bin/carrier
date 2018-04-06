@@ -4126,7 +4126,7 @@ EOI
 }
 
 ### create this appliance specific build stages
-appliance_createOwnBuildStages() {
+appliance_createDockerfileOwnBuildStages() {
   info 'creating appliance specific build stages'
 
   cat << EOI
@@ -4134,6 +4134,34 @@ FROM $BASE_IMAGE as final
 RUN mkdir -p /usr/local/bin/
 COPY importPackageFrom /usr/local/bin
 EOI
+
+  return $?
+}
+
+appliance_createDockerfileImportBuildStages() {
+  info 'creating Dockerfile import build stage for appliance service image'
+
+  local names_aliases_map="$1"
+
+  # results
+  local appliance_image_imports=
+  for pair in $names_aliases_map; do
+    # extract build stage alias
+    local alias="$(valueOf "$pair")" \
+    && local dependency_import="$(cat << EOI
+COPY --from=$alias /tmp/package /tmp/
+RUN importPackageFrom /tmp/package
+EOI
+    )" \
+    && appliance_image_imports="$(
+      append "$appliance_image_imports" \
+             "$dependency_import" \
+             $'\n'
+      )" \
+      || return $?
+  done
+
+  echo "$appliance_image_imports"
 
   return $?
 }
@@ -4154,32 +4182,12 @@ appliance_compileDockerfile() {
       "$names_aliases_map"
     )" \
   && local appliance_build_stage="$(
-    appliance_createOwnBuildStages
+    appliance_createDockerfileOwnBuildStages
     )" \
+  && local appliance_image_imports="$(
+    appliance_createDockerfileImportBuildStages \
+      "$names_aliases_map")" \
   || return $?
-
-  # import each dependency image package
-  local appliance_image_imports=
-  local dependency_import=
-  for pair in $names_aliases_map; do
-    # extract build stage alias
-    alias="$(valueOf "$pair")"
-
-    # create import instruction for each dependency
-    dependency_import="$(cat << EOI
-COPY --from=$alias /tmp/package /tmp/
-RUN importPackageFrom /tmp/package
-EOI
-    )"
-
-    # aggregate them
-    appliance_image_imports="$(
-      append "$appliance_image_imports" \
-             "$dependency_import" \
-             $'\n'
-      )" \
-      || return $?
-  done
 
   # final step, create the Dockerfile and appending the
   # EXTRA_DOCKERFILE_COMMANDS
