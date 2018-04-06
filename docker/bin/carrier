@@ -3704,25 +3704,29 @@ image_fillImageBuildStagingArea() {
   return $?
 }
 
-### attempt to build the image and all of its dependencies
-image_buildImageAndDependencies() {
-  info 'building image and its dependencies if any'
+### build current image dependent images after a genuine carrier repository
+### fetch
+# TODO: look at appliance building if refacto is needed
+image_fetchAndBuildDependentImages() {
+  info 'building image dependencies'
 
-  # source the content of the manifest file, that will initialize some useful
-  # variables
-  . $MANIFEST_FILE_PATH
-
-  # build all dependencies of this project first if there are
   if [ ! -z "$REQUIRES" ]; then
     info 'fetching genuine carrier repository...'
 
     fetchManifestImageContent \
       $DOMAIN_IMAGE_COMMAND_BUILD_IMAGE_STAGING_DIRECTORY \
-    && image_buildDependencies \
-    || return $?
+    && image_buildDependencies
   fi
 
+  return $?
+}
+
+### once everything is setup, build the requested image
+image_buildImage() {
+  info 'building requested image'
+
   # rely on some variables extracted from the manifest file that was parsed
+  # subshelling necessary because of exec usage
   (
     exec \
       ${DOMAIN_IMAGE_COMMAND_BUILD_IMAGE_STAGING_DIRECTORY}/build.sh \
@@ -3736,6 +3740,20 @@ image_buildImageAndDependencies() {
       "$BASE_IMAGE" \
       "$FINAL_EXTRA_DOCKERFILE_COMMANDS"
   )
+
+  return $?
+}
+
+### attempt to build the image and all of its dependencies
+image_buildImageAndDependencies() {
+  info 'building image and its dependencies if any'
+
+  # source the content of the manifest file, that will initialize some useful
+  # variables
+  . $MANIFEST_FILE_PATH
+
+  image_fetchAndBuildDependentImages \
+  && image_buildImage
 
   local returnCode=$?
 
