@@ -3288,7 +3288,6 @@ image_factorizeMakePairOfFirstTwoElements() {
 
 ### initialize the image.dist file of the base image. It will contains common
 ### files found in the two very first image iterated
-# TODO: check bootstrap cleanup is OK
 image_initializeBaseImageDistFileInStagingArea() {
   info 'Initializing the base image of factorization'
 
@@ -3344,46 +3343,92 @@ image_getImageToFactorizeSequence() {
   return $?
 }
 
-### finalize the image.dist file of the base image and all images to factorize.
-### A first version of base.image.dist file must be present in the staging area
-# TODO : refactor that one
-image_finalizeAllImageDistFileInStagingArea() {
-  info 'finalizing image.dist files'
-
+### gets the base image dist file path after it has been created. If the file
+### does not exist, fatal is triggered
+image_factorizeGetBaseImageDistFile() {
   local base_image_dist_file="$(
     image_getFactorizeStagingDirectory)"/base.image.dist \
   || return $?
 
   if [ ! -f "$base_image_dist_file" ]; then
-    error 'Missing base.image.dist file in staging area'
+    fatal 'Missing base.image.dist file in staging area'
     return 1
   fi
+
+  echo "$base_image_dist_file"
+
+  return $?
+}
+
+### create an image.dist file in the image factorize staging area. THis file is
+### extracted from a docker image, created in the staging area. This function
+### returns the image.dist file path
+image_createImageDistFileFromImageInFactorizeStagingArea() {
+  local image_files_sequence="$(
+    image_extractImageDistFileFromImage "$image"
+  )" \
+  && image_addFileInFactorizeStagingAreaWithContent \
+    'image.dist' \
+    "$image_files_sequence" \
+  && local image_dist_file="$(
+    image_getFactorizeStagingDirectory)"/'image.dist' \
+  || return $?
+
+  echo "$image_dist_file"
+
+  return $?
+}
+
+### internal function computing both a base image dist file and an image dist
+### file by comparing their content. The result is the creation of one dist
+### file for the image and the possible update of the base.image.dist file
+### containing common files accross images
+### $1: the image name to factorize
+### $2: the base image dist file full path
+### $3: the resulting factorizable image.dist file, encoded in path64
+image_computeBaseAndImageDistFilesInFactorizeStagingArea() {
+  [ -z "$1" ] || [ -z "$2" ] || [ -z "$3" ] \
+  && fatal 'cannot factorize, missing argument(s) in internal function call' \
+  && return 1
+
+  local image="$1"
+  local base_image_dist_file="$2"
+  local image_dist_file="$3"
+
+  local path64_image_dist_file_name="$(
+    path64Encode "$image")".dist \
+  && image_addFileInFactorizeStagingAreaWithContent \
+    "$path64_image_dist_file_name" \
+    "$(comm \
+        -1 -3 \
+        "$base_image_dist_file" \
+        "$image_dist_file")" \
+  && image_addFileInFactorizeStagingAreaWithContent \
+    'base.image.dist' \
+    "$(comm \
+        -1 -2 \
+        "$base_image_dist_file" \
+        "$image_dist_file")"
+
+  return $?
+}
+
+### finalize the image.dist file of the base image and all images to factorize.
+### A first version of base.image.dist file must be present in the staging area
+image_finalizeAllImageDistFileInStagingArea() {
+  info 'finalizing image.dist files'
+
+  local base_image_dist_file="$(
+    image_factorizeGetBaseImageDistFile)" \
+  || return $?
 
   local image=
   for image in $(image_getImageToFactorizeSequence); do
     image_checkIfExistsOnDockerHost "$image" \
-    && local image_files_sequence="$(
-      image_extractImageDistFileFromImage "$image"
-    )" \
-    && image_addFileInFactorizeStagingAreaWithContent \
-      'image.dist' \
-      "$image_files_sequence" \
-    && local path64_image_dist_file_name="$(
-      path64Encode "$image")".dist \
     && local image_dist_file="$(
-      image_getFactorizeStagingDirectory)"/'image.dist' \
-    && image_addFileInFactorizeStagingAreaWithContent \
-      "$path64_image_dist_file_name" \
-      "$(comm \
-          -1 -3 \
-          "$base_image_dist_file" \
-          "$image_dist_file")" \
-    && image_addFileInFactorizeStagingAreaWithContent \
-      'base.image.dist' \
-      "$(comm \
-          -1 -2 \
-          "$base_image_dist_file" \
-          "$image_dist_file")" \
+      image_createImageDistFileFromImageInFactorizeStagingArea "$image")" \
+    && image_computeBaseAndImageDistFilesInFactorizeStagingArea \
+      "$image" "$base_image_dist_file" "$image_dist_file" \
     || return $?
   done
   pause
