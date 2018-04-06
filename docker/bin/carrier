@@ -2957,6 +2957,7 @@ bootstrap_fillBootstrapStagingArea() {
 
   find \
     "$CARRIER_SHARE_BOOTSTRAP_DIR" \
+    -type f \
     ! -name '.' \
     -exec cp -r {} "$(bootstrap_getBootstrapStagingDirectory)" \; \
   || ( returnCode=$? \
