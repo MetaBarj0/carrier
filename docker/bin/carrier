@@ -3655,10 +3655,8 @@ image_getImageNameFromDirectoryPath() {
 image_initializeImageToBuildDirectoryInBuildStagingArea() {
   info 'initializing specific image directory in image build staging area'
 
-  if [ ! -z "$DOMAIN_IMAGE_COMMAND_BUILD_IMAGE_STAGING_DIRECTORY" ]; then
-    warning 'image to build staging directory already initialized'
-    return 0
-  fi
+  local staging_directory="$1"
+  local image_name="$2"
 
   DOMAIN_IMAGE_COMMAND_BUILD_IMAGE_STAGING_DIRECTORY=\
 "${staging_directory}"/"$image_name"
@@ -3700,6 +3698,7 @@ image_fillImageBuildStagingArea() {
   && local image_name="$(
     image_getImageNameFromDirectoryPath "$image_directory")" \
   && image_initializeImageToBuildDirectoryInBuildStagingArea \
+    "$staging_directory" "$image_name" \
   && image_copyUtilityFilesInImageBuildStagingArea
 
   return $?
