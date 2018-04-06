@@ -3047,7 +3047,6 @@ EOI
   if [ $remove_bootstrap = 'Y' ] || [ $remove_bootstrap = 'y' ]; then
     docker rmi metabarj0/bootstrap
 
-    # TODO: check returnCode is ALWAYS a local
     local returnCode=$?
 
     [ $returnCode -ne 0 ] \
@@ -3269,48 +3268,52 @@ image_cleanupFactorizeStagingDirectory() {
   return $?
 }
 
-### initialize the image.dist file of the base image. It will contains common
-### files found in the two very first image iterated
-# TODO : that one is to refactor
-image_initializeBaseImageDistFileInStagingArea() {
-  info 'Initializing tha base image of factorization'
-
-  image_initializeImageToFactorizeSequence \
+### extract the first two image in the image to factorize sequence
+image_factorizeMakePairOfFirstTwoElements() {
+  local sequence="$(image_getImageToFactorizeSequence)" \
   || return $?
 
   local image=
-  for image in $(image_getImageToFactorizeSequence); do
+  for image in $sequence; do
     [ -z "$first_image" ] \
     && local first_image="$image" && continue \
     || local second_image="$image" && break
   done
 
-  local first_files_sequence="$(
+  echo "$(makePair "$first_image" "$second_image")"
+
+  return $?
+}
+
+### initialize the image.dist file of the base image. It will contains common
+### files found in the two very first image iterated
+# TODO: check bootstrap cleanup is OK
+image_initializeBaseImageDistFileInStagingArea() {
+  info 'Initializing the base image of factorization'
+
+  image_initializeImageToFactorizeSequence \
+  && local imagePair="$(image_factorizeMakePairOfFirstTwoElements)" \
+  && local first_image="$(keyOf "$imagePair")" \
+  && local second_image="$(valueOf "$imagePair")" \
+  && local first_files_sequence="$(
     image_extractImageDistFileFromImage "$first_image"
   )" \
-  || return $?
-
-  local second_files_sequence="$(
+  && local second_files_sequence="$(
     image_extractImageDistFileFromImage "$second_image"
   )" \
-  ||  return $?
-
-  image_addFileInFactorizeStagingAreaWithContent \
+  && image_addFileInFactorizeStagingAreaWithContent \
     'first_files_sequence.dist' \
     "$first_files_sequence" \
   && image_addFileInFactorizeStagingAreaWithContent \
     'second_files_sequence.dist' \
     "$second_files_sequence" \
-  || return $?
-
-  local common_files_sequence="$(
+  && local common_files_sequence="$(
     extractCommonLinesInTwoFiles \
       "$(image_getFactorizeStagingDirectory)"/first_files_sequence.dist \
       "$(image_getFactorizeStagingDirectory)"/second_files_sequence.dist)" \
   && image_addFileInFactorizeStagingAreaWithContent \
     'base.image.dist' \
-    "$common_files_sequence" \
-  || return $?
+    "$common_files_sequence"
 
   return $?
 }
