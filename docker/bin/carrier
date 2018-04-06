@@ -4091,44 +4091,56 @@ appliance_checkRequiredImages() {
   return 0
 }
 
-### Generate the entire Dockerfile of an image of the appliance, relying on the
-### content of the manifest file and values computed by the process of
-### appliance building.
-appliance_compileDockerfile() {
-  info 'compiling appliance docker file'
+### generate Dockerfile instruction used in an appliance service Dockerfile
+### $1: a map between required images and unique build stage names
+appliance_createDockerfileDependenciesBuildStages() {
+  info 'creating dependent images build stages'
 
-  # TODO refactor this function by breaking it in more atomic parts
-  # create a map between image used in build stages and their alias that will be
-  # used later
-  local names_aliases_map="$(
-    mapImageNamesAndBuildStageAliases "$REQUIRED_IMAGES"
-    )" \
-    || return $?
+  local names_aliases_map="$1"
 
-  # create a Dockerfile in the appliance staging directory. Using required image
-  # specified in the manifest as well as other variables :
+  # result of the operation
+  local dependencies_build_stages=
+
   local pair=
   for pair in $names_aliases_map; do
     # extract image name and build stage alias
     local name="$(keyOf "$pair")" \
-    && local alias="$(valueOf "$pair")"
-
-    # instruction to export the dependency image package
-    local build_stage="$(cat << EOI
+    && local alias="$(valueOf "$pair")" \
+    && local build_stage="$(cat << EOI
 FROM $name as $alias
 USER root:root
 RUN exportPackageTo /tmp/package
 EOI
-    )"
-
-    # group these instructions together
-    local dependencies_build_stages="$(
+    )" \
+    && dependencies_build_stages="$(
       append "$dependencies_build_stages" \
              "$build_stage" \
              $'\n'
     )" \
     || return $?
   done
+
+  echo "$dependencies_build_stages"
+
+  return $?
+}
+
+### Generate the entire Dockerfile of an image of the appliance, relying on the
+### content of the manifest file and values computed by the process of
+### appliance building.
+appliance_compileDockerfile() {
+  info 'compiling appliance docker file'
+
+  # create a map between image used in build stages and their alias that will be
+  # used later
+  local names_aliases_map="$(
+    mapImageNamesAndBuildStageAliases "$REQUIRED_IMAGES"
+    )" \
+  && local dependencies_build_stages="$(
+    appliance_createDockerfileDependenciesBuildStages \
+      "$names_aliases_map"
+    )" \
+  || return $?
 
   # copy tooling to extract dependencies' packages
   local appliance_build_stage="$(cat << EOI
