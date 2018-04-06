@@ -3146,6 +3146,8 @@ image_prepareImageSequenceForFactorization() {
 ### check on the docker host if the image exists.
 ### $1 image name
 image_checkIfExistsOnDockerHost() {
+  info 'checking an image existence on the docker host'
+
   local image="$1"
 
   info 'checking if image '"$image"' exists on the docker host'
@@ -3271,6 +3273,8 @@ image_cleanupFactorizeStagingDirectory() {
 
 ### extract the first two image in the image to factorize sequence
 image_factorizeMakePairOfFirstTwoElements() {
+  info 'making a pair with the first two elements of a sequence'
+
   local sequence="$(image_getImageToFactorizeSequence)" \
   || return $?
 
@@ -3346,6 +3350,8 @@ image_getImageToFactorizeSequence() {
 ### gets the base image dist file path after it has been created. If the file
 ### does not exist, fatal is triggered
 image_factorizeGetBaseImageDistFile() {
+  info 'getting base image dist file path'
+
   local base_image_dist_file="$(
     image_getFactorizeStagingDirectory)"/base.image.dist \
   || return $?
@@ -3364,6 +3370,8 @@ image_factorizeGetBaseImageDistFile() {
 ### extracted from a docker image, created in the staging area. This function
 ### returns the image.dist file path
 image_createImageDistFileFromImageInFactorizeStagingArea() {
+  info 'creating a dist file for an image in staging area'
+
   local image_files_sequence="$(
     image_extractImageDistFileFromImage "$image"
   )" \
@@ -3387,9 +3395,7 @@ image_createImageDistFileFromImageInFactorizeStagingArea() {
 ### $2: the base image dist file full path
 ### $3: the resulting factorizable image.dist file, encoded in path64
 image_computeBaseAndImageDistFilesInFactorizeStagingArea() {
-  [ -z "$1" ] || [ -z "$2" ] || [ -z "$3" ] \
-  && fatal 'cannot factorize, missing argument(s) in internal function call' \
-  && return 1
+  info 'computing image and base image dist files in staging area'
 
   local image="$1"
   local base_image_dist_file="$2"
@@ -3633,36 +3639,75 @@ image_getImageBuildStagingDirectory() {
   return $?
 }
 
-### fill the staging area with file necessary to build the image and its
-### dependencies
-# TODO: refacto this function
-image_fillImageBuildStagingArea() {
-  info 'filling image build staging area'
+### obtains the full image directory given its manifest full path
+### $1: manifest file full path
+image_getImageDirectoryFromManifestFilePath() {
+  info 'getting image directory from manifest file path'
 
   local image_directory="$(dirname $MANIFEST_FILE_PATH)" \
   || ( returnCode=$? \
        && fatal 'Could not get the image directory name' \
-       && return $returnCode ) \
-  || return $?
+       && return $returnCode )
 
-  local staging_directory="$(image_getImageBuildStagingDirectory)" \
-  || return $?
+  echo "$image_directory"
 
-  # copy the project in the staging area
+  return $?
+}
+
+### copy an image directory to the staging area
+### $1: image directory
+### $2: image build staging directory
+image_copyImageDirectoryToImageBuildStagingDirectory() {
+  info 'copying image directory to image build staging area'
+
+  local image_directory="$1"
+  local staging_directory="$2"
+
   cp -a "$image_directory" "$staging_directory" \
   || ( returnCode=$? \
        && fatal 'could not copy image files to staging area' \
-       && return $returnCode ) \
-  || return $?
+       && return $returnCode )
 
-  # copy necessary lib files in the project directory in the staging area
-  local image_name=$(basename $image_directory)
-  DOMAIN_IMAGE_COMMAND_BUILD_IMAGE_STAGING_DIRECTORY=\
-"${staging_directory}"/"$image_name" \
+  return $?
+}
+
+### get an image name from its directory
+### $1: directory full path
+image_getImageNameFromDirectoryPath() {
+  info 'getting image name from its directory path'
+
+  local image_name=$(basename $image_directory) \
   || ( returnCode=$? \
        && fatal 'Could not get the image name' \
        && return $returnCode ) \
   || return $?
+
+  echo "$image_name"
+
+  return $?
+}
+
+### initializes a specific image build staging directory. The directory already
+### exist in the staging area bacause copied beforehand. Creates a shell
+### variable usable in a couple of places
+### $1: image build staging directory
+### $2: image name to build
+image_initializeImageToBuildDirectoryInBuildStagingArea() {
+  info 'initializing specific image directory in image build staging area'
+
+  if [ ! -z "$DOMAIN_IMAGE_COMMAND_BUILD_IMAGE_STAGING_DIRECTORY" ]; then
+    warning 'image to build staging directory already initialized'
+    return 0
+  fi
+
+  DOMAIN_IMAGE_COMMAND_BUILD_IMAGE_STAGING_DIRECTORY=\
+"${staging_directory}"/"$image_name"
+}
+
+### copy some utility files in image directory in image build staging area
+image_copyUtilityFilesInImageBuildStagingArea() {
+  info 'copying utility file in image specific directory in image build '\
+'staging area'
 
   cd $CARRIER_LIB_DIR \
   && cp \
@@ -3682,8 +3727,29 @@ image_fillImageBuildStagingArea() {
   return $?
 }
 
+### fill the staging area with file necessary to build the image and its
+### dependencies
+image_fillImageBuildStagingArea() {
+  info 'filling image build staging area'
+
+  local image_directory="$(
+    image_getImageDirectoryFromManifestFilePath)" \
+  && local staging_directory="$(image_getImageBuildStagingDirectory)" \
+  && image_copyImageDirectoryToImageBuildStagingDirectory \
+    "$image_directory" "$staging_directory" \
+  && local image_name="$(
+    image_getImageNameFromDirectoryPath "$image_directory")" \
+  && image_initializeImageToBuildDirectoryInBuildStagingArea \
+  && image_copyUtilityFilesInImageBuildStagingArea
+
+  return $?
+}
+
 ### attempt to build the image and all of its dependencies
 image_buildImageAndDependencies() {
+  info 'building image and its dependencies if any'
+
+  return 0
   # source the content of the manifest file, that will initialize some useful
   # variables
   . $MANIFEST_FILE_PATH
