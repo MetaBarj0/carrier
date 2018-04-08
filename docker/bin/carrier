@@ -4223,19 +4223,21 @@ appliance_compileServiceDockerfile() {
 appliance_buildServiceImage() {
   info 'Building appliance service image'
 
+  local image_name="$1"
+
   # now we have a dockerfile, we just have to use it to build the appliance
   # image, go to the build context
 
   # build a squashed image, docker compose can't do that yet
   # then cleanup intermediate images, docker compose don't do that yet
   cd "$APPLIANCE_STAGING_DIRECTORY" \
-  && docker build --squash -t "$IMAGE_NAME" . \
+  && docker build --squash -t "$image_name" . \
   && docker image prune -f \
   && cd "$USER_DIRECTORY"
 
   local returnCode=$?
   [ $returnCode -ne 0 ] \
-  && fatal 'could not build service '"$IMAGE_NAME" \
+  && fatal 'could not build service '"$image_name" \
   && return $returnCode
 
   return 0
@@ -4265,6 +4267,7 @@ appliance_cleanupStagingArea() {
 ### source the specified function, exposing global variables useful to build a
 ### service image.
 ### $1 : function name
+# TODO: refacto the entire appliance flow
 appliance_callBuildContextFunction() {
   info 'calling build context function '"$1"
 
@@ -4305,7 +4308,6 @@ EOI
 appliance_unsetBuildContextVariables() {
   info 'unsetting build context'
 
-  unset IMAGE_NAME
   unset BASE_IMAGE
   unset REQUIRED_IMAGES
   unset EXTRA_DOCKERFILE_COMMANDS
@@ -4341,25 +4343,26 @@ EOI
   # iterate through each pair of image name/function to build
   local pair_element=
   local function_name=
+  local image_name=
   for pair_element in $pairSequence; do
-    IMAGE_NAME="$(keyOf "$pair_element")" \
+    image_name="$(keyOf "$pair_element")" \
     && function_name="$(valueOf "$pair_element")" \
     || return $?
 
     # image already exists, nothing to do
-    local repository_id="$(docker image ls -q "$IMAGE_NAME")"
+    local repository_id="$(docker image ls -q "$image_name")"
 
     local returnCode=$?
 
     [ $returnCode -ne 0 ] \
-    && fatal 'could not query '"$IMAGE_NAME"' on the docker host' \
+    && fatal 'could not query '"$image_name"' on the docker host' \
     && return $returnCode
 
     if [ ! -z "$repository_id" ]; then
-      info 'appliance service '"$IMAGE_NAME"' already exists'
+      info 'appliance service '"$image_name"' already exists'
 
       # some global variable have been set, rollback context
-      IMAGE_NAME=
+      image_name=
       function_name=
       continue
     fi
@@ -4374,7 +4377,7 @@ EOI
     appliance_callBuildContextFunction "$function_name" \
     && appliance_checkRequiredImages \
     && appliance_compileServiceDockerfile \
-    && appliance_buildServiceImage \
+    && appliance_buildServiceImage "$image_name" \
     && appliance_unsetBuildContextVariables
 
     returnCode=$?
