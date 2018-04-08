@@ -4340,16 +4340,12 @@ EOI
     makePairSequence "$COMPOSE_BUILD_CONTEXT")" \
   || return $?
 
-  # iterate through each pair of image name/function to build
   local pair_element=
-  local function_name=
-  local image_name=
   for pair_element in $pairSequence; do
-    image_name="$(keyOf "$pair_element")" \
-    && function_name="$(valueOf "$pair_element")" \
+    local image_name="$(keyOf "$pair_element")" \
+    && local function_name="$(valueOf "$pair_element")" \
     || return $?
 
-    # image already exists, nothing to do
     local repository_id="$(docker image ls -q "$image_name")"
 
     local returnCode=$?
@@ -4360,20 +4356,9 @@ EOI
 
     if [ ! -z "$repository_id" ]; then
       info 'appliance service '"$image_name"' already exists'
-
-      # some global variable have been set, rollback context
-      image_name=
-      function_name=
       continue
     fi
 
-    # validate and run the function, exposing global variables to build the
-    # image
-    # then, check if requested docker images are built. If not, the system will
-    # attempt to build them.
-    # then, generate the dockerfile to build the appliance docker image
-    # then, build the image
-    # finally unset all global variables set by the build context function call
     appliance_callBuildContextFunction "$function_name" \
     && appliance_checkRequiredImages \
     && appliance_compileServiceDockerfile \
@@ -4385,9 +4370,6 @@ EOI
     [ $returnCode -ne 0 ] \
     && error 'Appliance service image build failed at some point' \
     && return $returnCode
-
-    # resetting the function name, for one more iteration
-    function_name=
   done
 
   return 0
