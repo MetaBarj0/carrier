@@ -66,6 +66,7 @@ makePair() {
   echo "$1"'='"$2"
 }
 
+# verify iss given argument is a pair
 isPair() {
   if [ -z "$1" ]; then
     error 'No argument specified...exiting...'
@@ -662,4 +663,40 @@ path64Decode() {
   local decoded="$(printf "$1" | sed 's/-/\//g' | base64 -d)"
 
   echo "$decoded"
+}
+
+# create a sequence of pair with the given sequence. If the element count of
+# the sequence is odd, this function fails
+# $1: a sequence to transform into a sequence of pair
+makePairSequence() {
+  if [ -z "$1" ]; then
+    error 'no sequence specified.'
+    return 1
+  fi
+
+  local key=
+  local value=
+  local pair=
+  local pairSequence=
+
+  local item=
+  for item in $1; do
+    [ -z "$key" ] && key="$item" && continue \
+    || value="$item"
+
+    pair="$(makePair "$key" "$value")"
+    pairSequence="$(
+      append "$pairSequence" "$pair" $'\n')"
+
+    key=
+    value=
+  done
+
+  # non empty key denote a malformed sequence containing an odd count of element
+  [ -z "$key" ] \
+  || return $?
+
+  echo "$pairSequence"
+
+  return $?
 }

@@ -4313,6 +4313,7 @@ appliance_unsetBuildContextVariables() {
   return $?
 }
 
+# TODO: make sure errors are good with image build when check manifest
 ### this function will build each and every image that are needed to build each
 ### service of the appliance. It relies on the content of the manifest file
 ### that has been source and roughly validated
@@ -4333,44 +4334,17 @@ problem
 EOI
 )"
 
+  local pairSequence="$(
+    makePairSequence "$COMPOSE_BUILD_CONTEXT")" \
+  || return $?
+
   # iterate through each pair of image name/function to build
   local pair_element=
   local function_name=
-  for pair_element in $COMPOSE_BUILD_CONTEXT; do
-    # extract pair's elements
-    if [ -z "$IMAGE_NAME" ]; then
-      # first, verify current pair_element
-      if [ -z "$pair_element" ]; then
-        error "$(cat << EOI
-Error: Cannot read the image name in the definition of COMPOSE_BUILD_CONTEXT in
-your appliance manifest file.
-$part_error_message
-EOI
-        )"
-        return 1
-      fi
-
-      # extracting the image name
-      IMAGE_NAME="$pair_element"
-
-      # loop at once to get the function name
-      continue
-    else
-      # image name is set, assuming we are reading a function name but first,
-      # make a check
-      if [ -z "$pair_element" ]; then
-        error "$(cat << EOI
-Error: Cannot read the function name in the definition of COMPOSE_BUILD_CONTEXT
-in your appliance manifest file.
-$part_error_message
-EOI
-        )"
-        return 1
-      fi
-
-      # extracting the function name
-      function_name="$pair_element"
-    fi
+  for pair_element in $pairSequence; do
+    IMAGE_NAME="$(keyOf "$pair_element")" \
+    && function_name="$(valueOf "$pair_element")" \
+    || return $?
 
     # image already exists, nothing to do
     local repository_id="$(docker image ls -q "$IMAGE_NAME")"
