@@ -192,7 +192,12 @@ getPackageFiles() {
   # get the image.dist file from the image, bypassing registered entrypoint if
   # any
   local dist_file_content="$(
-    docker run --rm --entrypoint='' "$image" cat /image.dist 2> /dev/null)"
+    docker run \
+    -u root \
+    --rm \
+    --entrypoint='' \
+    "$image" \
+    cat /image.dist 2> /dev/null)"
 
   # error while querying image.dist file content
   if [ ! $? -eq 0 ]; then

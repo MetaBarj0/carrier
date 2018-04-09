@@ -3177,6 +3177,7 @@ image_extractImageDistFileFromImage() {
 
   local file_sequence="$(
     docker run \
+      -u root \
       --rm \
       --entrypoint '' \
       "$1" cat /image.dist \
@@ -3828,7 +3829,7 @@ image_getManifestFileFullPath() {
 }
 #### End of image domain specific functions
 
-#### common between appliance and image domain specific functions
+#### common cross-domain functions
 
 ### get the full manifest file path if the provided argument is correct
 ### $1: type of manifest file path to reolve (appliance or image)
@@ -3847,7 +3848,34 @@ getManifestFileFullPath() {
     return $?
   fi
 }
-#### End of common between appliance and image domain specific functions
+
+### query the docker host for a specific image name. If the image exists on the
+### docker host, its id is echoed. If the image does not exist on the docker
+### host, an empty output is echoed. If an error occurs while querying the
+### docker host, an error code is returned
+getDockerImageIdIfExists() {
+  info 'looking for an image on the docker host'
+
+  [ -z "$1" ] \
+  && error 'docker image name unspecified. Cannot query the docker host' \
+  && return 1
+
+  local image_name="$1"
+
+  local repository_id="$(docker image ls -q "$image_name")"
+
+  local returnCode=$?
+
+  [ $returnCode -ne 0 ] \
+  && fatal 'could not query '"$image_name"' on the docker host' \
+  && return $returnCode
+
+  echo "$repository_id"
+
+  return $?
+}
+
+#### End of common cross-domain functions
 
 #### appliance domain specific functions
 
@@ -4319,22 +4347,8 @@ appliance_unsetBuildContextVariables() {
 ### this function will build each and every image that are needed to build each
 ### service of the appliance. It relies on the content of the manifest file
 ### that has been source and roughly validated
-# TODO: Refacto!
 appliance_buildServiceImages() {
   info 'building appliance service image'
-
-  # a common part of an error message
-  local part_error_message="$(cat << EOI
-Make sure that the COMPOSE_BUILD_CONTEXT variable is defined like following :
-
-  COMPOSE_BUILD_CONTEXT="image_name1 function_name1
-image_name2 function_name2
-image_name3 function_name3" and so on...
-
-Taking this remark into account should help you to resolve your
-problem
-EOI
-)"
 
   local pairSequence="$(
     makePairSequence "$COMPOSE_BUILD_CONTEXT")" \
@@ -4343,23 +4357,16 @@ EOI
   local pair_element=
   for pair_element in $pairSequence; do
     local image_name="$(keyOf "$pair_element")" \
-    && local function_name="$(valueOf "$pair_element")" \
+    && local repository_id="$(getDockerImageIdIfExists "$image_name")" \
     || return $?
-
-    local repository_id="$(docker image ls -q "$image_name")"
-
-    local returnCode=$?
-
-    [ $returnCode -ne 0 ] \
-    && fatal 'could not query '"$image_name"' on the docker host' \
-    && return $returnCode
 
     if [ ! -z "$repository_id" ]; then
       info 'appliance service '"$image_name"' already exists'
       continue
     fi
 
-    appliance_callBuildContextFunction "$function_name" \
+    local function_name="$(valueOf "$pair_element")" \
+    && appliance_callBuildContextFunction "$function_name" \
     && appliance_checkRequiredImages \
     && appliance_compileServiceDockerfile \
     && appliance_buildServiceImage "$image_name" \
