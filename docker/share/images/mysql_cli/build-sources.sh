@@ -17,7 +17,7 @@ include '/usr/local/mysql/bin/mysql'
 collectSharedObjectDependencies
 
 # ncurses used
-include '/usr/share/terminfo'
+include '/usr/local/share/terminfo'
 
 # finalizing the package
 finalizePackage

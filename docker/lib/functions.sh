@@ -179,7 +179,7 @@ getPackageFiles() {
   local image=$(docker image ls -q "$1")
 
   if [ -z "$image" ]; then
-    error 'Inexisting docker image: '"$image"'...exiting...'
+    error 'Inexisting docker image: '"$1"'...exiting...'
     return 1
   fi
 
