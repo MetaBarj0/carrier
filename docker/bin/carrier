@@ -3840,13 +3840,9 @@ image_getManifestFileFullPath() {
 getManifestFileFullPath() {
   info 'resolving a manifest file full path'
 
-  if [ "$1" = 'image' ]; then
-    echo "$(image_getManifestFileFullPath "$2")"
-    return $?
-  elif [ "$1" = 'appliance' ]; then
-    echo "$(appliance_getManifestFileFullPath "$2")"
-    return $?
-  fi
+  echo "$("$1"_getManifestFileFullPath "$2")"
+
+  return $?
 }
 
 ### query the docker host for a specific image name. If the image exists on the
