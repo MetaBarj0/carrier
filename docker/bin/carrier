@@ -3637,7 +3637,6 @@ image_copyImageDirectoryToImageBuildStagingDirectory() {
 image_getImageNameFromDirectoryPath() {
   info 'getting image name from its directory path'
 
-  # TODO: validate that!
   local image_directory="$1"
 
   local image_name=$(basename $image_directory) \
