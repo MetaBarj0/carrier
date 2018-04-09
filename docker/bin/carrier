@@ -3637,6 +3637,9 @@ image_copyImageDirectoryToImageBuildStagingDirectory() {
 image_getImageNameFromDirectoryPath() {
   info 'getting image name from its directory path'
 
+  # TODO: validate that!
+  local image_directory="$1"
+
   local image_name=$(basename $image_directory) \
   || ( returnCode=$? \
        && fatal 'Could not get the image name' \
@@ -3970,40 +3973,105 @@ appliance_getApplianceDirectoryFromManifestFilePath() {
   return $?
 }
 
-### put all necessary files intor the being built appliance staging directory.
-appliance_fillStagingArea() {
-  info 'filling appliance staging area'
+### get the specific appliance being managed staging directory. The directory
+### must has been initialized beforehand
+appliance_getApplianceStagingDirectory() {
+  info 'getting appliance staging directory'
 
-  # create the intermediate appliance directory in the staging area if it does
-  # not already exist
-  local appliance_directory="$(
-    appliance_getApplianceDirectoryFromManifestFilePath \
-    "$MANIFEST_FILE_PATH")" \
-  && local staging_directory=${CARRIER_TMP_DIR}/appliances \
-  && APPLIANCE_STAGING_DIRECTORY="${staging_directory}"/"$APPLIANCE_NAME" \
-  || ( returnCode=$? \
-       && error 'Could not setup appliance staging directory' \
-       && return $returnCode ) \
-  || return $?
+  [ -z "$APPLIANCE_STAGING_DIRECTORY" ] \
+  && error 'appliance staging directory has not been initialized' \
+  && return 1
 
-  # sanitize the staging area if it does already exist
-  rm -rf "$APPLIANCE_STAGING_DIRECTORY" \
-  && mkdir -p "$staging_directory" \
-  && cp -a "$appliance_directory" "$staging_directory" \
+  echo "$APPLIANCE_STAGING_DIRECTORY"
+
+  return $?
+}
+
+### copy the directory of the appliance being managed into the appliance
+### staging area directory
+### $1: appliance directory
+### $2: staging area directory
+appliance_copyApplianceDirectoryToApplianceStagingArea() {
+  info 'copying appliance files into the appliance staging directory'
+
+  local appliance_directory="$1"
+
+  cp -a "$appliance_directory" "$(appliance_getApplianceStagingDirectory)" \
   || ( returnCode=$? \
        && error 'could not copy appliance files into staging area' \
        && return $returnCode )
 
-  # copy necessary lib files in the project directory in the staging area
+  return $?
+}
+
+### copy utility files in lib/directory to the appliance staging directory
+appliance_copyUtilityFilesToApplianceStagingDirectory() {
+  info 'copying utility files into the appliance staging directory'
+
   cd "$CARRIER_LIB_DIR" \
   && cp \
     .dockerignore \
     exportPackageTo \
     functions.sh \
     importPackageFrom \
-    "$APPLIANCE_STAGING_DIRECTORY" \
+    "$APPLIANCE_NAMED_STAGING_DIRECTORY" \
   && cd "$USER_DIRECTORY" \
-  || fatal 'could not copy utility files into staging area'
+  || ( returnCode=$? \
+       && fatal 'could not copy utility files into staging area' \
+       && return $returnCode )
+
+  return $?
+}
+
+### obtains the appliance name from its directory
+### $1: appliance directory absolute path
+appliance_getApplianceNameFromDirectoryPath() {
+  info 'getting appliance name from its directory path'
+
+  local appliance_directory="$1"
+
+  local appliance_name=$(basename $appliance_directory) \
+  || ( returnCode=$? \
+       && fatal 'Could not get the appliance name' \
+       && return $returnCode ) \
+  || return $?
+
+  echo "$appliance_name"
+
+  return $?
+}
+
+### initializes a specific appliance staging directory. The directory already
+### exist in the staging area bacause copied beforehand. Creates a shell
+### variable usable in a couple of places
+### $1: appliance staging directory
+### $2: appliance name to manage
+appliance_initializeApplianceDirectoryInStagingArea() {
+  info 'initializing specific appliance directory in staging area'
+
+  local staging_directory="$1"
+  local appliance_name="$2"
+
+  APPLIANCE_NAMED_STAGING_DIRECTORY=\
+"${staging_directory}"/"$appliance_name"
+}
+
+### put all necessary files into the being built appliance staging directory.
+appliance_fillStagingArea() {
+  info 'filling appliance staging area'
+
+  local appliance_directory="$(
+    appliance_getApplianceDirectoryFromManifestFilePath \
+    "$MANIFEST_FILE_PATH")" \
+  && local staging_directory="$(
+    appliance_getApplianceStagingDirectory)" \
+  && local appliance_name="$(
+    appliance_getApplianceNameFromDirectoryPath "$appliance_directory")" \
+  && appliance_copyApplianceDirectoryToApplianceStagingArea \
+    "$appliance_directory" \
+  && appliance_initializeApplianceDirectoryInStagingArea \
+    "$staging_directory" "$appliance_name" \
+  && appliance_copyUtilityFilesToApplianceStagingDirectory
 
   return $?
 }
@@ -4219,7 +4287,7 @@ appliance_writeToServiceDockerfile() {
   local appliance_build_stage="$2"
   local appliance_image_imports="$3"
 
-  cat << EOI > "${APPLIANCE_STAGING_DIRECTORY}"/Dockerfile
+  cat << EOI > "${APPLIANCE_NAMED_STAGING_DIRECTORY}"/Dockerfile
 $dependencies_build_stages
 $appliance_build_stage
 $appliance_image_imports
@@ -4271,7 +4339,7 @@ appliance_buildServiceImage() {
 
   # build a squashed image, docker compose can't do that yet
   # then cleanup intermediate images, docker compose don't do that yet
-  cd "$APPLIANCE_STAGING_DIRECTORY" \
+  cd "$APPLIANCE_NAMED_STAGING_DIRECTORY" \
   && docker build --squash -t "$image_name" . \
   && docker image prune -f \
   && cd "$USER_DIRECTORY"
@@ -4286,23 +4354,18 @@ appliance_buildServiceImage() {
 
 ### cleanup the appliance staging area when the build is complete
 appliance_cleanupStagingArea() {
-  if [ -d "$APPLIANCE_STAGING_DIRECTORY" ]; then
-    rm -rf "$APPLIANCE_STAGING_DIRECTORY" \
-    || ( returnCode=$? \
-         && error 'could not remove appliance staging directory' \
-         && return $returnCode ) \
-    || return $?
-  fi
+  rm -rf "$(appliance_getApplianceStagingDirectory)" \
+  || ( returnCode=$? \
+        && error 'could not remove appliance staging directory' \
+        && return $returnCode ) \
+  || return $?
 
-  if [ -z "$(ls "${CARRIER_TMP_DIR}"/appliances)" ]; then
-    rm -r "${CARRIER_TMP_DIR}"/appliances \
-    || ( returnCode=$? \
-         && error 'could not remove appliance staging directory' \
-         && return $returnCode ) \
-    || return $?
-  fi
+  removeDirectoryIfEmpty "$(appliance_getStagingRootDirectory)" \
+  || return $?
 
-  return 0
+  APPLIANCE_STAGING_DIRECTORY=
+
+  return $?
 }
 
 ### source the specified function, exposing global variables useful to build a
@@ -4393,12 +4456,42 @@ appliance_buildServiceImages() {
   return 0
 }
 
+### gets the root directory of appliance staging area
+appliance_getStagingRootDirectory() {
+  info 'getting the root appliance staging area directory'
+
+  echo "${CARRIER_TMP_DIR}"/appliance
+
+  return $?
+}
+
+### initializes the appliance staging directory for further uses
+appliance_initializeApplianceStagingDirectory() {
+  info 'Initializing appliance staging directory'
+
+  if [ ! -z "$APPLIANCE_STAGING_DIRECTORY" ]; then
+    warning 'appliance staging already initialized'
+    return 0
+  fi
+
+  APPLIANCE_STAGING_DIRECTORY="$(
+    appliance_getStagingRootDirectory
+  )"/"$(generateRandomString)" \
+  || return $?
+
+  mkdir -p "$APPLIANCE_STAGING_DIRECTORY" \
+  || fatal 'Could not create appliance staging directory'
+  
+  return $?
+}
+
 ### entrypoint of the build command. In finality, create the appliance's docker
 ### image on the docker host.
 appliance_build() {
   info 'building appliance'
 
-  appliance_fillStagingArea \
+  appliance_initializeApplianceStagingDirectory \
+  && appliance_fillStagingArea \
   && appliance_buildServiceImages \
   && appliance_cleanupStagingArea
 
@@ -4418,6 +4511,7 @@ appliance_start() {
 
   # if some image are not yet built, build them
   appliance_build \
+  && appliance_initializeApplianceStagingDirectory \
   && appliance_fillStagingArea
 
   local returnCode=$?
@@ -4431,7 +4525,7 @@ appliance_start() {
   # ephemeral
   local command='docker-compose up --no-build -d'
 
-  cd "$APPLIANCE_STAGING_DIRECTORY" \
+  cd "$APPLIANCE_NAMED_STAGING_DIRECTORY" \
   && eval "$command" \
   && cd "$USER_DIRECTORY"
 
@@ -4450,14 +4544,15 @@ appliance_start() {
 appliance_stop() {
   info 'stopping appliance'
 
-  appliance_fillStagingArea \
+  appliance_initializeApplianceStagingDirectory \
+  && appliance_fillStagingArea \
   || return $?
 
   # crafting the docker-compose command, removing ephemeral containers
   local command='docker-compose rm -sf'
 
   # execute the docker-compose command
-  cd "$APPLIANCE_STAGING_DIRECTORY" \
+  cd "$APPLIANCE_NAMED_STAGING_DIRECTORY" \
   && eval "$command" \
   && cd "$USER_DIRECTORY"
 
