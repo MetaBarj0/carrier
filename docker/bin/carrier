@@ -3937,7 +3937,9 @@ EOI
   # shallow validation complete, the appliance name is gotten, assuming all is
   # OK so far
   APPLIANCE_NAME="$(basename "$(dirname "$MANIFEST_FILE_PATH")")" \
-  || fatal 'could not get the appliance name'
+  || ( returnCode=$? \
+       && fatal 'could not get the appliance name' \
+       && return $returnCode )
 
   return $?
 }
@@ -4291,7 +4293,6 @@ appliance_cleanupStagingArea() {
 ### source the specified function, exposing global variables useful to build a
 ### service image.
 ### $1 : function name
-# TODO: refacto the entire appliance flow
 appliance_callBuildContextFunction() {
   info 'calling build context function '"$1"
 
@@ -4339,7 +4340,6 @@ appliance_unsetBuildContextVariables() {
   return $?
 }
 
-# TODO: make sure errors are good with image build when check manifest
 ### this function will build each and every image that are needed to build each
 ### service of the appliance. It relies on the content of the manifest file
 ### that has been source and roughly validated
@@ -4466,7 +4466,7 @@ appliance_executeRequestedCommand() {
 
   # make sure the manifest file is well formed and contains mandatory stuff
   appliance_shallowValidateManifestFile \
-  && $function_name
+  && "$function_name"
 
   return $?
 }
