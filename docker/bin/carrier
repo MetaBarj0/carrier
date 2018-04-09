@@ -3955,14 +3955,30 @@ appliance_checkArgument() {
   return $?
 }
 
+### gets the appliance directory name from the full path of its manifest file
+### $1: the appliance's manifest file full path
+appliance_getApplianceDirectoryFromManifestFilePath() {
+  info 'Getting the appliance directory name from the manifest file path'
+
+  local appliance_directory="$(dirname "$MANIFEST_FILE_PATH")" \
+  || ( returnCode=$? \
+       && error 'Could not deduce the appliance directory name' \
+       && return $returnCode )
+
+  echo "$appliance_directory"
+
+  return $?
+}
+
 ### put all necessary files intor the being built appliance staging directory.
 appliance_fillStagingArea() {
-  # TODO : take a look at filling staging area in the image build feature to see if a refacto could be done
   info 'filling appliance staging area'
 
   # create the intermediate appliance directory in the staging area if it does
   # not already exist
-  local appliance_directory="$(dirname "$MANIFEST_FILE_PATH")" \
+  local appliance_directory="$(
+    appliance_getApplianceDirectoryFromManifestFilePath \
+    "$MANIFEST_FILE_PATH")" \
   && local staging_directory=${CARRIER_TMP_DIR}/appliances \
   && APPLIANCE_STAGING_DIRECTORY="${staging_directory}"/"$APPLIANCE_NAME" \
   || ( returnCode=$? \
@@ -3995,7 +4011,6 @@ appliance_fillStagingArea() {
 ### fetch a copy of the master branch of the carrier directory then, copy the
 ### entire docker directory into the staging directory. This manifest is used
 ### to build various dependencies and serve as a genuine repository.
-# TODO: refacto!
 appliance_fetchManifest() {
   info 'fetching manifest for appliance command execution'
 

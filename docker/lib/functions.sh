@@ -463,7 +463,7 @@ collectSharedObjectDependencies() {
 fetchManifestImageContent() {
   if [ ! ${USER_DIRECTORY+0} ]; then
     error "$(cat << EOI
-Error: the internal variable USER_DIRECTORY is not set and maandatory to use
+Error: the internal variable USER_DIRECTORY is not set and mandatory to use
 this function...exiting...
 EOI
     )"
