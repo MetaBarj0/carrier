@@ -55,7 +55,7 @@ ENV TERMINFO /usr/local/share/terminfo
 ENV PATH /usr/local/mysql/bin:\${PATH}
 
 # group id passed from docker host to allow usage of docker-cli API
-ENV DOCKER_GROUP_ID=$(id -g docker)
+ENV DOCKER_GROUP_ID=$(id -g)
 
 # an entrypoint to finalize the environment setup
 COPY devenv_shell_entrypoint.sh /usr/local/bin/
