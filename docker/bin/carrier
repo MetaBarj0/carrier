@@ -2794,6 +2794,8 @@ EOI
 contextSetImageFactorizeOverwriteExistingImages() {
   info 'setting factorize image overwrite behavior on'
 
+  DOMAIN_IMAGE_COMMAND_FACTORIZE_OPTION_OVERWRITE_EXISTING='yes'
+
   return $?
 }
 
@@ -3509,7 +3511,10 @@ image_factorizeCreateFactorizedImage() {
 ### checking if resulting image name are conflicting with existing image names
 ### on the docker host
 image_factorizeCheckResultantImageNames() {
-  info 'checking resultat image full names for possible conflicts'
+  info 'checking resultant image full names for possible conflicts'
+
+  [ $DOMAIN_IMAGE_COMMAND_FACTORIZE_OPTION_OVERWRITE_EXISTING = 'yes' ] \
+  && return 0
 
   return $?
 }
