@@ -403,6 +403,7 @@ WORKDIR /tmp/
 
 COPY --from=docker /tmp/docker.tar ./
 RUN tar --directory / -xf docker.tar && \
+    chmod u+s /usr/bin/docker && \
     rm -f docker.tar
 
 COPY entrypoint.sh /usr/local/bin/
