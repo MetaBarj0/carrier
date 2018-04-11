@@ -3453,12 +3453,28 @@ image_createImagesDistFileInStagingDirectory() {
   return $?
 }
 
+### create the base image of a factorization process. Relies on the file
+### base.image.dist create in the image factorize staging area
+image_factorizeCreateBaseImage() {
+  info 'creating factorized base image'
+
+  return $?
+}
+
+image_factorizeCreateFactorizedImage() {
+  info 'creating factorized images'
+
+  return $?
+}
+
 ### factorization feature of the image domain
 image_factorize() {
   info 'factorizing images'
 
   image_initializeFactorizeStagingDirectory \
   && image_createImagesDistFileInStagingDirectory \
+  && image_factorizeCreateBaseImage \
+  && image_factorizeCreateFactorizedImage \
   && image_cleanupFactorizeStagingDirectory
 
   return $?
