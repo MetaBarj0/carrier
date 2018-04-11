@@ -849,6 +849,12 @@ contextSetImageFactorizeImageSequence
 (-r|--remove-original-images)=?
 --
 contextSetImageFactorizeRemoveOriginalImages
+
+# indicates if resulting image overwrite existing images with the same name on
+# the docker host
+(-o|--overwrite-resulting-images)
+--
+contextSetImageFactorizeOverwriteExistingImages
 EOI
   )"
 
@@ -1249,6 +1255,7 @@ initializeExecutionContext() {
   DOMAIN_IMAGE_COMMAND_FACTORIZE_OPTION_FACTORIZED_IMAGE_PREFIX=
   DOMAIN_IMAGE_COMMAND_FACTORIZE_OPTION_IMAGE_SEQUENCE=
   DOMAIN_IMAGE_COMMAND_FACTORIZE_OPTION_REMOVE_ORIGINAL_IMAGES='no'
+  DOMAIN_IMAGE_COMMAND_FACTORIZE_OPTION_OVERWRITE_EXISTING='no'
 
   # carrier appliance build devenv_cpp -r
   DOMAIN_APPLIANCE_COMMAND_BUILD_OPTION_REMOVE_EXISTING='no'
@@ -1424,6 +1431,8 @@ $DOMAIN_IMAGE_COMMAND_FACTORIZE_OPTION_FACTORIZED_IMAGE_PREFIX
 $DOMAIN_IMAGE_COMMAND_FACTORIZE_OPTION_IMAGE_SEQUENCE
   DOMAIN_IMAGE_COMMAND_FACTORIZE_OPTION_REMOVE_ORIGINAL_IMAGES=\
 $DOMAIN_IMAGE_COMMAND_FACTORIZE_OPTION_REMOVE_ORIGINAL_IMAGES
+  DOMAIN_IMAGE_COMMAND_FACTORIZE_OPTION_OVERWRITE_EXISTING=\
+$DOMAIN_IMAGE_COMMAND_FACTORIZE_OPTION_OVERWRITE_EXISTING
   DOMAIN_APPLIANCE_COMMAND_BUILD_OPTION_REMOVE_EXISTING=\
 $DOMAIN_APPLIANCE_COMMAND_BUILD_OPTION_REMOVE_EXISTING
   DOMAIN_APPLIANCE_COMMAND_BUILD_OPTION_TAG_EXISTING=\
@@ -2653,6 +2662,10 @@ contextSetImageCheckImageSequence() {
   return 1
 }
 
+### mutator to set the prefix of the base image.
+### domain is image, command is factorize
+### $1: is the key of the option
+### $2: value of the option
 contextSetImageFactorizeBaseImagePrefix() {
   info 'setting image factorize base image prefix'
 
@@ -2674,6 +2687,10 @@ EOI
   return 0
 }
 
+### mutator to set the prefix of factorize images.
+### domain is image, command is factorize
+### $1: is the key of the option
+### $2: value of the option
 contextSetImageFactorizeFactorizedImagePrefix() {
   info 'setting image factorize factorized image prefix'
 
@@ -2695,6 +2712,10 @@ EOI
   return 0
 }
 
+### mutator to set the resulting base image name
+### domain is image, command is factorize
+### $1: is the key of the option
+### $2: value of the option
 contextSetImageFactorizeBaseImageName() {
   info 'setting image factorize base image name'
 
@@ -2716,6 +2737,11 @@ EOI
   return 0
 }
 
+
+### mutator to set the image sequence to factorize, comma separated
+### domain is image, command is factorize
+### $1: is the key of the option
+### $2: value of the option
 contextSetImageFactorizeImageSequence() {
   info 'setting image factorize image sequence'
 
@@ -2737,6 +2763,10 @@ EOI
   return 0
 }
 
+
+### mutator to indicate if original factorized image must be removed
+### domain is image, command is factorize
+### $1: is the key of the option
 contextSetImageFactorizeRemoveOriginalImages() {
   info 'setting image factorize remove original images flag'
 
@@ -2756,6 +2786,15 @@ EOI
   DOMAIN_IMAGE_COMMAND_FACTORIZE_OPTION_REMOVE_ORIGINAL_IMAGES='yes'
 
   return 0
+}
+
+### mutator to indicate if resulting image must overwrite existing images
+### domain is image, command is factorize
+### $1: is the key of the option
+contextSetImageFactorizeOverwriteExistingImages() {
+  info 'setting factorize image overwrite behavior on'
+
+  return $?
 }
 
 ### mutator to setup the appliance command. Valid call if:
@@ -3467,11 +3506,21 @@ image_factorizeCreateFactorizedImage() {
   return $?
 }
 
+### checking if resulting image name are conflicting with existing image names
+### on the docker host
+image_factorizeCheckResultantImageNames() {
+  info 'checking resultat image full names for possible conflicts'
+
+  return $?
+}
+
+
 ### factorization feature of the image domain
 image_factorize() {
   info 'factorizing images'
 
-  image_initializeFactorizeStagingDirectory \
+  image_factorizeCheckResultantImageNames \
+  && image_initializeFactorizeStagingDirectory \
   && image_createImagesDistFileInStagingDirectory \
   && image_factorizeCreateBaseImage \
   && image_factorizeCreateFactorizedImage \
