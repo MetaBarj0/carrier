@@ -827,14 +827,14 @@ contextSetImageFactorizeBaseImageName
 # docker images
 # if not specified, defaulted to 'base'
 (-b|--base-image-prefix)=?
-.*
+.+
 contextSetImageFactorizeBaseImagePrefix
 
 # prefix used on factorized images. A prefixed factorized image will look like
 # prefix/factorize_image when listing docker images. If the prefix is not
 # specified, the prefixed base image name is used.
 (-f|--factorized-image-prefix)=?
-.*
+.+
 contextSetImageFactorizeFactorizedImagePrefix
 
 # the image list to factorize. At least 2 images have to be specified but
