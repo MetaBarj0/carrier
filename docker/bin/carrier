@@ -2159,7 +2159,6 @@ executeImageFactorizeCommand() {
      || [ -z "$DOMAIN_IMAGE_COMMAND_FACTORIZE_OPTION_BASE_IMAGE_NAME" ] \
      || [ -z "$DOMAIN_IMAGE_COMMAND_FACTORIZE_OPTION_IMAGE_SEQUENCE" ]; then
     info "incomplete or incorrect execution context:
-incomplete or incorrect execution context:
   DOMAIN=$DOMAIN
   COMMAND=$COMMAND
   DOMAIN_IMAGE_COMMAND_FACTORIZE_OPTION_BASE_IMAGE_NAME=\
@@ -2623,6 +2622,22 @@ EOI
 }
 
 ### TODO NYI
+contextSetImageListOnlyBuilt() {
+  :
+
+  debug 'Not Implemented Yet'
+  return 1
+}
+
+### TODO NYI
+contextSetImageInfoOnlyBaseImage() {
+  :
+
+  debug 'Not Implemented Yet'
+  return 1
+}
+
+### TODO NYI
 contextSetImageListOnlyLocal() {
   :
 
@@ -2845,6 +2860,30 @@ contextSetApplianceVolumesList() {
 
 ### TODO NYI
 contextSetApplianceListOnlyNotBuilt() {
+  :
+
+  debug 'Not Implemented Yet'
+  return 1
+}
+
+### TODO NYI
+contextSetApplianceListOnlyBuilt() {
+  :
+
+  debug 'Not Implemented Yet'
+  return 1
+}
+
+### TODO NYI
+contextSetApplianceInfoOnlyBase() {
+  :
+
+  debug 'Not Implemented Yet'
+  return 1
+}
+
+### TODO NYI
+contextSetApplianceStartBuild() {
   :
 
   debug 'Not Implemented Yet'
@@ -3184,19 +3223,34 @@ image_prepareImageSequenceForFactorization() {
   return $?
 }
 
-### check on the docker host if the image exists.
-### $1 image name
-image_checkIfExistsOnDockerHost() {
-  info 'checking an image existence on the docker host'
+### simply queries an image name on the docker host and indicates if it exists
+### or not. return 0 if exists and echo the id.
+### $1: image name
+image_queryImageOnDockerHost() {
+  info 'querying an image on the docker host'
 
   local image="$1"
-
-  info 'checking if image '"$image"' exists on the docker host'
 
   local id=$(docker image ls -q "$image") \
   || ( returnCode=$? \
        && fatal 'Could not request image' \
        && return $returnCode ) \
+  || return $?
+
+  echo "$id"
+
+  return $?
+}
+
+### check if the mandatory specified image exists on docker host. If the image
+### does not exist, trigger an error message
+### $1: image name
+image_mustExistsOnDockerHost() {
+  info 'checking a mandatory image existence on the docker host'
+
+  local image="$1"
+
+  local id="$(image_queryImageOnDockerHost "$image")" \
   || return $?
 
   if [ -z $id ]; then
@@ -3207,7 +3261,27 @@ EOI
     return 1
   fi
 
-  return 0
+  echo "$id"
+
+  return $?
+}
+
+### check on the docker host if the image exists. Does not trigger an error if
+### the image does not exist but return a positive value
+### $1 image name
+image_checkIfExistsOnDockerHost() {
+  info 'checking an image existence on the docker host'
+
+  local image="$1"
+
+  local id=$(image_queryImageOnDockerHost "$image") \
+  || return $?
+
+  [ -z $id ] && return 1
+
+  echo "$id"
+
+  return $?
 }
 
 ### extract the content of the image.dist file of the specified docker image.
@@ -3472,14 +3546,13 @@ image_finalizeAllImageDistFileInStagingArea() {
 
   local image=
   for image in $(image_getImageToFactorizeSequence); do
-    image_checkIfExistsOnDockerHost "$image" \
+    image_mustExistsOnDockerHost "$image" 1>/dev/null \
     && local image_dist_file="$(
       image_createImageDistFileFromImageInFactorizeStagingArea "$image")" \
     && image_computeBaseAndImageDistFilesInFactorizeStagingArea \
       "$image" "$base_image_dist_file" "$image_dist_file" \
     || return $?
   done
-  pause
 
   return $?
 }
@@ -3502,9 +3575,40 @@ image_factorizeCreateBaseImage() {
   return $?
 }
 
+### Creates all factorized images that have been specified, using dist file in
+### the image factorize staging area
 image_factorizeCreateFactorizedImage() {
   info 'creating factorized images'
 
+  return $?
+}
+
+### verify if the base image name does not conflict with an existing image on
+### the docker host
+image_factorizeVerifyBaseImageName() {
+  info 'verifying conflicts for base image name'
+
+  local fullBaseImageName=\
+"$DOMAIN_IMAGE_COMMAND_FACTORIZE_OPTION_BASE_IMAGE_PREFIX"\
+'/'\
+"$DOMAIN_IMAGE_COMMAND_FACTORIZE_OPTION_BASE_IMAGE_NAME"
+
+  local image_id="$(image_checkIfExistsOnDockerHost "$fullBaseImageName")" \
+  || return $?
+
+  if [ ! -z "$image_id" ]; then
+    error 'the image '"$fullBaseImageName"' already exists on the docker host'
+    return 1
+  fi
+
+  return 0
+}
+
+### verify that each image to factorize will have a name that does not conflict
+### with an existing image on the docker host
+image_factorizeVerifyImagesNames() {
+  info 'Verifying conflicts image names'
+  
   return $?
 }
 
@@ -3513,8 +3617,11 @@ image_factorizeCreateFactorizedImage() {
 image_factorizeCheckResultantImageNames() {
   info 'checking resultant image full names for possible conflicts'
 
-  [ $DOMAIN_IMAGE_COMMAND_FACTORIZE_OPTION_OVERWRITE_EXISTING = 'yes' ] \
+  [ "$DOMAIN_IMAGE_COMMAND_FACTORIZE_OPTION_OVERWRITE_EXISTING" = 'yes' ] \
   && return 0
+
+  image_factorizeVerifyBaseImageName \
+  && image_factorizeVerifyImagesNames
 
   return $?
 }
