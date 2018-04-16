@@ -3411,8 +3411,7 @@ image_factorizeMakePairOfFirstTwoElements() {
 image_initializeBaseImageDistFileInStagingArea() {
   info 'Initializing the base image of factorization'
 
-  image_initializeImageToFactorizeSequence \
-  && local imagePair="$(image_factorizeMakePairOfFirstTwoElements)" \
+  local imagePair="$(image_factorizeMakePairOfFirstTwoElements)" \
   && local first_image="$(keyOf "$imagePair")" \
   && local second_image="$(valueOf "$imagePair")" \
   && local first_files_sequence="$(
@@ -3454,9 +3453,10 @@ image_initializeImageToFactorizeSequence() {
 image_getImageToFactorizeSequence() {
   info 'getting image to factorize sequence'
 
-  [ -z "$DOMAIN_IMAGE_COMMAND_FACTORIZE_IMAGE_TO_FACTORIZE_SEQUENCE" ] \
-  && error 'Image to factorize sequence is not initialized' \
-  && return 1
+  if [ -z "$DOMAIN_IMAGE_COMMAND_FACTORIZE_IMAGE_TO_FACTORIZE_SEQUENCE" ]; then
+    image_initializeImageToFactorizeSequence \
+    || return $?
+  fi
 
   echo "$DOMAIN_IMAGE_COMMAND_FACTORIZE_IMAGE_TO_FACTORIZE_SEQUENCE"
 
@@ -3583,31 +3583,119 @@ image_factorizeCreateFactorizedImage() {
   return $?
 }
 
-### verify if the base image name does not conflict with an existing image on
-### the docker host
-image_factorizeVerifyBaseImageName() {
-  info 'verifying conflicts for base image name'
+### build the base image name of a factorization command
+image_factorizeBuildBaseImageName() {
+  info 'building the base image name'
 
   local fullBaseImageName=\
 "$DOMAIN_IMAGE_COMMAND_FACTORIZE_OPTION_BASE_IMAGE_PREFIX"\
 '/'\
 "$DOMAIN_IMAGE_COMMAND_FACTORIZE_OPTION_BASE_IMAGE_NAME"
 
-  local image_id="$(image_checkIfExistsOnDockerHost "$fullBaseImageName")" \
+  echo "$fullBaseImageName"
+
+  return $?
+}
+
+### Build a factorizable image name.
+### $1: image name to factorize
+image_factorizeBuildFactorizedImageName() {
+  info 'building a factorized image name'
+
+  local fullImageName=\
+"$DOMAIN_IMAGE_COMMAND_FACTORIZE_OPTION_FACTORIZED_IMAGE_PREFIX"\
+'/'\
+"$DOMAIN_IMAGE_COMMAND_FACTORIZE_OPTION_BASE_IMAGE_NAME"\
+'/'\
+"$image"
+
+  echo "$fullImageName"
+
+  return $?
+}
+
+### verify if the base image name does not conflict with an existing image on
+### the docker host
+image_factorizeVerifyBaseImageName() {
+  info 'verifying conflicts for base image name'
+
+  image_factorizeIssueErrorIfImageNameExistsOnDockerHost 'base'
+
+  return $?
+}
+
+### setup the images to factorize prefix. As it cannot be empty and defaulted
+### to the base image prefix and name value, cannot be determined at execution
+### context construction
+image_factorizeSetupImagesToFactorizePrefix() {
+  info 'setting up the image to factorize prefix'
+
+  if [ -z "$DOMAIN_IMAGE_COMMAND_FACTORIZE_OPTION_FACTORIZED_IMAGE_PREFIX" ];
+  then
+    DOMAIN_IMAGE_COMMAND_FACTORIZE_OPTION_FACTORIZED_IMAGE_PREFIX=\
+"$DOMAIN_IMAGE_COMMAND_FACTORIZE_OPTION_BASE_IMAGE_PREFIX"
+  fi
+
+  return $?
+}
+
+### obtains the name of the function able to build a base image or a factorized
+### image name from an image type
+### $1: image type ('base' or 'factorized')
+image_factorizeGetImageNameBuildFunctionFromImageType() {
+  info 'getting the image name build function from image type'
+
+  local imageType="$1"
+
+  local buildImageNameFunction=
+  if [ "$imageType" = 'factorized' ]; then
+    buildImageNameFunction='image_factorizeBuildFactorizedImageName'
+  elif [ "$imageType" = 'base' ]; then
+    buildImageNameFunction='image_factorizeBuildBaseImageName'
+  fi
+
+  echo "$buildImageNameFunction"
+
+  return $?
+}
+
+### issues an error if a factorizabe image or a base image name already exists
+### on the docker host
+### $1: a docker image name
+image_factorizeIssueErrorIfImageNameExistsOnDockerHost() {
+  info 'checking if factorizable image or base image exists'
+
+  local imageType="$1"
+  local image="$2"
+  local buildImageNameFunction="$(
+    image_factorizeGetImageNameBuildFunctionFromImageType "$imageType")" \
+  && local fullImageName="$("$buildImageNameFunction" "$image")" \
+  && local image_id="$(image_checkIfExistsOnDockerHost "$fullImageName")" \
   || return $?
 
   if [ ! -z "$image_id" ]; then
-    error 'the image '"$fullBaseImageName"' already exists on the docker host'
+    error 'the image '"$fullImageName"' already exists on the docker host'
     return 1
   fi
 
-  return 0
+  return $?
 }
 
 ### verify that each image to factorize will have a name that does not conflict
 ### with an existing image on the docker host
 image_factorizeVerifyImagesNames() {
   info 'Verifying conflicts image names'
+
+  image_factorizeSetupImagesToFactorizePrefix \
+  && local sequence="$(image_getImageToFactorizeSequence)" \
+  || return $?
+
+  local image=
+  for image in $sequence; do
+    image_factorizeIssueErrorIfImageNameExistsOnDockerHost \
+      'factorized' "$image" \
+    || return $?
+  done
   
   return $?
 }
