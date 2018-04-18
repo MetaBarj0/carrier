@@ -3388,7 +3388,7 @@ image_cleanupFactorizeStagingDirectory() {
 }
 
 ### extract the very first image of the sequance of image to factorize
-image_factorizeExtractFirstImageOfSequence() {
+image_factorizeExtractFirstImageNameOfSequence() {
   info 'extracting the first image of the sequence'
 
   local sequence="$(image_getImageToFactorizeSequence)" \
@@ -3588,6 +3588,158 @@ image_createImagesDistFileInStagingDirectory() {
 image_factorizeCreateBaseImage() {
   info 'creating factorized base image'
 
+  local baseImageName="$(image_factorizeBuildBaseImageName)" \
+  && image_factorizeCreateEmptyBaseImage "$baseImageName" \
+  && image_factorizeFillBaseImage "$baseImageName"
+
+  return $?
+}
+
+### generate a random temporary folder name used as staging directory inside
+### containers
+### $1: base name of the mount point
+image_factorizeGenerateRandomTemporaryMountPoint() {
+  info 'Generating random temporary mount point'
+
+  local baseName="$1"
+
+  echo '/tmp/'"$1"
+
+  return $?
+}
+
+### generates Dockerfile commands for the base image creation
+image_factorizeGeneratebaseImageDockerfileCommands() {
+  info 'generating Dockerfile commands for base image'
+
+  cat << EOI
+FROM busybox
+EOI
+
+  return $?
+}
+
+### create the empty base image to fill later
+### $1: base image name
+image_factorizeCreateEmptyBaseImage() {
+  info 'creating the empty base image'
+
+  local baseImageName="$1"
+
+  local dockerfileCommandsForBaseImage="$(
+    image_factorizeGeneratebaseImageDockerfileCommands)" \
+  || return $?
+
+  echo "$dockerfileCommandsForBaseImage" | docker build -t "$baseImageName" - \
+  || ( returnCode=$? \
+       && fatal 'Could not build the docker base image for factorization' \
+       && return $returnCode )
+
+  return $?
+}
+
+### create a temporary volume for the factorization process. This volume will
+### be attached to running containers of factorized images and of base image
+image_factorizeCreateTemporaryVolume() {
+  info 'Creating a temporary volume for the factorization process'
+
+  local randomPathString="$(generateRandomVolumeName 2)" \
+  || return $?
+
+  docker volume create "$randomPathString" 1>/dev/null 2>&1 \
+  || ( returnCode=$? \
+       && fatal '' \
+       && return $returnCode ) \
+  || return $?
+
+  echo "$randomPathString"
+
+  return $?
+}
+
+### run the base image and attach the temporary volume to it
+### $1: base image name to run
+### $2: the temporary volume name
+image_factorizeRunBaseImageWithTemporaryVolume() {
+  info 'attempting to run base image with temporary volume'
+
+  local baseImageName="$1"
+  local volumeName="$2"
+
+  local mountPoint="$(
+    image_factorizeGenerateRandomTemporaryMountPoint "$volumeName")" \
+  || return $?
+
+  docker run \
+    --rm -d \
+    -v "$volumeName":"$mountPoint" \
+    "$baseImageName" \
+    sh -c \
+    'while true; do sleep 10; done' \
+  || ( returnCode=$? \
+       && fatal 'Could not start the base image container' \
+       && return $returnCode ) \
+  || return $?
+
+  echo "$containerID"
+
+  return $?
+}
+
+### runs the base image that is empty so far. Attach a temporary volume to
+### transfer common files
+### $1: base image name to run
+image_factorizeRunBaseImage() {
+  info 'running the base image of the factorization process'
+
+  local baseImageName="$1"
+
+  local temporaryVolumeName="$(
+    image_factorizeCreateTemporaryVolume)" \
+  && local containerID="$(
+    image_factorizeRunBaseImageWithTemporaryVolume \
+    "$baseImageName" "$temporaryVolumeName")"
+
+  echo "$containerID"
+
+  return $?
+}
+
+### copy common files from one of the image to factorize to the base image.
+### temporary volume is used in the process to transfer files from running
+### container to running container as it is not supported by docker.
+image_factorizeCopyCommonFiles() {
+  info 'Copying common files to base image'
+
+  local baseImageContainerID="$1"
+
+  local firstImageToFactorizeName="$(
+    image_factorizeExtractFirstImageNameOfSequence)"
+
+  return $?
+}
+
+### kill the base image container running in background
+### $1: container id to kill
+image_factorizeKillBaseImageContainer() {
+  info 'killing base image running container'
+
+  return $?
+}
+
+### fill the base image with common files. Common files list is the
+### base.image.dist file stored on the staging area. Any factorized image
+### contain these common files
+image_factorizeFillBaseImage() {
+  info 'Filling the base image for factorization process'
+
+  local baseImageName="$1"
+
+  # TODO: obtain volume name
+  local containerID="$(image_factorizeRunBaseImage "$baseImageName")" \
+  && image_factorizeCopyCommonFiles "$containerID" \
+  && image_factorizeKillBaseImageContainer "$containerID"
+
   return $?
 }
 
@@ -3595,13 +3747,6 @@ image_factorizeCreateBaseImage() {
 ### the image factorize staging area
 image_factorizeCreateFactorizedImage() {
   info 'creating factorized images'
-
-  local baseImageName="$(image_factorizeBuildBaseImageName)" \
-  && local firstImageToFactorizename="$(
-    image_factorizeExtractFirstImageOfSequence)"
-
-  fatal '===> '"$firstImageToFactorizename"' '"$baseImageName"
-  pause
 
   return $?
 }

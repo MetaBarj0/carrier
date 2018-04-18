@@ -99,6 +99,15 @@ valueOf() {
   echo "$1" | sed -E 's/^[^=]+=(.+)$/\1/'
 }
 
+# generate a random modified base64 string ready to be used as a docker volume
+# name. Replaces all instances of '-' and '/' by '_'
+generateRandomVolumeName() {
+  local random="$(generateRandomString "$1")"
+
+  # replace annoying special char (+) with _
+  echo "$random" | sed -E 's/\+/_/g'
+}
+
 # generate a random modified base64 string ready to be used in a docker build
 # stage alias. Replaced all '-' and '+' by '0'
 generateRandomBuildStageAlias() {
@@ -123,6 +132,7 @@ generateRandomString() {
        ibs=6 \
        count="$factor" 2>/dev/null \
     | base64 \
+    | tr -d $'\n' \
     | sed 's/\//-/g')
 
   echo "$output"
@@ -652,7 +662,11 @@ path64Encode() {
     return 0
   fi
 
-  local encoded="$(printf "$1" | base64 | sed 's/\//-/g')"
+  local encoded="$(
+    printf "$1" \
+    | base64 \
+    | tr -d $'\n' \
+    | sed 's/\//-/g')"
 
   echo "$encoded"
 }
