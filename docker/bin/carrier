@@ -3387,6 +3387,22 @@ image_cleanupFactorizeStagingDirectory() {
   return $?
 }
 
+### extract the very first image of the sequance of image to factorize
+image_factorizeExtractFirstImageOfSequence() {
+  info 'extracting the first image of the sequence'
+
+  local sequence="$(image_getImageToFactorizeSequence)" \
+  || return $?
+
+  local image=
+  for image in $sequence; do
+    echo "$image"
+    return $?
+  done
+
+  return 1
+}
+
 ### extract the first two image in the image to factorize sequence
 image_factorizeMakePairOfFirstTwoElements() {
   info 'making a pair with the first two elements of a sequence'
@@ -3579,6 +3595,13 @@ image_factorizeCreateBaseImage() {
 ### the image factorize staging area
 image_factorizeCreateFactorizedImage() {
   info 'creating factorized images'
+
+  local baseImageName="$(image_factorizeBuildBaseImageName)" \
+  && local firstImageToFactorizename="$(
+    image_factorizeExtractFirstImageOfSequence)"
+
+  fatal '===> '"$firstImageToFactorizename"' '"$baseImageName"
+  pause
 
   return $?
 }
