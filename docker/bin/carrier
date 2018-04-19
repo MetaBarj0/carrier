@@ -3673,11 +3673,10 @@ image_factorizeCreateTemporaryVolume() {
   return $?
 }
 
-### runs the base image that is empty so far. Attach a temporary volume to
-### transfer common files
+### runs an image attached to a temporary volume
 ### $1: base image name to run
 ### $2: temporary volume name to attach to the running container
-image_factorizeRunBaseImage() {
+image_factorizeRunImageWithVolumeAttached() {
   info 'attempting to run base image with temporary volume'
 
   local baseImageName="$1"
@@ -3691,6 +3690,8 @@ image_factorizeRunBaseImage() {
     --rm -d \
     -v "$volumeName":"$mountPoint" \
     -e MOUNTPOINT="$mountPoint" \
+    -u root \
+    --entrypoint='' \
     "$baseImageName" \
     sh -c \
     'while true; do sleep 10; done' \
@@ -3743,7 +3744,8 @@ image_factorizeFillBaseImage() {
 
   local temporaryVolumeName="$(image_factorizeCreateTemporaryVolume)" \
   && local containerID="$(
-    image_factorizeRunBaseImage "$baseImageName" "$temporaryVolumeName")" \
+    image_factorizeRunImageWithVolumeAttached \
+    "$baseImageName" "$temporaryVolumeName")" \
   && image_factorizeCopyCommonFiles "$containerID" \
   && pause \
   && image_factorizeKillBaseImageContainer "$containerID" \
