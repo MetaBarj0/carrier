@@ -104,8 +104,9 @@ valueOf() {
 generateRandomVolumeName() {
   local random="$(generateRandomString "$1")"
 
-  # replace annoying special char (+) with _
-  echo "$random" | sed -E 's/\+/_/g'
+  # replace annoying special char (+) with _ and starting with a valid
+  # character
+  echo '0'"$random" | sed -E 's/\+/_/g'
 }
 
 # generate a random modified base64 string ready to be used in a docker build

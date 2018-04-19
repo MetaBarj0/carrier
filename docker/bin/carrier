@@ -3609,7 +3609,7 @@ image_factorizeGenerateRandomTemporaryMountPoint() {
 }
 
 ### generates Dockerfile commands for the base image creation
-image_factorizeGeneratebaseImageDockerfileCommands() {
+image_factorizeGenerateBaseImageDockerfileCommands() {
   info 'generating Dockerfile commands for base image'
 
   cat << EOI
@@ -3627,7 +3627,7 @@ image_factorizeCreateEmptyBaseImage() {
   local baseImageName="$1"
 
   local dockerfileCommandsForBaseImage="$(
-    image_factorizeGeneratebaseImageDockerfileCommands)" \
+    image_factorizeGenerateBaseImageDockerfileCommands)" \
   || return $?
 
   echo "$dockerfileCommandsForBaseImage" | docker build -t "$baseImageName" - \
@@ -3646,6 +3646,11 @@ image_factorizeDestroyTemporaryVolume() {
 
   local volumeName="$1"
 
+  docker volume rm "$volumeName" 1>/dev/null 2>&1 \
+    || ( returnCode=$? \
+         && fatal 'Could not remove a temporary volume' \
+         && return $returnCode )
+
   return $?
 }
 
@@ -3659,7 +3664,7 @@ image_factorizeCreateTemporaryVolume() {
 
   docker volume create "$randomPathString" 1>/dev/null 2>&1 \
   || ( returnCode=$? \
-       && fatal '' \
+       && fatal 'Could not create a temporary docker volume' \
        && return $returnCode ) \
   || return $?
 
@@ -3718,6 +3723,13 @@ image_factorizeCopyCommonFiles() {
 image_factorizeKillBaseImageContainer() {
   info 'killing base image running container'
 
+  local containerID="$1"
+
+  docker kill "$containerID" 1>/dev/null 2>&1 \
+  || ( returnCode=$? \
+       && fatal 'Could not kill the base image container' \
+       && return $returnCode )
+
   return $?
 }
 
@@ -3729,14 +3741,11 @@ image_factorizeFillBaseImage() {
 
   local baseImageName="$1"
 
-  local temporaryVolumeName="$(
-    image_factorizeCreateTemporaryVolume)" \
-  || return $?
-
-  # TODO: obtain volume name
-  local containerID="$(
+  local temporaryVolumeName="$(image_factorizeCreateTemporaryVolume)" \
+  && local containerID="$(
     image_factorizeRunBaseImage "$baseImageName" "$temporaryVolumeName")" \
   && image_factorizeCopyCommonFiles "$containerID" \
+  && pause \
   && image_factorizeKillBaseImageContainer "$containerID" \
   && image_factorizeDestroyTemporaryVolume "$temporaryVolumeName"
 
