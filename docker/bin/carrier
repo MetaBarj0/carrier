@@ -3638,6 +3638,17 @@ image_factorizeCreateEmptyBaseImage() {
   return $?
 }
 
+### destroy a previsously created temporary volume in the image factorization
+### process
+### $1: name of the volume to destroy
+image_factorizeDestroyTemporaryVolume() {
+  info 'Destroying a temporary volume used to factorize images'
+
+  local volumeName="$1"
+
+  return $?
+}
+
 ### create a temporary volume for the factorization process. This volume will
 ### be attached to running containers of factorized images and of base image
 image_factorizeCreateTemporaryVolume() {
