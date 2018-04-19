@@ -3674,12 +3674,12 @@ image_factorizeCreateTemporaryVolume() {
 }
 
 ### runs an image attached to a temporary volume
-### $1: base image name to run
+### $1: image name to run
 ### $2: temporary volume name to attach to the running container
 image_factorizeRunImageWithVolumeAttached() {
   info 'attempting to run base image with temporary volume'
 
-  local baseImageName="$1"
+  local imageName="$1"
   local volumeName="$2"
 
   local mountPoint="$(
@@ -3692,11 +3692,11 @@ image_factorizeRunImageWithVolumeAttached() {
     -e MOUNTPOINT="$mountPoint" \
     -u root \
     --entrypoint='' \
-    "$baseImageName" \
+    "$imageName" \
     sh -c \
     'while true; do sleep 10; done' \
   || ( returnCode=$? \
-       && fatal 'Could not start the base image container' \
+       && fatal 'Could not start the image container' \
        && return $returnCode ) \
   || return $?
 
