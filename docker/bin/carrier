@@ -3668,10 +3668,11 @@ image_factorizeCreateTemporaryVolume() {
   return $?
 }
 
-### run the base image and attach the temporary volume to it
+### runs the base image that is empty so far. Attach a temporary volume to
+### transfer common files
 ### $1: base image name to run
-### $2: the temporary volume name
-image_factorizeRunBaseImageWithTemporaryVolume() {
+### $2: temporary volume name to attach to the running container
+image_factorizeRunBaseImage() {
   info 'attempting to run base image with temporary volume'
 
   local baseImageName="$1"
@@ -3684,6 +3685,7 @@ image_factorizeRunBaseImageWithTemporaryVolume() {
   docker run \
     --rm -d \
     -v "$volumeName":"$mountPoint" \
+    -e MOUNTPOINT="$mountPoint" \
     "$baseImageName" \
     sh -c \
     'while true; do sleep 10; done' \
@@ -3691,25 +3693,6 @@ image_factorizeRunBaseImageWithTemporaryVolume() {
        && fatal 'Could not start the base image container' \
        && return $returnCode ) \
   || return $?
-
-  echo "$containerID"
-
-  return $?
-}
-
-### runs the base image that is empty so far. Attach a temporary volume to
-### transfer common files
-### $1: base image name to run
-image_factorizeRunBaseImage() {
-  info 'running the base image of the factorization process'
-
-  local baseImageName="$1"
-
-  local temporaryVolumeName="$(
-    image_factorizeCreateTemporaryVolume)" \
-  && local containerID="$(
-    image_factorizeRunBaseImageWithTemporaryVolume \
-    "$baseImageName" "$temporaryVolumeName")"
 
   echo "$containerID"
 
@@ -3746,17 +3729,23 @@ image_factorizeFillBaseImage() {
 
   local baseImageName="$1"
 
+  local temporaryVolumeName="$(
+    image_factorizeCreateTemporaryVolume)" \
+  || return $?
+
   # TODO: obtain volume name
-  local containerID="$(image_factorizeRunBaseImage "$baseImageName")" \
+  local containerID="$(
+    image_factorizeRunBaseImage "$baseImageName" "$temporaryVolumeName")" \
   && image_factorizeCopyCommonFiles "$containerID" \
-  && image_factorizeKillBaseImageContainer "$containerID"
+  && image_factorizeKillBaseImageContainer "$containerID" \
+  && image_factorizeDestroyTemporaryVolume "$temporaryVolumeName"
 
   return $?
 }
 
 ### Creates all factorized images that have been specified, using dist file in
 ### the image factorize staging area
-image_factorizeCreateFactorizedImage() {
+image_factorizeCreateFactorizedImages() {
   info 'creating factorized images'
 
   return $?
@@ -3902,7 +3891,7 @@ image_factorize() {
   && image_initializeFactorizeStagingDirectory \
   && image_createImagesDistFileInStagingDirectory \
   && image_factorizeCreateBaseImage \
-  && image_factorizeCreateFactorizedImage \
+  && image_factorizeCreateFactorizedImages \
   && image_cleanupFactorizeStagingDirectory
 
   return $?
