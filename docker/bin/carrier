@@ -3686,15 +3686,17 @@ image_factorizeRunImageWithVolumeAttached() {
     image_factorizeGenerateRandomTemporaryMountPoint "$volumeName")" \
   || return $?
 
-  docker run \
-    --rm -d \
-    -v "$volumeName":"$mountPoint" \
-    -e MOUNTPOINT="$mountPoint" \
-    -u root \
-    --entrypoint='' \
-    "$imageName" \
-    sh -c \
-    'while true; do sleep 10; done' \
+  local containerID="$(
+    docker run \
+      --rm -d \
+      -v "$volumeName":"$mountPoint" \
+      -e MOUNTPOINT="$mountPoint" \
+      -u root \
+      --entrypoint='' \
+      "$imageName" \
+      sh -c \
+      'while true; do sleep 10; done'
+  )" \
   || ( returnCode=$? \
        && fatal 'Could not start the image container' \
        && return $returnCode ) \
@@ -3705,30 +3707,45 @@ image_factorizeRunImageWithVolumeAttached() {
   return $?
 }
 
+image_factorizeCopyFilesAccrossContainers() {
+  info 'Copying files accross containers'
+
+  return $?
+}
+
 ### copy common files from one of the image to factorize to the base image.
 ### temporary volume is used in the process to transfer files from running
 ### container to running container as it is not supported by docker.
-image_factorizeCopyCommonFiles() {
+### $1: the base image container running
+### $2: temporary volume name to attach to the running container
+image_factorizeCopyCommonFilesInBaseImageContainer() {
   info 'Copying common files to base image'
 
   local baseImageContainerID="$1"
+  local temporaryVolumeName="$2"
 
   local firstImageToFactorizeName="$(
-    image_factorizeExtractFirstImageNameOfSequence)"
+    image_factorizeExtractFirstImageNameOfSequence)" \
+  && local firstImageContainerID="$(
+    image_factorizeRunImageWithVolumeAttached \
+    "$firstImageToFactorizeName" "$temporaryVolumeName")" \
+  && image_factorizeCopyFilesAccrossContainers \
+    "$firstImageContainerID" "$baseImageContainerID" \
+  && image_factorizeKillContainer "$firstImageContainerID"
 
   return $?
 }
 
 ### kill the base image container running in background
 ### $1: container id to kill
-image_factorizeKillBaseImageContainer() {
+image_factorizeKillContainer() {
   info 'killing base image running container'
 
   local containerID="$1"
 
   docker kill "$containerID" 1>/dev/null 2>&1 \
   || ( returnCode=$? \
-       && fatal 'Could not kill the base image container' \
+       && fatal 'Could not kill the container' \
        && return $returnCode )
 
   return $?
@@ -3737,6 +3754,7 @@ image_factorizeKillBaseImageContainer() {
 ### fill the base image with common files. Common files list is the
 ### base.image.dist file stored on the staging area. Any factorized image
 ### contain these common files
+### $1: base image name
 image_factorizeFillBaseImage() {
   info 'Filling the base image for factorization process'
 
@@ -3746,9 +3764,9 @@ image_factorizeFillBaseImage() {
   && local containerID="$(
     image_factorizeRunImageWithVolumeAttached \
     "$baseImageName" "$temporaryVolumeName")" \
-  && image_factorizeCopyCommonFiles "$containerID" \
-  && pause \
-  && image_factorizeKillBaseImageContainer "$containerID" \
+  && image_factorizeCopyCommonFilesInBaseImageContainer \
+    "$containerID" "$temporaryVolumeName" \
+  && image_factorizeKillContainer "$containerID" \
   && image_factorizeDestroyTemporaryVolume "$temporaryVolumeName"
 
   return $?
