@@ -3707,8 +3707,38 @@ image_factorizeRunImageWithVolumeAttached() {
   return $?
 }
 
-image_factorizeCopyFilesAccrossContainers() {
+image_factorizeCopyBaseImageDistFileToSourceContainer() {
+  info 'copying base image.dist file inside the container'
+
+  local containerID="$1"
+  local baseImageName="$2"
+
+  local baseImageDistFile="$(image_factorizeGetBaseImageDistFile)" \
+  || return $?
+
+  docker cp "$baseImageDistFile" "$containerID":/image.dist \
+  && docker commit "$containerID" "$baseImageName"
+
+  return $?
+}
+
+### copy files from a container to an another, relying on a shared volume as
+### intermediate staging area
+### $1: source container
+### $2: target container
+image_factorizeCopyFilesAccrossContainersInSharedVolume() {
   info 'Copying files accross containers'
+
+  local sourceContainer="$1"
+  local targetContainer="$2"
+  local targetImageName="$3"
+
+  image_factorizeCopyBaseImageDistFileToSourceContainer \
+    "$targetContainer" "$targetImageName" \
+  && image_factorizeCreateArchiveFromSourceContainerInSharedVolume
+    "$sourceContainer" \
+  && image_factorizeExtractArchiveFromSharedVolumeToTargetContainer \
+    "$targetContainer"
 
   return $?
 }
@@ -3722,15 +3752,16 @@ image_factorizeCopyCommonFilesInBaseImageContainer() {
   info 'Copying common files to base image'
 
   local baseImageContainerID="$1"
-  local temporaryVolumeName="$2"
+  local baseImageName="$2"
+  local temporaryVolumeName="$3"
 
   local firstImageToFactorizeName="$(
     image_factorizeExtractFirstImageNameOfSequence)" \
   && local firstImageContainerID="$(
     image_factorizeRunImageWithVolumeAttached \
     "$firstImageToFactorizeName" "$temporaryVolumeName")" \
-  && image_factorizeCopyFilesAccrossContainers \
-    "$firstImageContainerID" "$baseImageContainerID" \
+  && image_factorizeCopyFilesAccrossContainersInSharedVolume \
+    "$firstImageContainerID" "$baseImageContainerID" "$baseImageName" \
   && image_factorizeKillContainer "$firstImageContainerID"
 
   return $?
@@ -3765,7 +3796,7 @@ image_factorizeFillBaseImage() {
     image_factorizeRunImageWithVolumeAttached \
     "$baseImageName" "$temporaryVolumeName")" \
   && image_factorizeCopyCommonFilesInBaseImageContainer \
-    "$containerID" "$temporaryVolumeName" \
+    "$containerID" "$baseImageName" "$temporaryVolumeName" \
   && image_factorizeKillContainer "$containerID" \
   && image_factorizeDestroyTemporaryVolume "$temporaryVolumeName"
 
