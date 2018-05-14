@@ -3688,23 +3688,29 @@ image_factorizeRunImageWithVolumeAttached() {
   return $?
 }
 
-### copy the base image dist file to the base image.
-### $1: base image container id running
-### $2: base image name used to perform the commit once the file has been copied
+### copy the base image dist file to the source container where to find common
+### files
+### $1: source container id running
 image_factorizeCopyBaseImageDistFileToSourceContainer() {
   info 'copying base image.dist file inside the container'
 
   local containerID="$1"
-  local baseImageName="$2"
 
   local baseImageDistFile="$(image_factorizeGetBaseImageDistFile)" \
   || return $?
 
   docker cp "$baseImageDistFile" "$containerID":/image.dist 1>/dev/null 2>&1 \
-  && docker commit "$containerID" "$baseImageName" 1>/dev/null 2>&1 \
-  || ( returnCode=$? \ )
+  || ( returnCode=$? \
+       [ $returnCode -ne 0 ] \
+       && fatal 'could not copy base image dist file to source container' \
+       && return $returnCode )
 
   return $?
+}
+
+image_factorizeCreateArchiveFromSourceContainerInSharedVolume() {
+  info 'Creating common files archive in shared volume'
+  pause
 }
 
 ### copy files from a container to an another, relying on a shared volume as
@@ -3720,12 +3726,11 @@ image_factorizeCopyFilesAccrossContainersInSharedVolume() {
   local targetImageName="$3"
 
   image_factorizeCopyBaseImageDistFileToSourceContainer \
-    "$targetContainer" "$targetImageName" \
-  && pause \
+    "$sourceContainer" \
   && image_factorizeCreateArchiveFromSourceContainerInSharedVolume
     "$sourceContainer" \
   && image_factorizeExtractArchiveFromSharedVolumeToTargetContainer \
-    "$targetContainer"
+    "$targetContainer" "$targetImageName"
 
   return $?
 }
