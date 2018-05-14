@@ -3730,6 +3730,31 @@ image_factorizeCreateArchiveFromSourceContainerInSharedVolume() {
   return $?
 }
 
+### use an archive of common files stored in shared volume to complete the base
+### image
+### $1: target container (base image)
+### $2: target image name, used to commit the result
+image_factorizeExtractArchiveFromSharedVolumeToTargetContainer() {
+  info 'extracting common files in base image'
+
+  local targetContainer="$1"
+  local targetImageName="$2"
+
+  docker cp \
+    "$CARRIER_LIB_DIR/importPackageFrom" \
+    "$targetContainer":/bin/importPackageFrom \
+  && docker exec "$targetContainer" chmod +x /bin/importPackageFrom \
+  && docker exec \
+    "$targetContainer" \
+    sh -c 'eval importPackageFrom $MOUNTPOINT/package' \
+  && docker commit "$targetContainer" "$targetImageName" 1>/dev/null 2>&1 \
+  || ( returnCode=$? \
+       && fatal 'could not complete base image from archive' \
+       && return $returnCode )
+
+  return $?
+}
+
 ### copy files from a container to an another, relying on a shared volume as
 ### intermediate staging area
 ### $1: source container
@@ -3816,6 +3841,8 @@ image_factorizeFillBaseImage() {
 ### the image factorize staging area
 image_factorizeCreateFactorizedImages() {
   info 'creating factorized images'
+
+  pause
 
   return $?
 }
