@@ -3866,12 +3866,12 @@ image_factorizeBuildBaseImageName() {
 image_factorizeBuildFactorizedImageName() {
   info 'building a factorized image name'
 
-  local fullImageName=\
-"$DOMAIN_IMAGE_COMMAND_FACTORIZE_OPTION_FACTORIZED_IMAGE_PREFIX"\
-'/'\
-"$DOMAIN_IMAGE_COMMAND_FACTORIZE_OPTION_BASE_IMAGE_NAME"\
-'/'\
-"$image"
+  local image="$1"
+
+  local baseImageName="$(image_factorizeBuildBaseImageName)" \
+  || return $?
+
+  local fullImageName="$baseImageName"'/'"$image"
 
   echo "$fullImageName"
 
