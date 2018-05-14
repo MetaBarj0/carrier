@@ -3708,9 +3708,26 @@ image_factorizeCopyBaseImageDistFileToSourceContainer() {
   return $?
 }
 
+### create the common files archive in the shared volume using files from one
+### of the images to factorize
+### $1: the source running container, one of the images to factorize
 image_factorizeCreateArchiveFromSourceContainerInSharedVolume() {
   info 'Creating common files archive in shared volume'
-  pause
+
+  local sourceContainer="$1"
+
+  docker cp \
+    "$CARRIER_LIB_DIR/exportPackageTo" \
+    "$sourceContainer":/bin/exportPackageTo \
+  && docker exec "$sourceContainer" chmod +x /bin/exportPackageTo \
+  && docker exec \
+    "$sourceContainer" \
+    sh -c 'eval exportPackageTo $MOUNTPOINT/package' \
+  || ( returnCode=$? \
+       && fatal 'could not create common files archive from source container' \
+       && return $returnCode )
+
+  return $?
 }
 
 ### copy files from a container to an another, relying on a shared volume as
@@ -3727,7 +3744,7 @@ image_factorizeCopyFilesAccrossContainersInSharedVolume() {
 
   image_factorizeCopyBaseImageDistFileToSourceContainer \
     "$sourceContainer" \
-  && image_factorizeCreateArchiveFromSourceContainerInSharedVolume
+  && image_factorizeCreateArchiveFromSourceContainerInSharedVolume \
     "$sourceContainer" \
   && image_factorizeExtractArchiveFromSharedVolumeToTargetContainer \
     "$targetContainer" "$targetImageName"
