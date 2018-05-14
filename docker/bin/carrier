@@ -3570,7 +3570,7 @@ image_factorizeCreateBaseImage() {
   info 'creating factorized base image'
 
   local baseImageName="$(image_factorizeBuildBaseImageName)" \
-  && image_factorizeInitializeBaseImage "$baseImageName" \
+  && image_factorizeInitializeMinimalisticImage "$baseImageName" \
   && image_factorizeFillBaseImage "$baseImageName"
 
   return $?
@@ -3590,8 +3590,8 @@ image_factorizeGenerateRandomTemporaryMountPoint() {
 }
 
 ### generates Dockerfile commands for the base image creation
-image_factorizeGenerateBaseImageDockerfileCommands() {
-  info 'generating Dockerfile commands for base image'
+image_factorizeGenerateMinimalisticImageDockerfileCommands() {
+  info 'generating Dockerfile commands for a minimalistic image'
 
   cat << EOI
 FROM busybox
@@ -3600,20 +3600,20 @@ EOI
   return $?
 }
 
-### create the empty base image to fill later
-### $1: base image name
-image_factorizeInitializeBaseImage() {
-  info 'creating the empty base image'
+### create a minimalistic image to fill later
+### $1: image name to create
+image_factorizeInitializeMinimalisticImage() {
+  info 'creating a minimalistic image'
 
-  local baseImageName="$1"
+  local imageName="$1"
 
-  local dockerfileCommandsForBaseImage="$(
-    image_factorizeGenerateBaseImageDockerfileCommands)" \
+  local dockerfileCommands="$(
+    image_factorizeGenerateMinimalisticImageDockerfileCommands)" \
   || return $?
 
-  echo "$dockerfileCommandsForBaseImage" | docker build -t "$baseImageName" - \
+  echo "$dockerfileCommands" | docker build -t "$imageName" - \
   || ( returnCode=$? \
-       && fatal 'Could not build the docker base image for factorization' \
+       && fatal 'Could not build a minimalistic image for factorization' \
        && return $returnCode )
 
   return $?
@@ -3841,8 +3841,18 @@ image_factorizeFillBaseImage() {
 ### the image factorize staging area
 image_factorizeCreateFactorizedImages() {
   info 'creating factorized images'
-
   pause
+
+  local imageSequence="$(image_getImageToFactorizeSequence)" \
+  || return $?
+
+  local image=
+  for image in $imageSequence; do
+    local finalImageName="$(image_factorizeBuildFactorizedImageName "$image")" \
+    && image_factorizeInitializeMinimalisticImage "$finalImageName" \
+    && image_factorizeFillFactorizedImage "$baseImageName" "$image" \
+    || return $?
+  done
 
   return $?
 }
