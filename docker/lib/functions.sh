@@ -31,7 +31,7 @@ extractCommonLinesInTwoFiles() {
 
   if [ $returnCode -ne 0 ]; then
     fatal 'could not extract common lines in '"$1"' and '"$2"
-    return 1
+    return $returnCode
   fi
 
   echo "$common_lines"
@@ -717,6 +717,23 @@ makePairSequence() {
   || return $?
 
   echo "$pairSequence"
+
+  return $?
+}
+
+# simply queries an image name on the docker host and indicates if it exists
+# or not. return 0 if exists and echo the id.
+# $1: image name
+getDockerImageIdFromName() {
+  local image="$1"
+
+  local id=$(docker image ls -q "$image") \
+  || ( returnCode=$? \
+       && fatal 'Could not request image' \
+       && return $returnCode ) \
+  || return $?
+
+  echo "$id"
 
   return $?
 }

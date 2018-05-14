@@ -817,7 +817,7 @@ EOI
 # respective files without common extracted ones.
 
 # the name to give to the extracted base image. Note that the provided name
-# must be conform to the docker standart in term of naming.
+# must be conform to the docker standard in term of naming.
 (-n|--base-image-name)=?
 .+
 contextSetImageFactorizeBaseImageName
@@ -3223,25 +3223,6 @@ image_prepareImageSequenceForFactorization() {
   return $?
 }
 
-### simply queries an image name on the docker host and indicates if it exists
-### or not. return 0 if exists and echo the id.
-### $1: image name
-image_queryImageOnDockerHost() {
-  info 'querying an image on the docker host'
-
-  local image="$1"
-
-  local id=$(docker image ls -q "$image") \
-  || ( returnCode=$? \
-       && fatal 'Could not request image' \
-       && return $returnCode ) \
-  || return $?
-
-  echo "$id"
-
-  return $?
-}
-
 ### check if the mandatory specified image exists on docker host. If the image
 ### does not exist, trigger an error message
 ### $1: image name
@@ -3250,7 +3231,7 @@ image_mustExistsOnDockerHost() {
 
   local image="$1"
 
-  local id="$(image_queryImageOnDockerHost "$image")" \
+  local id="$(getDockerImageIdFromName "$image")" \
   || return $?
 
   if [ -z $id ]; then
@@ -3274,7 +3255,7 @@ image_checkIfExistsOnDockerHost() {
 
   local image="$1"
 
-  local id=$(image_queryImageOnDockerHost "$image") \
+  local id=$(getDockerImageIdFromName "$image") \
   || return $?
 
   [ -z $id ] && return 1
@@ -3287,7 +3268,7 @@ image_checkIfExistsOnDockerHost() {
 ### extract the content of the image.dist file of the specified docker image.
 ### The file list is sorted and deduped
 ### $1 docker image name present on the docker host
-image_extractImageDistFileFromImage() {
+image_extractImageDistFileContentFromImage() {
   info 'Extracting image.dist file content of '"$1"
 
   local file_sequence="$(
@@ -3318,7 +3299,7 @@ image_initializeFactorizeStagingDirectory() {
   info 'Initializing image factorize staging area'
 
   if [ ! -z "$DOMAIN_IMAGE_COMMAND_FACTORIZE_STAGING_DIRECTORY" ]; then
-    warning 'image factorize staging area is alerady initialized'
+    warning 'image factorize staging area is already initialized'
     return 0
   fi
 
@@ -3353,7 +3334,7 @@ image_addFileInFactorizeStagingAreaWithContent() {
   info 'adding a file in image factorize staging area'
 
   if [ -z "$1" ] || [ -z "$2" ]; then
-    error 'Missing file informations (name or content)'
+    error 'Missing file informations (name and/or content)'
     return 1
   fi
 
@@ -3404,8 +3385,8 @@ image_factorizeExtractFirstImageNameOfSequence() {
 }
 
 ### extract the first two image in the image to factorize sequence
-image_factorizeMakePairOfFirstTwoElements() {
-  info 'making a pair with the first two elements of a sequence'
+image_factorizeGetFirstTwoImages() {
+  info 'making a pair with the first two images to factorize'
 
   local sequence="$(image_getImageToFactorizeSequence)" \
   || return $?
@@ -3427,14 +3408,14 @@ image_factorizeMakePairOfFirstTwoElements() {
 image_initializeBaseImageDistFileInStagingArea() {
   info 'Initializing the base image of factorization'
 
-  local imagePair="$(image_factorizeMakePairOfFirstTwoElements)" \
+  local imagePair="$(image_factorizeGetFirstTwoImages)" \
   && local first_image="$(keyOf "$imagePair")" \
   && local second_image="$(valueOf "$imagePair")" \
   && local first_files_sequence="$(
-    image_extractImageDistFileFromImage "$first_image"
+    image_extractImageDistFileContentFromImage "$first_image"
   )" \
   && local second_files_sequence="$(
-    image_extractImageDistFileFromImage "$second_image"
+    image_extractImageDistFileContentFromImage "$second_image"
   )" \
   && image_addFileInFactorizeStagingAreaWithContent \
     'first_files_sequence.dist' \
@@ -3505,7 +3486,7 @@ image_createImageDistFileFromImageInFactorizeStagingArea() {
   info 'creating a dist file for an image in staging area'
 
   local image_files_sequence="$(
-    image_extractImageDistFileFromImage "$image"
+    image_extractImageDistFileContentFromImage "$image"
   )" \
   && image_addFileInFactorizeStagingAreaWithContent \
     'image.dist' \
@@ -3589,7 +3570,7 @@ image_factorizeCreateBaseImage() {
   info 'creating factorized base image'
 
   local baseImageName="$(image_factorizeBuildBaseImageName)" \
-  && image_factorizeCreateEmptyBaseImage "$baseImageName" \
+  && image_factorizeInitializeBaseImage "$baseImageName" \
   && image_factorizeFillBaseImage "$baseImageName"
 
   return $?
@@ -3621,7 +3602,7 @@ EOI
 
 ### create the empty base image to fill later
 ### $1: base image name
-image_factorizeCreateEmptyBaseImage() {
+image_factorizeInitializeBaseImage() {
   info 'creating the empty base image'
 
   local baseImageName="$1"
@@ -3707,6 +3688,9 @@ image_factorizeRunImageWithVolumeAttached() {
   return $?
 }
 
+### copy the base image dist file to the base image.
+### $1: base image container id running
+### $2: base image name used to perform the commit once the file has been copied
 image_factorizeCopyBaseImageDistFileToSourceContainer() {
   info 'copying base image.dist file inside the container'
 
@@ -3716,8 +3700,9 @@ image_factorizeCopyBaseImageDistFileToSourceContainer() {
   local baseImageDistFile="$(image_factorizeGetBaseImageDistFile)" \
   || return $?
 
-  docker cp "$baseImageDistFile" "$containerID":/image.dist \
-  && docker commit "$containerID" "$baseImageName"
+  docker cp "$baseImageDistFile" "$containerID":/image.dist 1>/dev/null 2>&1 \
+  && docker commit "$containerID" "$baseImageName" 1>/dev/null 2>&1 \
+  || ( returnCode=$? \ )
 
   return $?
 }
@@ -3726,6 +3711,7 @@ image_factorizeCopyBaseImageDistFileToSourceContainer() {
 ### intermediate staging area
 ### $1: source container
 ### $2: target container
+### $3: target image name to commit to
 image_factorizeCopyFilesAccrossContainersInSharedVolume() {
   info 'Copying files accross containers'
 
@@ -3735,6 +3721,7 @@ image_factorizeCopyFilesAccrossContainersInSharedVolume() {
 
   image_factorizeCopyBaseImageDistFileToSourceContainer \
     "$targetContainer" "$targetImageName" \
+  && pause \
   && image_factorizeCreateArchiveFromSourceContainerInSharedVolume
     "$sourceContainer" \
   && image_factorizeExtractArchiveFromSharedVolumeToTargetContainer \
@@ -3770,7 +3757,7 @@ image_factorizeCopyCommonFilesInBaseImageContainer() {
 ### kill the base image container running in background
 ### $1: container id to kill
 image_factorizeKillContainer() {
-  info 'killing base image running container'
+  info 'killing running container'
 
   local containerID="$1"
 
