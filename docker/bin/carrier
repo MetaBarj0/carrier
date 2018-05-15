@@ -3723,20 +3723,15 @@ image_factorizeCreateArchiveFromSourceContainerInSharedVolume() {
 
   local sourceContainer="$1"
 
-  # TODO : refacto that shit
-  docker exec "$sourceContainer" mkdir -p /usr/local/bin \
-  && docker cp \
-    "$CARRIER_LIB_DIR"/exportPackageTo \
-    "$sourceContainer":/usr/local/bin/exportPackageTo \
-  && docker cp \
-    "$CARRIER_LIB_DIR"/importPackageFrom \
-    "$sourceContainer":/usr/local/bin/importPackageFrom \
-  && docker exec "$sourceContainer" sh -c 'eval cp /image.dist "$MOUNTPOINT"' \
-  && docker exec "$sourceContainer" chmod +x /usr/local/bin/exportPackageTo \
-  && docker exec "$sourceContainer" chmod +x /usr/local/bin/importPackageFrom \
-  && docker exec \
+  image_factorizeCopyUtilitiesInContainer "$sourceContainer" \
+  || return $?
+
+  docker exec \
     "$sourceContainer" \
     sh -c 'eval exportPackageTo "$MOUNTPOINT"/package' \
+  && docker exec \
+    "$sourceContainer" \
+    sh -c 'eval cp /image.dist "$MOUNTPOINT"/image.dist' \
   || ( returnCode=$? \
        && fatal 'could not create common files archive from source container' \
        && return $returnCode )
@@ -3755,16 +3750,10 @@ image_factorizeExtractArchiveFromSharedVolumeToTargetContainer() {
   local targetImageName="$2"
 
   # TODO refacto that shit
-  docker exec "$targetContainer" mkdir -p /usr/local/bin \
-  && docker cp \
-    "$CARRIER_LIB_DIR"/importPackageFrom \
-    "$targetContainer":/usr/local/bin/importPackageFrom \
-  && docker cp \
-    "$CARRIER_LIB_DIR"/exportPackageTo \
-    "$targetContainer":/usr/local/bin/exportPackageTo \
-  && docker exec "$targetContainer" sh -c 'eval cp "$MOUNTPOINT"/image.dist /' \
-  && docker exec "$targetContainer" chmod +x /usr/local/bin/importPackageFrom \
-  && docker exec "$targetContainer" chmod +x /usr/local/bin/exportPackageTo \
+  image_factorizeCopyUtilitiesInContainer "$targetContainer" \
+  || return $?
+
+  docker exec "$targetContainer" sh -c 'eval cp "$MOUNTPOINT"/image.dist /' \
   && docker exec \
     "$targetContainer" \
     sh -c 'eval importPackageFrom "$MOUNTPOINT"/package' \
@@ -3859,17 +3848,53 @@ image_factorizeFillBaseImage() {
   return $?
 }
 
+### Copy or overwrite some utilities from the docker/lib directory in the
+### specified container
+### $1: container ID to copy utilities to
+image_factorizeCopyUtilitiesInContainer() {
+  info 'copying utilities in container'
+
+  local containerId="$1"
+
+  docker exec "$containerId" mkdir -p /usr/local/bin \
+  && docker cp \
+    "$CARRIER_LIB_DIR"/exportPackageTo \
+    "$containerId":/usr/local/bin/exportPackageTo \
+  && docker cp \
+    "$CARRIER_LIB_DIR"/importPackageFrom \
+    "$containerId":/usr/local/bin/importPackageFrom \
+  && docker exec "$containerId" chmod +x /usr/local/bin/exportPackageTo \
+  && docker exec "$containerId" chmod +x /usr/local/bin/importPackageFrom \
+  || ( returnCode=$? \
+       && [ $returnCode -ne 0 ] \
+       && fatal '' \
+       && return $returnCode )
+
+  return $?
+}
+
 ### create the factorized image using the content of the original image to
 ### factorize and the computed image.dist file present in staging area
 ### $1: original image running container ID
 ### $2: minimalistic factorized image running container ID
 ### $3: factorized image name
+### $4: original image to factorize name
 image_factorizeCreateFactorizedImageFromOriginalImage() {
   info 'creating factorized image from the original one'
 
-  local originalImageName="$1"
+  local originalImageContainerID="$1"
   local factorizedImageContainerID="$2"
   local factorizedImageName="$3"
+  local originalImageName="$4"
+
+  image_factorizeCopyUtilitiesInContainer \
+    "$originalImageContainerID" \
+  && image_factorizeCopyDistFileToOriginalImageContainer \
+    "$originalImageContainerID" "$originalImageName" \
+  && image_factorizeExportPackageFromOriginalImageContainerToSharedVolume \
+  && image_factorizeImportPackageFromSharedVolumeToFactorizedImageContainer \
+  "$factorizedImageContainerID" "$factorizedImageName" \
+  || return $?
 
   return $?
 }
@@ -3895,6 +3920,7 @@ image_factorizeCopySpecificFilesInFactorizedImageContainer() {
     "$originalImageContainerID" \
     "$factorizedImageContainerID" \
     "$factorizedImageName" \
+    "$originalImageName" \
   && image_factorizeKillContainer "$originalImageContainerID" \
   || return $?
 
