@@ -3589,12 +3589,16 @@ image_factorizeGenerateRandomTemporaryMountPoint() {
   return $?
 }
 
-### generates Dockerfile commands for the base image creation
-image_factorizeGenerateMinimalisticImageDockerfileCommands() {
+### generates Dockerfile commands for the base image creation using a specified
+### base image
+### $1: the base image to use in the from command, defaulted to 'busybox'
+image_factorizeGenerateMinimalisticImageDockerfileCommandsFrom() {
   info 'generating Dockerfile commands for a minimalistic image'
 
+  local baseImage="$(setValueWithDefault "$1" 'busybox')"
+
   cat << EOI
-FROM busybox
+FROM $baseImage
 EOI
 
   return $?
@@ -3602,13 +3606,16 @@ EOI
 
 ### create a minimalistic image to fill later
 ### $1: image name to create
+### $2: image to use as base
 image_factorizeInitializeMinimalisticImage() {
   info 'creating a minimalistic image'
 
   local imageName="$1"
+  local baseImage="$2"
 
   local dockerfileCommands="$(
-    image_factorizeGenerateMinimalisticImageDockerfileCommands)" \
+    image_factorizeGenerateMinimalisticImageDockerfileCommandsFrom \
+    "$baseImage")" \
   || return $?
 
   echo "$dockerfileCommands" | docker build -t "$imageName" - \
@@ -3716,13 +3723,20 @@ image_factorizeCreateArchiveFromSourceContainerInSharedVolume() {
 
   local sourceContainer="$1"
 
-  docker cp \
-    "$CARRIER_LIB_DIR/exportPackageTo" \
-    "$sourceContainer":/bin/exportPackageTo \
-  && docker exec "$sourceContainer" chmod +x /bin/exportPackageTo \
+  # TODO : refacto that shit
+  docker exec "$sourceContainer" mkdir -p /usr/local/bin \
+  && docker cp \
+    "$CARRIER_LIB_DIR"/exportPackageTo \
+    "$sourceContainer":/usr/local/bin/exportPackageTo \
+  && docker cp \
+    "$CARRIER_LIB_DIR"/importPackageFrom \
+    "$sourceContainer":/usr/local/bin/importPackageFrom \
+  && docker exec "$sourceContainer" sh -c 'eval cp /image.dist "$MOUNTPOINT"' \
+  && docker exec "$sourceContainer" chmod +x /usr/local/bin/exportPackageTo \
+  && docker exec "$sourceContainer" chmod +x /usr/local/bin/importPackageFrom \
   && docker exec \
     "$sourceContainer" \
-    sh -c 'eval exportPackageTo $MOUNTPOINT/package' \
+    sh -c 'eval exportPackageTo "$MOUNTPOINT"/package' \
   || ( returnCode=$? \
        && fatal 'could not create common files archive from source container' \
        && return $returnCode )
@@ -3740,13 +3754,20 @@ image_factorizeExtractArchiveFromSharedVolumeToTargetContainer() {
   local targetContainer="$1"
   local targetImageName="$2"
 
-  docker cp \
-    "$CARRIER_LIB_DIR/importPackageFrom" \
-    "$targetContainer":/bin/importPackageFrom \
-  && docker exec "$targetContainer" chmod +x /bin/importPackageFrom \
+  # TODO refacto that shit
+  docker exec "$targetContainer" mkdir -p /usr/local/bin \
+  && docker cp \
+    "$CARRIER_LIB_DIR"/importPackageFrom \
+    "$targetContainer":/usr/local/bin/importPackageFrom \
+  && docker cp \
+    "$CARRIER_LIB_DIR"/exportPackageTo \
+    "$targetContainer":/usr/local/bin/exportPackageTo \
+  && docker exec "$targetContainer" sh -c 'eval cp "$MOUNTPOINT"/image.dist /' \
+  && docker exec "$targetContainer" chmod +x /usr/local/bin/importPackageFrom \
+  && docker exec "$targetContainer" chmod +x /usr/local/bin/exportPackageTo \
   && docker exec \
     "$targetContainer" \
-    sh -c 'eval importPackageFrom $MOUNTPOINT/package' \
+    sh -c 'eval importPackageFrom "$MOUNTPOINT"/package' \
   && docker commit "$targetContainer" "$targetImageName" 1>/dev/null 2>&1 \
   || ( returnCode=$? \
        && fatal 'could not complete base image from archive' \
@@ -3755,12 +3776,12 @@ image_factorizeExtractArchiveFromSharedVolumeToTargetContainer() {
   return $?
 }
 
-### copy files from a container to an another, relying on a shared volume as
-### intermediate staging area
+### Create the base image of the factorization process using common files that
+### are present in the first image to factorize sequence
 ### $1: source container
 ### $2: target container
 ### $3: target image name to commit to
-image_factorizeCopyFilesAccrossContainersInSharedVolume() {
+image_factorizeCreateBaseImageFromFirstImageInSequence() {
   info 'Copying files accross containers'
 
   local sourceContainer="$1"
@@ -3781,7 +3802,8 @@ image_factorizeCopyFilesAccrossContainersInSharedVolume() {
 ### temporary volume is used in the process to transfer files from running
 ### container to running container as it is not supported by docker.
 ### $1: the base image container running
-### $2: temporary volume name to attach to the running container
+### $2: the base image name to commit to
+### $3: temporary volume name to attach to the running container
 image_factorizeCopyCommonFilesInBaseImageContainer() {
   info 'Copying common files to base image'
 
@@ -3794,7 +3816,7 @@ image_factorizeCopyCommonFilesInBaseImageContainer() {
   && local firstImageContainerID="$(
     image_factorizeRunImageWithVolumeAttached \
     "$firstImageToFactorizeName" "$temporaryVolumeName")" \
-  && image_factorizeCopyFilesAccrossContainersInSharedVolume \
+  && image_factorizeCreateBaseImageFromFirstImageInSequence \
     "$firstImageContainerID" "$baseImageContainerID" "$baseImageName" \
   && image_factorizeKillContainer "$firstImageContainerID"
 
@@ -3837,11 +3859,78 @@ image_factorizeFillBaseImage() {
   return $?
 }
 
+### create the factorized image using the content of the original image to
+### factorize and the computed image.dist file present in staging area
+### $1: original image running container ID
+### $2: minimalistic factorized image running container ID
+### $3: factorized image name
+image_factorizeCreateFactorizedImageFromOriginalImage() {
+  info 'creating factorized image from the original one'
+
+  local originalImageName="$1"
+  local factorizedImageContainerID="$2"
+  local factorizedImageName="$3"
+
+  return $?
+}
+
+### copy specific files from an image to factorize inside the new created
+### factorized image using a shared volume as intermediate staging area
+### $1: original image name
+### $2: factorized image running container
+### $3: factorized image name (to commit to)
+### $4: temporary volume name to bind with original image container
+image_factorizeCopySpecificFilesInFactorizedImageContainer() {
+  info 'copying specific image files to factorized image'
+
+  local originalImageName="$1"
+  local factorizedImageContainerID="$2"
+  local factorizedImageName="$3"
+  local temporaryVolumeName="$4"
+
+  local originalImageContainerID="$(
+    image_factorizeRunImageWithVolumeAttached \
+    "$originalImageName" "$temporaryVolumeName")" \
+  && image_factorizeCreateFactorizedImageFromOriginalImage \
+    "$originalImageContainerID" \
+    "$factorizedImageContainerID" \
+    "$factorizedImageName" \
+  && image_factorizeKillContainer "$originalImageContainerID" \
+  || return $?
+
+  return $?
+}
+
+### Given a minimalistic image, this function fills it with specific files of
+### a given image.
+### $1: the factorized image name (which ultimately will contain only specific
+###     files regarding an existing base image already created and filled
+### $2: the original image name containing specific files to extract
+image_factorizeFillFactorizedImage() {
+  info 'filling factorized image with specific files'
+
+  local factorizedImageName="$1"
+  local originalImageName="$2"
+
+  local temporaryVolumeName="$(image_factorizeCreateTemporaryVolume)" \
+  && local containerID="$(
+    image_factorizeRunImageWithVolumeAttached \
+    "$factorizedImageName" "$temporaryVolumeName")" \
+  && image_factorizeCopySpecificFilesInFactorizedImageContainer \
+    "$originalImageName" \
+    "$containerID" \
+    "$factorizedImageName" \
+    "$temporaryVolumeName" \
+  && image_factorizeKillContainer "$containerID" \
+  && image_factorizeDestroyTemporaryVolume "$temporaryVolumeName"
+
+  return $?
+}
+
 ### Creates all factorized images that have been specified, using dist file in
 ### the image factorize staging area
 image_factorizeCreateFactorizedImages() {
   info 'creating factorized images'
-  pause
 
   local imageSequence="$(image_getImageToFactorizeSequence)" \
   || return $?
@@ -3849,8 +3938,9 @@ image_factorizeCreateFactorizedImages() {
   local image=
   for image in $imageSequence; do
     local finalImageName="$(image_factorizeBuildFactorizedImageName "$image")" \
-    && image_factorizeInitializeMinimalisticImage "$finalImageName" \
-    && image_factorizeFillFactorizedImage "$baseImageName" "$image" \
+    && image_factorizeInitializeMinimalisticImage \
+      "$finalImageName" "$(image_factorizeBuildBaseImageName)" \
+    && image_factorizeFillFactorizedImage "$finalImageName" "$image" \
     || return $?
   done
 
