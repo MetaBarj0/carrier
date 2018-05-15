@@ -3743,13 +3743,11 @@ image_factorizeCreateArchiveFromSourceContainerInSharedVolume() {
 ### image
 ### $1: target container (base image)
 ### $2: target image name, used to commit the result
-### $3: mount point used for the intermediate staging volume, must be removed
 image_factorizeExtractArchiveFromSharedVolumeToTargetContainer() {
   info 'extracting common files in base image'
 
   local targetContainer="$1"
   local targetImageName="$2"
-  local mountPoint="$3"
 
   # TODO refacto that, re organize function call, replace by other function...
   image_factorizeCopyUtilitiesInContainer "$targetContainer" \
@@ -3759,7 +3757,7 @@ image_factorizeExtractArchiveFromSharedVolumeToTargetContainer() {
   && docker exec \
     "$targetContainer" \
     sh -c 'importPackageFrom "$MOUNTPOINT"/package' \
-  && local entryPointCommand='ENTRYPOINT [ "sh", "-c", "rm -rf '"$mountPoint"\
+  && local entryPointCommand='ENTRYPOINT [ "sh", "-c", "rm -rf $MOUNTPOINT'\
 ' && unset MOUNTPOINT && sh" ]' \
   && docker commit \
     --change="$entryPointCommand" \
@@ -3776,21 +3774,19 @@ image_factorizeExtractArchiveFromSharedVolumeToTargetContainer() {
 ### $1: source container
 ### $2: target container
 ### $3: target image name to commit to
-### $4: mount point used for the shared volume, must be removed in final image
 image_factorizeCreateBaseImageFromFirstImageInSequence() {
   info 'Copying files accross containers'
 
   local sourceContainer="$1"
   local targetContainer="$2"
   local targetImageName="$3"
-  local mountPoint="$4"
 
   image_factorizeCopyBaseImageDistFileToSourceContainer \
     "$sourceContainer" \
   && image_factorizeCreateArchiveFromSourceContainerInSharedVolume \
     "$sourceContainer" \
   && image_factorizeExtractArchiveFromSharedVolumeToTargetContainer \
-    "$targetContainer" "$targetImageName" "$mountPoint"
+    "$targetContainer" "$targetImageName"
 
   return $?
 }
@@ -3817,7 +3813,6 @@ image_factorizeCopyCommonFilesInBaseImageContainer() {
     "$firstImageContainerID" \
     "$baseImageContainerID" \
     "$baseImageName" \
-    '/tmp/'"$temporaryVolumeName" \
   && image_factorizeKillContainer "$firstImageContainerID"
 
   return $?
@@ -3947,21 +3942,18 @@ image_factorizeExportPackageFromOriginalImageContainerToSharedVolume() {
 ### running container. Then, commit this container to the new factorized image.
 ### $1: target image running container identifier
 ### $2: target image name to commit to
-### $3: temporary volume name used in the mount point folder name to connect to
-###     the shared volume
 image_factorizeImportPackageFromSharedVolumeToFactorizedImageContainer() {
   info 'importing package from shared volume'
 
   local targetContainer="$1"
   local targetImageName="$2"
-  local temporaryVolumeName="$3"
 
   # TODO: refacto container commit
   docker exec "$targetContainer" sh -c 'cp "$MOUNTPOINT"/image.dist /' \
   && docker exec \
     "$targetContainer" \
     sh -c 'importPackageFrom "$MOUNTPOINT"/package' \
-  && local entryPointCommand='ENTRYPOINT [ "sh", "-c", "rm -rf '"$mountPoint"\
+  && local entryPointCommand='ENTRYPOINT [ "sh", "-c", "rm -rf $MOUNTPOINT'\
 ' && unset MOUNTPOINT && sh" ]' \
   && docker commit \
     --change="$entryPointCommand" \
@@ -3979,8 +3971,6 @@ image_factorizeImportPackageFromSharedVolumeToFactorizedImageContainer() {
 ### $2: minimalistic factorized image running container ID
 ### $3: factorized image name
 ### $4: original image to factorize name
-### $5: temporary volume name of the shared volume used to transfer files
-###     accross containers
 image_factorizeCreateFactorizedImageFromOriginalImage() {
   info 'creating factorized image from the original one'
 
@@ -4001,7 +3991,7 @@ image_factorizeCreateFactorizedImageFromOriginalImage() {
   && image_factorizeExportPackageFromOriginalImageContainerToSharedVolume \
     "$originalImageContainerID" \
   && image_factorizeImportPackageFromSharedVolumeToFactorizedImageContainer \
-  "$factorizedImageContainerID" "$factorizedImageName" "$temporaryVolumeName" \
+  "$factorizedImageContainerID" "$factorizedImageName" \
   || return $?
 
   return $?
@@ -4029,7 +4019,6 @@ image_factorizeCopySpecificFilesInFactorizedImageContainer() {
     "$factorizedImageContainerID" \
     "$factorizedImageName" \
     "$originalImageName" \
-    "$temporaryVolumeName" \
   && image_factorizeKillContainer "$originalImageContainerID" \
   || return $?
 
