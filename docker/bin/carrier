@@ -3873,6 +3873,48 @@ image_factorizeCopyUtilitiesInContainer() {
   return $?
 }
 
+### Obtains the absolute path of a dist file from an image name to factorize in
+### the image factorize staging directory
+image_factorizeGetImageDistFilePathInStagingDirectoryFromImageName() {
+  info 'getting the dist file absolute path from image name'
+
+  local distFileName="$(path64Encode "$originalImageName")"'.dist' \
+  && local distFilePath="$(image_getFactorizeStagingDirectory
+    )"'/'"$distFileName" \
+  || return $?
+
+  echo "$distFilePath"
+
+  return $?
+}
+
+### copy the corresponding image.dist file into the running container of the
+### original image. Reminder: the image.dist file to copy contains only specific
+### files of this image regarding the previsouly built base image
+### $1: original image running container ID
+### $2: original image to factorize name
+image_factorizeCopyDistFileToOriginalImageContainer() {
+  info 'copying specific image dist file in original image container'
+
+  local originalImageContainerID="$1"
+  local originalImageName="$2"
+
+  local distFilePath="$(
+    image_factorizeGetImageDistFilePathInStagingDirectoryFromImageName \
+    "$originalImageName")" \
+  || return $?
+
+  docker cp "$distFilePath" "$originalImageContainerID":/image.dist \
+  && docker exec \
+    "$originalImageContainerID" \
+    sh -c 'eval cp /image.dist "$MOUNTPOINT"/image.dist' \
+  || ( returnCode=$? \
+       && fatal 'Could not copy dist file in container' \
+       && return $returnCode )
+
+  return $?
+}
+
 ### create the factorized image using the content of the original image to
 ### factorize and the computed image.dist file present in staging area
 ### $1: original image running container ID
