@@ -3728,10 +3728,10 @@ image_factorizeCreateArchiveFromSourceContainerInSharedVolume() {
 
   docker exec \
     "$sourceContainer" \
-    sh -c 'eval exportPackageTo "$MOUNTPOINT"/package' \
+    sh -c 'exportPackageTo "$MOUNTPOINT"/package' \
   && docker exec \
     "$sourceContainer" \
-    sh -c 'eval cp /image.dist "$MOUNTPOINT"/image.dist' \
+    sh -c 'cp /image.dist "$MOUNTPOINT"/image.dist' \
   || ( returnCode=$? \
        && fatal 'could not create common files archive from source container' \
        && return $returnCode )
@@ -3755,10 +3755,10 @@ image_factorizeExtractArchiveFromSharedVolumeToTargetContainer() {
   image_factorizeCopyUtilitiesInContainer "$targetContainer" \
   || return $?
 
-  docker exec "$targetContainer" sh -c 'eval cp "$MOUNTPOINT"/image.dist /' \
+  docker exec "$targetContainer" sh -c 'cp "$MOUNTPOINT"/image.dist /' \
   && docker exec \
     "$targetContainer" \
-    sh -c 'eval importPackageFrom "$MOUNTPOINT"/package' \
+    sh -c 'importPackageFrom "$MOUNTPOINT"/package' \
   && local entryPointCommand='ENTRYPOINT [ "sh", "-c", "rm -rf '"$mountPoint"\
 ' && unset MOUNTPOINT && sh" ]' \
   && docker commit \
@@ -3918,7 +3918,7 @@ image_factorizeCopyDistFileToOriginalImageContainer() {
   docker cp "$distFilePath" "$originalImageContainerID":/image.dist \
   && docker exec \
     "$originalImageContainerID" \
-    sh -c 'eval cp /image.dist "$MOUNTPOINT"/image.dist' \
+    sh -c 'cp /image.dist "$MOUNTPOINT"/image.dist' \
   || ( returnCode=$? \
        && fatal 'Could not copy dist file in container' \
        && return $returnCode )
@@ -3935,7 +3935,7 @@ image_factorizeExportPackageFromOriginalImageContainerToSharedVolume() {
 
   docker exec \
     "$originalImageContainerID" \
-    sh -c 'eval exportPackageTo "$MOUNTPOINT"/package' \
+    sh -c 'exportPackageTo "$MOUNTPOINT"/package' \
   || ( returnCode=$? \
        && fatal 'Could not export the package in shared volume' \
        && return $returnCode )
@@ -3957,10 +3957,10 @@ image_factorizeImportPackageFromSharedVolumeToFactorizedImageContainer() {
   local temporaryVolumeName="$3"
 
   # TODO: refacto container commit
-  docker exec "$targetContainer" sh -c 'eval cp "$MOUNTPOINT"/image.dist /' \
+  docker exec "$targetContainer" sh -c 'cp "$MOUNTPOINT"/image.dist /' \
   && docker exec \
     "$targetContainer" \
-    sh -c 'eval importPackageFrom "$MOUNTPOINT"/package' \
+    sh -c 'importPackageFrom "$MOUNTPOINT"/package' \
   && local entryPointCommand='ENTRYPOINT [ "sh", "-c", "rm -rf '"$mountPoint"\
 ' && unset MOUNTPOINT && sh" ]' \
   && docker commit \
