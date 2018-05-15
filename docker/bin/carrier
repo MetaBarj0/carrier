@@ -3743,11 +3743,13 @@ image_factorizeCreateArchiveFromSourceContainerInSharedVolume() {
 ### image
 ### $1: target container (base image)
 ### $2: target image name, used to commit the result
+### $3: mount point used for the intermediate staging volume, must be removed
 image_factorizeExtractArchiveFromSharedVolumeToTargetContainer() {
   info 'extracting common files in base image'
 
   local targetContainer="$1"
   local targetImageName="$2"
+  local mountPoint="$3"
 
   # TODO refacto that, re organize function call, replace by other function...
   image_factorizeCopyUtilitiesInContainer "$targetContainer" \
@@ -3757,8 +3759,10 @@ image_factorizeExtractArchiveFromSharedVolumeToTargetContainer() {
   && docker exec \
     "$targetContainer" \
     sh -c 'eval importPackageFrom "$MOUNTPOINT"/package' \
+  && local entryPointCommand='ENTRYPOINT [ "sh", "-c", "rm -rf '"$mountPoint"\
+' && unset MOUNTPOINT && sh" ]' \
   && docker commit \
-    --change='ENTRYPOINT [ "sh" ]' \
+    --change="$entryPointCommand" \
     "$targetContainer" "$targetImageName" 1>/dev/null 2>&1 \
   || ( returnCode=$? \
        && fatal 'could not complete base image from archive' \
@@ -3772,19 +3776,21 @@ image_factorizeExtractArchiveFromSharedVolumeToTargetContainer() {
 ### $1: source container
 ### $2: target container
 ### $3: target image name to commit to
+### $4: mount point used for the shared volume, must be removed in final image
 image_factorizeCreateBaseImageFromFirstImageInSequence() {
   info 'Copying files accross containers'
 
   local sourceContainer="$1"
   local targetContainer="$2"
   local targetImageName="$3"
+  local mountPoint="$4"
 
   image_factorizeCopyBaseImageDistFileToSourceContainer \
     "$sourceContainer" \
   && image_factorizeCreateArchiveFromSourceContainerInSharedVolume \
     "$sourceContainer" \
   && image_factorizeExtractArchiveFromSharedVolumeToTargetContainer \
-    "$targetContainer" "$targetImageName"
+    "$targetContainer" "$targetImageName" "$mountPoint"
 
   return $?
 }
@@ -3808,7 +3814,10 @@ image_factorizeCopyCommonFilesInBaseImageContainer() {
     image_factorizeRunImageWithVolumeAttached \
     "$firstImageToFactorizeName" "$temporaryVolumeName")" \
   && image_factorizeCreateBaseImageFromFirstImageInSequence \
-    "$firstImageContainerID" "$baseImageContainerID" "$baseImageName" \
+    "$firstImageContainerID" \
+    "$baseImageContainerID" \
+    "$baseImageName" \
+    '/tmp/'"$temporaryVolumeName" \
   && image_factorizeKillContainer "$firstImageContainerID"
 
   return $?
@@ -3931,7 +3940,7 @@ image_factorizeExportPackageFromOriginalImageContainerToSharedVolume() {
        && fatal 'Could not export the package in shared volume' \
        && return $returnCode )
 
-  pause; return $?
+  return $?
 }
 
 ### create the factorized image using the content of the original image to
@@ -3948,6 +3957,11 @@ image_factorizeCreateFactorizedImageFromOriginalImage() {
   local factorizedImageName="$3"
   local originalImageName="$4"
 
+  # TODO : get inspired for base image refacto:
+  #        - copy utilities then
+  #        - copy dist then
+  #        - export then
+  #        - import
   image_factorizeCopyUtilitiesInContainer \
     "$originalImageContainerID" \
   && image_factorizeCopyDistFileToOriginalImageContainer \
