@@ -3756,7 +3756,9 @@ image_factorizeExtractArchiveFromSharedVolumeToTargetContainer() {
   && docker exec \
     "$targetContainer" \
     sh -c 'eval importPackageFrom "$MOUNTPOINT"/package' \
-  && docker commit "$targetContainer" "$targetImageName" 1>/dev/null 2>&1 \
+  && docker commit \
+    --change='ENTRYPOINT [ "sh" ]' \
+    "$targetContainer" "$targetImageName" 1>/dev/null 2>&1 \
   || ( returnCode=$? \
        && fatal 'could not complete base image from archive' \
        && return $returnCode )
