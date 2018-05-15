@@ -3701,70 +3701,19 @@ image_factorizeRunImageWithVolumeAttached() {
 image_factorizeCopyBaseImageDistFileToSourceContainer() {
   info 'copying base image.dist file inside the container'
 
+  # TODO refacto as lot of common code with factorized dist file copying
   local containerID="$1"
 
   local baseImageDistFile="$(image_factorizeGetBaseImageDistFile)" \
   || return $?
 
   docker cp "$baseImageDistFile" "$containerID":/image.dist 1>/dev/null 2>&1 \
+  && docker exec \
+    "$containerID" \
+    sh -c 'cp /image.dist "$MOUNTPOINT"/image.dist' \
   || ( returnCode=$? \
        [ $returnCode -ne 0 ] \
        && fatal 'could not copy base image dist file to source container' \
-       && return $returnCode )
-
-  return $?
-}
-
-### create the common files archive in the shared volume using files from one
-### of the images to factorize
-### $1: the source running container, one of the images to factorize
-image_factorizeCreateArchiveFromSourceContainerInSharedVolume() {
-  info 'Creating common files archive in shared volume'
-
-  local sourceContainer="$1"
-
-  image_factorizeCopyUtilitiesInContainer "$sourceContainer" \
-  || return $?
-
-  docker exec \
-    "$sourceContainer" \
-    sh -c 'exportPackageTo "$MOUNTPOINT"/package' \
-  && docker exec \
-    "$sourceContainer" \
-    sh -c 'cp /image.dist "$MOUNTPOINT"/image.dist' \
-  || ( returnCode=$? \
-       && fatal 'could not create common files archive from source container' \
-       && return $returnCode )
-
-  return $?
-}
-
-### use an archive of common files stored in shared volume to complete the base
-### image
-### $1: target container (base image)
-### $2: target image name, used to commit the result
-image_factorizeExtractArchiveFromSharedVolumeToTargetContainer() {
-  info 'extracting common files in base image'
-
-  local targetContainer="$1"
-  local targetImageName="$2"
-
-  # TODO refacto that, re organize function call, replace by other function...
-  image_factorizeCopyUtilitiesInContainer "$targetContainer" \
-  || return $?
-
-  docker exec "$targetContainer" sh -c 'cp "$MOUNTPOINT"/image.dist /' \
-  && docker exec \
-    "$targetContainer" \
-    sh -c 'importPackageFrom "$MOUNTPOINT"/package' \
-  && local entryPointCommand='ENTRYPOINT [ "sh", "-c", "rm -rf $MOUNTPOINT'\
-' && unset MOUNTPOINT && sh" ]' \
-  && docker commit \
-    --change='ONBUILD RUN rm -rf $MOUNTPOINT && unset MOUNTPOINT' \
-    --change="$entryPointCommand" \
-    "$targetContainer" "$targetImageName" 1>/dev/null 2>&1 \
-  || ( returnCode=$? \
-       && fatal 'could not complete base image from archive' \
        && return $returnCode )
 
   return $?
@@ -3782,12 +3731,15 @@ image_factorizeCreateBaseImageFromFirstImageInSequence() {
   local targetContainer="$2"
   local targetImageName="$3"
 
-  image_factorizeCopyBaseImageDistFileToSourceContainer \
+
+  image_factorizeCopyBaseImageDistFileToSourceContainer "$sourceContainer" \
+  && image_factorizeCopyUtilitiesInContainer "$sourceContainer" \
+  && image_factorizeExportPackageFromOriginalImageContainerToSharedVolume \
     "$sourceContainer" \
-  && image_factorizeCreateArchiveFromSourceContainerInSharedVolume \
-    "$sourceContainer" \
-  && image_factorizeExtractArchiveFromSharedVolumeToTargetContainer \
-    "$targetContainer" "$targetImageName"
+  && image_factorizeCopyUtilitiesInContainer "$targetContainer" \
+  && image_factorizeImportPackageFromSharedVolumeToTargetImageContainer \
+    "$targetContainer" \
+  && image_factorizeCommitContainerToImage "$targetContainer" "$targetImageName"
 
   return $?
 }
@@ -3874,7 +3826,7 @@ image_factorizeCopyUtilitiesInContainer() {
   && docker exec "$containerId" chmod +x /usr/local/bin/importPackageFrom \
   || ( returnCode=$? \
        && [ $returnCode -ne 0 ] \
-       && fatal '' \
+       && fatal 'could not copy utilities in container' \
        && return $returnCode )
 
   return $?
@@ -3900,7 +3852,7 @@ image_factorizeGetImageDistFilePathInStagingDirectoryFromImageName() {
 ### files of this image regarding the previsouly built base image
 ### $1: original image running container ID
 ### $2: original image to factorize name
-image_factorizeCopyDistFileToOriginalImageContainer() {
+image_factorizeCopyDistFileToOriginalImageToFactorizeContainer() {
   info 'copying specific image dist file in original image container'
 
   local originalImageContainerID="$1"
@@ -3939,25 +3891,42 @@ image_factorizeExportPackageFromOriginalImageContainerToSharedVolume() {
   return $?
 }
 
-### import done package from the shared volume into the factorized image
-### running container. Then, commit this container to the new factorized image.
+### import done package from the shared volume into the target image
+### running container.
 ### $1: target image running container identifier
-### $2: target image name to commit to
-image_factorizeImportPackageFromSharedVolumeToFactorizedImageContainer() {
+image_factorizeImportPackageFromSharedVolumeToTargetImageContainer() {
   info 'importing package from shared volume'
 
   local targetContainer="$1"
-  local targetImageName="$2"
 
-  # TODO: refacto container commit
   docker exec "$targetContainer" sh -c 'cp "$MOUNTPOINT"/image.dist /' \
   && docker exec \
     "$targetContainer" \
     sh -c 'importPackageFrom "$MOUNTPOINT"/package' \
-  && local entryPointCommand='ENTRYPOINT [ "sh", "-c", "rm -rf $MOUNTPOINT'\
-' && unset MOUNTPOINT && sh" ]' \
+  || ( returnCode=$? \
+       && fatal 'could not complete target image from package' \
+       && return $returnCode )
+
+  return $?
+}
+
+### commit a running container to an image
+### $1: the running container identifier
+### $2: the image name to commit to
+image_factorizeCommitContainerToImage() {
+  info 'committing container to image'
+
+  local targetContainer="$1"
+  local targetImageName="$2"
+
+  local entryPointCommand="$(
+    cat << EOI
+ENTRYPOINT [ "sh", "-c", "rm -rf \$MOUNTPOINT && unset MOUNTPOINT && sh" ]
+EOI
+)" \
+  && local onBuildCommand='ONBUILD RUN rm -rf $MOUNTPOINT && unset MOUNTPOINT' \
   && docker commit \
-    --change='ONBUILD RUN rm -rf $MOUNTPOINT && unset MOUNTPOINT' \
+    --change="$onBuildCommand" \
     --change="$entryPointCommand" \
     "$targetContainer" "$targetImageName" 1>/dev/null 2>&1 \
   || ( returnCode=$? \
@@ -3981,19 +3950,16 @@ image_factorizeCreateFactorizedImageFromOriginalImage() {
   local factorizedImageName="$3"
   local originalImageName="$4"
 
-  # TODO : get inspired for base image refacto:
-  #        - copy utilities then
-  #        - copy dist then
-  #        - export then
-  #        - import
-  image_factorizeCopyUtilitiesInContainer \
-    "$originalImageContainerID" \
-  && image_factorizeCopyDistFileToOriginalImageContainer \
+  image_factorizeCopyDistFileToOriginalImageToFactorizeContainer \
     "$originalImageContainerID" "$originalImageName" \
+  && image_factorizeCopyUtilitiesInContainer "$originalImageContainerID" \
   && image_factorizeExportPackageFromOriginalImageContainerToSharedVolume \
     "$originalImageContainerID" \
-  && image_factorizeImportPackageFromSharedVolumeToFactorizedImageContainer \
-  "$factorizedImageContainerID" "$factorizedImageName" \
+  && image_factorizeCopyUtilitiesInContainer "$factorizedImageContainerID" \
+  && image_factorizeImportPackageFromSharedVolumeToTargetImageContainer \
+    "$factorizedImageContainerID" \
+  && image_factorizeCommitContainerToImage \
+    "$factorizedImageContainerID" "$factorizedImageName" \
   || return $?
 
   return $?
