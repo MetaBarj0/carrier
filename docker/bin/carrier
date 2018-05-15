@@ -3760,6 +3760,7 @@ image_factorizeExtractArchiveFromSharedVolumeToTargetContainer() {
   && local entryPointCommand='ENTRYPOINT [ "sh", "-c", "rm -rf $MOUNTPOINT'\
 ' && unset MOUNTPOINT && sh" ]' \
   && docker commit \
+    --change='ONBUILD RUN rm -rf $MOUNTPOINT && unset MOUNTPOINT' \
     --change="$entryPointCommand" \
     "$targetContainer" "$targetImageName" 1>/dev/null 2>&1 \
   || ( returnCode=$? \
@@ -3956,6 +3957,7 @@ image_factorizeImportPackageFromSharedVolumeToFactorizedImageContainer() {
   && local entryPointCommand='ENTRYPOINT [ "sh", "-c", "rm -rf $MOUNTPOINT'\
 ' && unset MOUNTPOINT && sh" ]' \
   && docker commit \
+    --change='ONBUILD RUN rm -rf $MOUNTPOINT && unset MOUNTPOINT' \
     --change="$entryPointCommand" \
     "$targetContainer" "$targetImageName" 1>/dev/null 2>&1 \
   || ( returnCode=$? \
