@@ -3749,6 +3749,7 @@ image_factorizeExtractArchiveFromSharedVolumeToTargetContainer() {
   local targetContainer="$1"
   local targetImageName="$2"
 
+  # TODO refacto that, re organize function call, replace by other function...
   image_factorizeCopyUtilitiesInContainer "$targetContainer" \
   || return $?
 
