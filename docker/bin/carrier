@@ -3749,7 +3749,6 @@ image_factorizeExtractArchiveFromSharedVolumeToTargetContainer() {
   local targetContainer="$1"
   local targetImageName="$2"
 
-  # TODO refacto that shit
   image_factorizeCopyUtilitiesInContainer "$targetContainer" \
   || return $?
 
@@ -3915,6 +3914,23 @@ image_factorizeCopyDistFileToOriginalImageContainer() {
   return $?
 }
 
+### create a package in a shared volume, from an original image to factorize
+### $1: original image rnning container, modified (dist file and utilities)
+image_factorizeExportPackageFromOriginalImageContainerToSharedVolume() {
+  info 'creating a package from original image to shared volume'
+
+  local originalImageContainerID="$1"
+
+  docker exec \
+    "$originalImageContainerID" \
+    sh -c 'eval exportPackageTo "$MOUNTPOINT"/package' \
+  || ( returnCode=$? \
+       && fatal 'Could not export the package in shared volume' \
+       && return $returnCode )
+
+  pause; return $?
+}
+
 ### create the factorized image using the content of the original image to
 ### factorize and the computed image.dist file present in staging area
 ### $1: original image running container ID
@@ -3934,6 +3950,7 @@ image_factorizeCreateFactorizedImageFromOriginalImage() {
   && image_factorizeCopyDistFileToOriginalImageContainer \
     "$originalImageContainerID" "$originalImageName" \
   && image_factorizeExportPackageFromOriginalImageContainerToSharedVolume \
+    "$originalImageContainerID" \
   && image_factorizeImportPackageFromSharedVolumeToFactorizedImageContainer \
   "$factorizedImageContainerID" "$factorizedImageName" \
   || return $?
