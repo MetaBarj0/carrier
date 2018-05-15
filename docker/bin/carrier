@@ -3943,12 +3943,44 @@ image_factorizeExportPackageFromOriginalImageContainerToSharedVolume() {
   return $?
 }
 
+### import done package from the shared volume into the factorized image
+### running container. Then, commit this container to the new factorized image.
+### $1: target image running container identifier
+### $2: target image name to commit to
+### $3: temporary volume name used in the mount point folder name to connect to
+###     the shared volume
+image_factorizeImportPackageFromSharedVolumeToFactorizedImageContainer() {
+  info 'importing package from shared volume'
+
+  local targetContainer="$1"
+  local targetImageName="$2"
+  local temporaryVolumeName="$3"
+
+  # TODO: refacto container commit
+  docker exec "$targetContainer" sh -c 'eval cp "$MOUNTPOINT"/image.dist /' \
+  && docker exec \
+    "$targetContainer" \
+    sh -c 'eval importPackageFrom "$MOUNTPOINT"/package' \
+  && local entryPointCommand='ENTRYPOINT [ "sh", "-c", "rm -rf '"$mountPoint"\
+' && unset MOUNTPOINT && sh" ]' \
+  && docker commit \
+    --change="$entryPointCommand" \
+    "$targetContainer" "$targetImageName" 1>/dev/null 2>&1 \
+  || ( returnCode=$? \
+       && fatal 'could not complete target image from package' \
+       && return $returnCode )
+
+  return $?
+}
+
 ### create the factorized image using the content of the original image to
 ### factorize and the computed image.dist file present in staging area
 ### $1: original image running container ID
 ### $2: minimalistic factorized image running container ID
 ### $3: factorized image name
 ### $4: original image to factorize name
+### $5: temporary volume name of the shared volume used to transfer files
+###     accross containers
 image_factorizeCreateFactorizedImageFromOriginalImage() {
   info 'creating factorized image from the original one'
 
@@ -3969,7 +4001,7 @@ image_factorizeCreateFactorizedImageFromOriginalImage() {
   && image_factorizeExportPackageFromOriginalImageContainerToSharedVolume \
     "$originalImageContainerID" \
   && image_factorizeImportPackageFromSharedVolumeToFactorizedImageContainer \
-  "$factorizedImageContainerID" "$factorizedImageName" \
+  "$factorizedImageContainerID" "$factorizedImageName" "$temporaryVolumeName" \
   || return $?
 
   return $?
@@ -3997,6 +4029,7 @@ image_factorizeCopySpecificFilesInFactorizedImageContainer() {
     "$factorizedImageContainerID" \
     "$factorizedImageName" \
     "$originalImageName" \
+    "$temporaryVolumeName" \
   && image_factorizeKillContainer "$originalImageContainerID" \
   || return $?
 
