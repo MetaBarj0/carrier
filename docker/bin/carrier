@@ -3697,24 +3697,43 @@ image_factorizeRunImageWithVolumeAttached() {
 
 ### copy the base image dist file to the source container where to find common
 ### files
-### $1: source container id running
-image_factorizeCopyBaseImageDistFileToSourceContainer() {
+### $1: running container id
+### $2: absolute path of file on host to copy
+### $3: absolute path of file in the container
+image_factorizeCopyFileToContainerAndSharedVolume() {
   info 'copying base image.dist file inside the container'
 
-  # TODO refacto as lot of common code with factorized dist file copying
   local containerID="$1"
+  local sourceFilePath="$2"
+  local targetFilePath="$3"
+  local targetFileName="$(basename "$targetFilePath")"
 
-  local baseImageDistFile="$(image_factorizeGetBaseImageDistFile)" \
-  || return $?
-
-  docker cp "$baseImageDistFile" "$containerID":/image.dist 1>/dev/null 2>&1 \
+  docker cp \
+    "$sourceFilePath" \
+    "$containerID"':'"$targetFilePath" 1>/dev/null 2>&1 \
   && docker exec \
     "$containerID" \
-    sh -c 'cp /image.dist "$MOUNTPOINT"/image.dist' \
+    sh -c 'cp '"$targetFilePath"' "$MOUNTPOINT"/'"$targetFileName" \
   || ( returnCode=$? \
        [ $returnCode -ne 0 ] \
-       && fatal 'could not copy base image dist file to source container' \
+       && fatal 'could not copy file to source container and shared volume' \
        && return $returnCode )
+
+  return $?
+}
+
+### copy the base.image.dist file present in the image factorize staging area
+### in a running container and the shared volume
+### $1: running container identifier
+image_factorizeCopyBaseDistFileInContainerAndSharedVolume() {
+  info 'copying dist file to container and shared volume'
+
+  local containerId="$1"
+
+  local targetFilePath='/image.dist'
+  local sourceFilePath="$(image_factorizeGetBaseImageDistFile)" \
+  && image_factorizeCopyFileToContainerAndSharedVolume \
+     "$containerId" "$sourceFilePath" "$targetFilePath"
 
   return $?
 }
@@ -3731,8 +3750,7 @@ image_factorizeCreateBaseImageFromFirstImageInSequence() {
   local targetContainer="$2"
   local targetImageName="$3"
 
-
-  image_factorizeCopyBaseImageDistFileToSourceContainer "$sourceContainer" \
+  image_factorizeCopyBaseDistFileInContainerAndSharedVolume "$sourceContainer" \
   && image_factorizeCopyUtilitiesInContainer "$sourceContainer" \
   && image_factorizeExportPackageFromOriginalImageContainerToSharedVolume \
     "$sourceContainer" \
@@ -3847,33 +3865,6 @@ image_factorizeGetImageDistFilePathInStagingDirectoryFromImageName() {
   return $?
 }
 
-### copy the corresponding image.dist file into the running container of the
-### original image. Reminder: the image.dist file to copy contains only specific
-### files of this image regarding the previsouly built base image
-### $1: original image running container ID
-### $2: original image to factorize name
-image_factorizeCopyDistFileToOriginalImageToFactorizeContainer() {
-  info 'copying specific image dist file in original image container'
-
-  local originalImageContainerID="$1"
-  local originalImageName="$2"
-
-  local distFilePath="$(
-    image_factorizeGetImageDistFilePathInStagingDirectoryFromImageName \
-    "$originalImageName")" \
-  || return $?
-
-  docker cp "$distFilePath" "$originalImageContainerID":/image.dist \
-  && docker exec \
-    "$originalImageContainerID" \
-    sh -c 'cp /image.dist "$MOUNTPOINT"/image.dist' \
-  || ( returnCode=$? \
-       && fatal 'Could not copy dist file in container' \
-       && return $returnCode )
-
-  return $?
-}
-
 ### create a package in a shared volume, from an original image to factorize
 ### $1: original image rnning container, modified (dist file and utilities)
 image_factorizeExportPackageFromOriginalImageContainerToSharedVolume() {
@@ -3950,8 +3941,13 @@ image_factorizeCreateFactorizedImageFromOriginalImage() {
   local factorizedImageName="$3"
   local originalImageName="$4"
 
-  image_factorizeCopyDistFileToOriginalImageToFactorizeContainer \
-    "$originalImageContainerID" "$originalImageName" \
+  # TODO refacto that
+  local targetFilePath='/image.dist'
+  local sourceFilePath="$(
+    image_factorizeGetImageDistFilePathInStagingDirectoryFromImageName \
+    "$originalImageName")" \
+  && image_factorizeCopyFileToContainerAndSharedVolume \
+     "$originalImageContainerID" "$sourceFilePath" "$targetFilePath" \
   && image_factorizeCopyUtilitiesInContainer "$originalImageContainerID" \
   && image_factorizeExportPackageFromOriginalImageContainerToSharedVolume \
     "$originalImageContainerID" \
