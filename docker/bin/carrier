@@ -3969,8 +3969,7 @@ image_factorizeCreateFactorizedImageFromOriginalImage() {
   && image_factorizeImportPackageFromSharedVolumeToTargetImageContainer \
     "$factorizedImageContainerID" \
   && image_factorizeCommitContainerToImage \
-    "$factorizedImageContainerID" "$factorizedImageName" \
-  || return $?
+    "$factorizedImageContainerID" "$factorizedImageName"
 
   return $?
 }
@@ -4127,7 +4126,8 @@ image_factorizeGetImageNameBuildFunctionFromImageType() {
 
 ### issues an error if a factorizabe image or a base image name already exists
 ### on the docker host
-### $1: a docker image name
+### $1: image type to verify: either base or factorized
+### $2: a docker image name, not mandatory
 image_factorizeIssueErrorIfImageNameExistsOnDockerHost() {
   info 'checking if factorizable image or base image exists'
 
@@ -4166,7 +4166,7 @@ image_factorizeVerifyImagesNames() {
   return $?
 }
 
-### checking if resulting image name are conflicting with existing image names
+### checking if resulting image names are conflicting with existing image names
 ### on the docker host
 image_factorizeCheckResultantImageNames() {
   info 'checking resultant image full names for possible conflicts'
@@ -4190,7 +4190,8 @@ image_factorize() {
   && image_createImagesDistFileInStagingDirectory \
   && image_factorizeCreateBaseImage \
   && image_factorizeCreateFactorizedImages \
-  && image_cleanupFactorizeStagingDirectory
+  && image_cleanupFactorizeStagingDirectory \
+  && pruneOrphanDockerImages 1>/dev/null 2>&1
 
   return $?
 }

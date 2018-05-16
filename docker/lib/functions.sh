@@ -325,6 +325,11 @@ registerBuiltFilesForPackaging() {
   | sed -E 's/^A\s//' > /image.dist
 }
 
+# remove all orphan images on the docker host
+pruneOrphanDockerImages() {
+  docker image prune -f
+}
+
 # finalize the packaging process, fixing /image.dist file paths and commiting
 # changes of the container in the image
 finalizePackage() {
@@ -338,7 +343,7 @@ finalizePackage() {
   docker commit $(hostname) $REPOSITORY
 
   # intermediate clean
-  docker image prune -f
+  pruneOrphanDockerImages
 }
 
 # a function that append stuff to a list that may be empty using a specified
