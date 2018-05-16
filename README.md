@@ -62,7 +62,7 @@ volumes).
 # Designed mount points
 
 - /boot : vfat type, EFI, really small, (64 MB)
-- / : LVM2, extendable, (2GB)
+- / : LVM2, extendable, (4GB)
 - /var/lib/docker : LVM2, extendable, noexec, nodev, nosuid, (8GB)
 - /var/lib/docker/volumes : LVM2, extendable, nosuid, (8GB)
 
@@ -70,7 +70,7 @@ volumes).
 
 - /vagrant : classical shared folder created by `Vagrant` itself
 - /docker : added mount point pointing on the docker directory of the `carrier`
-repository, to facilitate `carrier`'s scripts usage.
+repository, to facilitate `carrier`'s scripts usage from within the VM.
 
 Usage
 =====
@@ -80,7 +80,7 @@ Usage
 This section describes how to use the `Vagrant` environment provided with the
 `carrier` repository. It is not a mandatory step unless you're working on a
 platform that does not support `docker` and `docker-compose` natively.
-On the other hand, VirtualBox (5.2.6+) and Vagrant (2.0.2+) are needed.
+On the other hand, VirtualBox (5.2.12+) and Vagrant (2.0.3+) are needed.
 
 ## Setup
 
