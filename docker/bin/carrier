@@ -9,10 +9,13 @@ set -f
 
 ### set up paths after calling this script
 initializePaths() {
-  # get the full path of the called script
-  cd $(dirname "$0")
-  CALLED_SCRIPT="$(pwd -P)"/"$(basename "$0")"
-  cd - 1>/dev/null 2>&1
+  # get the full path of the called script if not provided by a restart in
+  # trace mode
+  if [ -z ${TRACE_ENABLED+0} ]; then
+    cd $(dirname "$0")
+    CALLED_SCRIPT="$(pwd -P)"/"$(basename "$0")"
+    cd - 1>/dev/null 2>&1
+  fi
 
   # if it is a symlink, resolve it, keeping the link path
   if [ -L "$CALLED_SCRIPT" ]; then
@@ -2417,22 +2420,20 @@ executeDomainCommand() {
 
 ### Helper function activating the trace mode if requested (--log-level=trace)
 ### and executing this script from its very start
-# TODO: repair trace mode
 executeWithTraceIfRequested() {
   if isTraceLogLevel \
      && [ ! ${TRACE_ENABLED+0} ]; then
     debug 'trace enabled; restarting script...'
 
     local carrier_code="$(
-      sed '2i\set -x' "${CARRIER_SCRIPT_PATH}"
+      sed '2i\
+set -x' "${CARRIER_SCRIPT_PATH}"
     )"
 
-    local carrier_script="${CARRIER_TMP_DIR}"/carrier
-
-    echo "$carrier_code" > "$carrier_script"
-    chmod +x "$carrier_script"
-
-    ( TRACE_ENABLED= exec "$carrier_script" "$@" )
+    TRACE_ENABLED= \
+    CALLED_SCRIPT="$CALLED_SCRIPT" \
+      sh -c 'eval '"$carrier_code" \
+      '' "$@"
 
     local returnCode=$?
     debug 'script execution finished, exiting with status code :'$returnCode
@@ -5328,18 +5329,15 @@ appliance_manage() {
 run() {
   info 'starting carrier execution'
 
+  buildArgumentsReferential \
+  && initializeExecutionContext \
+  && buildExecutionContextFromArguments "$@"
+
   executeWithTraceIfRequested "$@"\
   || ( returnCode=$? \
        && fatal 'could not restart in trace mode' \
        && return $returnCode ) \
   || return $?
-
-  info "building arguments referential, initializing execution context and
-building the final execution context from provided arguments"
-
-  buildArgumentsReferential \
-  && initializeExecutionContext \
-  && buildExecutionContextFromArguments "$@"
 
   [ $? -ne 0 ] \
   && error 'Failed to initialize carrier' \
