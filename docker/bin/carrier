@@ -3715,7 +3715,6 @@ image_factorizeCopyFileToContainerAndSharedVolume() {
     "$containerID" \
     sh -c 'cp '"$targetFilePath"' "$MOUNTPOINT"/'"$targetFileName" \
   || ( returnCode=$? \
-       [ $returnCode -ne 0 ] \
        && fatal 'could not copy file to source container and shared volume' \
        && return $returnCode )
 
@@ -3843,7 +3842,6 @@ image_factorizeCopyUtilitiesInContainer() {
   && docker exec "$containerId" chmod +x /usr/local/bin/exportPackageTo \
   && docker exec "$containerId" chmod +x /usr/local/bin/importPackageFrom \
   || ( returnCode=$? \
-       && [ $returnCode -ne 0 ] \
        && fatal 'could not copy utilities in container' \
        && return $returnCode )
 
@@ -3927,6 +3925,27 @@ EOI
   return $?
 }
 
+### copy the specific dist file from the image being factorized to a running
+### container and the shared volume
+### $1: running container identifier
+### $2: original image name to factorize, used to retrieve the right dist file
+###     in the image factorize staging area
+image_factorizeCopyFactorizedDistFileInContainerAndSharedVolume() {
+  info 'copying factorized image dist file to container and shared volume'
+
+  local originalImageName="$1"
+  local originalImageContainerID="$2"
+
+  local targetFilePath='/image.dist'
+  local sourceFilePath="$(
+    image_factorizeGetImageDistFilePathInStagingDirectoryFromImageName \
+    "$originalImageName")" \
+  && image_factorizeCopyFileToContainerAndSharedVolume \
+     "$originalImageContainerID" "$sourceFilePath" "$targetFilePath"
+
+  return $?
+}
+
 ### create the factorized image using the content of the original image to
 ### factorize and the computed image.dist file present in staging area
 ### $1: original image running container ID
@@ -3941,13 +3960,8 @@ image_factorizeCreateFactorizedImageFromOriginalImage() {
   local factorizedImageName="$3"
   local originalImageName="$4"
 
-  # TODO refacto that
-  local targetFilePath='/image.dist'
-  local sourceFilePath="$(
-    image_factorizeGetImageDistFilePathInStagingDirectoryFromImageName \
-    "$originalImageName")" \
-  && image_factorizeCopyFileToContainerAndSharedVolume \
-     "$originalImageContainerID" "$sourceFilePath" "$targetFilePath" \
+  image_factorizeCopyFactorizedDistFileInContainerAndSharedVolume \
+    "$originalImageName" "$originalImageContainerID" \
   && image_factorizeCopyUtilitiesInContainer "$originalImageContainerID" \
   && image_factorizeExportPackageFromOriginalImageContainerToSharedVolume \
     "$originalImageContainerID" \
@@ -4681,7 +4695,7 @@ appliance_getApplianceDirectoryFromManifestFilePath() {
 
   local appliance_directory="$(dirname "$MANIFEST_FILE_PATH")" \
   || ( returnCode=$? \
-       && error 'Could not deduce the appliance directory name' \
+       && fatal 'Could not deduce the appliance directory name' \
        && return $returnCode )
 
   echo "$appliance_directory"
@@ -4714,7 +4728,7 @@ appliance_copyApplianceDirectoryToApplianceStagingArea() {
 
   cp -a "$appliance_directory" "$(appliance_getApplianceStagingDirectory)" \
   || ( returnCode=$? \
-       && error 'could not copy appliance files into staging area' \
+       && fatal 'could not copy appliance files into staging area' \
        && return $returnCode )
 
   return $?
@@ -4882,7 +4896,7 @@ EOI
   # in a new sub-shell
   ( ${CARRIER_BIN_DIR}/carrier image build "$image_manifest_path" ) \
   || ( returnCode=$? \
-       && error 'could not build the dependent image targeted by '\
+       && fatal 'could not build the dependent image targeted by '\
 "$image_manifest_path" \
        && return $returnCode )
 
@@ -5072,7 +5086,7 @@ appliance_buildServiceImage() {
 appliance_cleanupStagingArea() {
   rm -rf "$(appliance_getApplianceStagingDirectory)" \
   || ( returnCode=$? \
-        && error 'could not remove appliance staging directory' \
+        && fatal 'could not remove appliance staging directory' \
         && return $returnCode ) \
   || return $?
 
@@ -5315,7 +5329,7 @@ run() {
 
   executeWithTraceIfRequested "$@"\
   || ( returnCode=$? \
-       && error 'could not restart in trace mode' \
+       && fatal 'could not restart in trace mode' \
        && return $returnCode ) \
   || return $?
 
