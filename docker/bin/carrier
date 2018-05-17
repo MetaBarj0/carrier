@@ -441,7 +441,7 @@ fatal|error|warning|info|debug|trace
 contextSetLogLevel
 
 # desired output for logs. Defaulted to '&2' that is stderr
-# i.e. carrier info --log-output=error.log
+# i.e. carrier info --log-output=carrier.log
 #      carrier info -o '&2'
 (-o|--log-output)=?
 .+
