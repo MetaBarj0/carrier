@@ -4765,7 +4765,6 @@ appliance_getApplianceStagingDirectory() {
 ### copy the directory of the appliance being managed into the appliance
 ### staging area directory
 ### $1: appliance directory
-### $2: staging area directory
 appliance_copyApplianceDirectoryToApplianceStagingArea() {
   info 'copying appliance files into the appliance staging directory'
 
@@ -5357,6 +5356,7 @@ appliance_executeRequestedCommand() {
 }
 
 ### main entrypoint to manage appliances
+### $1: command related to the appliance domain (assumed)
 appliance_manage() {
   info 'executing appliance command'
 
@@ -5374,17 +5374,14 @@ run() {
 
   buildArgumentsReferential \
   && initializeExecutionContext \
-  && buildExecutionContextFromArguments "$@"
+  && buildExecutionContextFromArguments "$@" \
+  || return $?
 
   executeWithTraceIfRequested "$@"\
   || ( returnCode=$? \
        && fatal 'could not restart in trace mode' \
        && return $returnCode ) \
   || return $?
-
-  [ $? -ne 0 ] \
-  && error 'Failed to initialize carrier' \
-  && return 1
 
   executeWithContext \
   || ( returnCode=$? \
