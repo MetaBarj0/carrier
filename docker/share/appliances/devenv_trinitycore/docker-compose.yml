@@ -6,9 +6,7 @@ services:
     image: metabarj0/devenv_trinitycore_mysql
 
     networks:
-      # common network between shell and mysql
       backend:
-        ipv4_address: 172.18.0.2
 
     expose:
       - "3306"
@@ -43,7 +41,6 @@ services:
 
     networks:
       backend:
-        ipv4_address: 172.18.0.3
 
     # exposed to host
     ports:
