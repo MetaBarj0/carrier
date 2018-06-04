@@ -915,7 +915,7 @@ EOI
 #   dependencies status
 # - start can start an appliance or several
 # - stop can stop one or more appliances
-# - volumes can help the user to manage columes used by an appliance
+# - volumes can help the user to manage volumes used by an appliance
 build|list|check|info|upgrade|start|stop|volumes
 --
 contextSetApplianceCommand
@@ -1124,29 +1124,34 @@ EOI
 
   DOMAIN_APPLIANCE_COMMAND_VOLUMES_OPTIONS_REFERENTIAL="$(cat << EOI
 # list the appliance volumes
--l|--list
+list
 --
-contextSetApplianceVolumesList
+contextSetApplianceVolumeList
 
-# remove all the appliance volumes
--r|--rm
---
+# remove specified appliance volumes. Volumes are specified just after,
+# separated by a comma
+rm
+[^,]+(,[^,]+)*
 contextSetApplianceVolumesRemove
 
-# dump specified volumes
--d|--dump
---
+# dump specified volumes. Volumes are specified just after, separated by a
+# comma
+dump
+[^,]+(,[^,]+)*
 contextSetApplianceVolumesDump
 
-# specify the dump file path (defaulted to current directory)
+# clone specified volumes. Volumes to be cloned are specified like this :
+# <volume to clone>=<new volume name to create> repeated n times and separated
+# by a comma
+clone
+[^=]+=[^,]+(,[^=]+=[^,]+)*
+contextSetApplianceVolumeClone
+
+# specify the dump file path (defaulted to current directory, using the volume
+# name)
 (-p|--dump-file-path)=?
 .+
 contextSetApplianceVolumesDumpPath
-
-# specific list of volume. used with --rm and --dump options
-(-v|--volume-list)=?
-[^,]+(,[^,]+)*
-contextSetApplianceVolumesList
 
 # targeted appliance
 (-a|--appliance)=?
@@ -2895,14 +2900,6 @@ contextSetApplianceListOnlyLocal() {
 }
 
 ### TODO NYI
-contextSetApplianceVolumesList() {
-  :
-
-  debug 'Not Implemented Yet'
-  return 1
-}
-
-### TODO NYI
 contextSetApplianceListOnlyNotBuilt() {
   :
 
@@ -2943,6 +2940,13 @@ contextSetApplianceStartDontBuild() {
 }
 
 contextSetApplianceCheckApplianceList() {
+  :
+
+  debug 'Not Implemented Yet'
+  return 1
+}
+
+contextSetApplianceVolumeClone() {
   :
 
   debug 'Not Implemented Yet'
