@@ -629,7 +629,7 @@ splitSequence() {
     return 1
   fi
 
-  if [ -z "$2"+0 ]; then
+  if [ -z ${2+0} ]; then
     error "No separator specified...exiting..."
     return 1
   fi
