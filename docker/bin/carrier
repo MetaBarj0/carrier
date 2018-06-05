@@ -410,7 +410,7 @@ $(removeIrrelevantDetailsFromReferentialOption \
 
 Appliance volumes command options:
 $(removeIrrelevantDetailsFromReferentialOption \
-    "$DOMAIN_APPLIANCE_COMMAND_VOLUMES_OPTIONS_REFERENTIAL")
+    "$DOMAIN_APPLIANCE_COMMAND_VOLUME_OPTIONS_REFERENTIAL")
 
 Appliance upgrade command options:
 $(removeIrrelevantDetailsFromReferentialOption \
@@ -915,8 +915,8 @@ EOI
 #   dependencies status
 # - start can start an appliance or several
 # - stop can stop one or more appliances
-# - volumes can help the user to manage volumes used by an appliance
-build|list|check|info|upgrade|start|stop|volumes
+# - volume can help the user to manage volumes used by an appliance
+build|list|check|info|upgrade|start|stop|volume
 --
 contextSetApplianceCommand
 EOI
@@ -1122,7 +1122,7 @@ contextSetApplianceStopApplianceSequence
 EOI
   )"
 
-  DOMAIN_APPLIANCE_COMMAND_VOLUMES_OPTIONS_REFERENTIAL="$(cat << EOI
+  DOMAIN_APPLIANCE_COMMAND_VOLUME_OPTIONS_REFERENTIAL="$(cat << EOI
 # list the appliance volumes
 list
 --
@@ -1347,13 +1347,13 @@ initializeExecutionContext() {
   DOMAIN_APPLIANCE_COMMAND_STOP_OPTION_REMOVE_CONTAINERS='yes'
   DOMAIN_APPLIANCE_COMMAND_STOP_OPTION_APPLIANCE_SEQUENCE=
 
-  # carrier appliance volumes devenv_cpp
-  DOMAIN_APPLIANCE_COMMAND_VOLUMES_OPTION_LIST='yes'
-  DOMAIN_APPLIANCE_COMMAND_VOLUMES_OPTION_REMOVE='no'
-  DOMAIN_APPLIANCE_COMMAND_VOLUMES_OPTION_DUMP='no'
-  DOMAIN_APPLIANCE_COMMAND_VOLUMES_OPTION_DUMP_PATH='./'
-  DOMAIN_APPLIANCE_COMMAND_VOLUMES_OPTION_VOLUME_SEQUENCE=
-  DOMAIN_APPLIANCE_COMMAND_VOLUMES_OPTION_APPLIANCE=
+  # carrier appliance volume devenv_cpp ...
+  DOMAIN_APPLIANCE_COMMAND_VOLUME_SUBCOMMAND_LIST=
+  DOMAIN_APPLIANCE_COMMAND_VOLUME_SUBCOMMAND_REMOVE=
+  DOMAIN_APPLIANCE_COMMAND_VOLUME_SUBCOMMAND_DUMP=
+  DOMAIN_APPLIANCE_COMMAND_VOLUME_OPTION_DUMP_PATH='./'
+  DOMAIN_APPLIANCE_COMMAND_VOLUME_OPTION_VOLUME_SEQUENCE=
+  DOMAIN_APPLIANCE_COMMAND_VOLUME_OPTION_APPLIANCE=
 
   # carrier appliance upgrade devev_cpp
   DOMAIN_APPLIANCE_COMMAND_UPGRADE_OPTION_ALL='yes'
@@ -1538,18 +1538,18 @@ $DOMAIN_APPLIANCE_COMMAND_START_OPTION_APPLIANCE_SEQUENCE
 $DOMAIN_APPLIANCE_COMMAND_STOP_OPTION_REMOVE_CONTAINERS
   DOMAIN_APPLIANCE_COMMAND_STOP_OPTION_APPLIANCE_SEQUENCE=\
 $DOMAIN_APPLIANCE_COMMAND_STOP_OPTION_APPLIANCE_SEQUENCE
-  DOMAIN_APPLIANCE_COMMAND_VOLUMES_OPTION_LIST=\
-$DOMAIN_APPLIANCE_COMMAND_VOLUMES_OPTION_LIST
-  DOMAIN_APPLIANCE_COMMAND_VOLUMES_OPTION_REMOVE=\
-$DOMAIN_APPLIANCE_COMMAND_VOLUMES_OPTION_REMOVE
-  DOMAIN_APPLIANCE_COMMAND_VOLUMES_OPTION_DUMP=\
-$DOMAIN_APPLIANCE_COMMAND_VOLUMES_OPTION_DUMP
-  DOMAIN_APPLIANCE_COMMAND_VOLUMES_OPTION_DUMP_PATH=\
-$DOMAIN_APPLIANCE_COMMAND_VOLUMES_OPTION_DUMP_PATH
-  DOMAIN_APPLIANCE_COMMAND_VOLUMES_OPTION_VOLUME_SEQUENCE=\
-$DOMAIN_APPLIANCE_COMMAND_VOLUMES_OPTION_VOLUME_SEQUENCE
-  DOMAIN_APPLIANCE_COMMAND_VOLUMES_OPTION_APPLIANCE=\
-$DOMAIN_APPLIANCE_COMMAND_VOLUMES_OPTION_APPLIANCE
+  DOMAIN_APPLIANCE_COMMAND_VOLUME_SUBCOMMAND_LIST=\
+$DOMAIN_APPLIANCE_COMMAND_VOLUME_SUBCOMMAND_LIST
+  DOMAIN_APPLIANCE_COMMAND_VOLUME_SUBCOMMAND_REMOVE=\
+$DOMAIN_APPLIANCE_COMMAND_VOLUME_SUBCOMMAND_REMOVE
+  DOMAIN_APPLIANCE_COMMAND_VOLUME_SUBCOMMAND_DUMP=\
+$DOMAIN_APPLIANCE_COMMAND_VOLUME_SUBCOMMAND_DUMP
+  DOMAIN_APPLIANCE_COMMAND_VOLUME_OPTION_DUMP_PATH=\
+$DOMAIN_APPLIANCE_COMMAND_VOLUME_OPTION_DUMP_PATH
+  DOMAIN_APPLIANCE_COMMAND_VOLUME_OPTION_VOLUME_SEQUENCE=\
+$DOMAIN_APPLIANCE_COMMAND_VOLUME_OPTION_VOLUME_SEQUENCE
+  DOMAIN_APPLIANCE_COMMAND_VOLUME_OPTION_APPLIANCE=\
+$DOMAIN_APPLIANCE_COMMAND_VOLUME_OPTION_APPLIANCE
   DOMAIN_APPLIANCE_COMMAND_UPGRADE_OPTION_ALL=\
 $DOMAIN_APPLIANCE_COMMAND_UPGRADE_OPTION_ALL
   DOMAIN_APPLIANCE_COMMAND_UPGRADE_OPTION_IGNORE_DATE=\
@@ -1870,8 +1870,8 @@ value=$value"
     deleteCommentLines "$DOMAIN_APPLIANCE_COMMAND_STOP_OPTIONS_REFERENTIAL"
   )"
 
-  local appliance_volumes_referential="$(
-    deleteCommentLines "$DOMAIN_APPLIANCE_COMMAND_VOLUMES_OPTIONS_REFERENTIAL"
+  local appliance_volume_referential="$(
+    deleteCommentLines "$DOMAIN_APPLIANCE_COMMAND_VOLUME_OPTIONS_REFERENTIAL"
   )"
 
   tryMutateReferential "$bootstrap_check_referential" "$key" "$value" \
@@ -1889,7 +1889,7 @@ value=$value"
   || tryMutateReferential "$appliance_upgrade_referential" "$key" "$value" \
   || tryMutateReferential "$appliance_start_referential" "$key" "$value" \
   || tryMutateReferential "$appliance_stop_referential" "$key" "$value" \
-  || tryMutateReferential "$appliance_volumes_referential" "$key" "$value"
+  || tryMutateReferential "$appliance_volume_referential" "$key" "$value"
 
   return $?
 }
@@ -2947,10 +2947,23 @@ contextSetApplianceCheckApplianceList() {
 }
 
 contextSetApplianceVolumeClone() {
-  :
+  info 'setting appliance volume clone volume map'
 
-  debug 'Not Implemented Yet'
-  return 1
+  if [ ! "$DOMAIN" = 'appliance' ] \
+     || [ ! "$COMMAND" = 'volume' ]; then
+    info "$(cat << EOI
+contextSetApplianceVolumeClone() can only be called when domain is
+appliance and command is volume.
+  current DOMAIN=$DOMAIN
+  current COMMAND=$COMMAND
+EOI
+    )"
+    return 1
+  fi
+
+  local volumeMap="$2"
+
+  return 0
 }
 
 contextSetApplianceUpgradeApplianceSequence() {
