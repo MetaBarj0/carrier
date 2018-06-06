@@ -2687,6 +2687,38 @@ contextSetImageListOnlyBuilt() {
 }
 
 ### TODO NYI
+contextSetImageListAll() {
+  :
+
+  debug 'Not Implemented Yet'
+  return 1
+}
+
+### TODO NYI
+contextSetImageCheckAllBuilt() {
+  :
+
+  debug 'Not Implemented Yet'
+  return 1
+}
+
+### TODO NYI
+contextSetImageInfoAllProps() {
+  :
+
+  debug 'Not Implemented Yet'
+  return 1
+}
+
+### TODO NYI
+contextSetImageUpgradeAll() {
+  :
+
+  debug 'Not Implemented Yet'
+  return 1
+}
+
+### TODO NYI
 contextSetImageInfoOnlyBaseImage() {
   :
 
@@ -2974,6 +3006,59 @@ EOI
     splitSequence "$2" ',')"
 
   return 0
+}
+
+### TODO NYI
+contextSetApplianceVolumesAppliance() {
+  info 'setting appliance name to clone volume map'
+
+  if [ ! "$DOMAIN" = 'appliance' ] \
+     || [ ! "$COMMAND" = 'volume' ]; then
+    info "$(cat << EOI
+contextSetApplianceVolumesAppliance() can only be called when domain is
+appliance and command is volume.
+  current DOMAIN=$DOMAIN
+  current COMMAND=$COMMAND
+EOI
+    )"
+    return 1
+  fi
+
+  DOMAIN_APPLIANCE_COMMAND_VOLUME_OPTION_APPLIANCE="$2"
+
+  return 0
+}
+
+### TODO NYI
+contextSetApplianceListAll() {
+  :
+
+  debug 'Not Implemented Yet'
+  return 1
+}
+
+### TODO NYI
+contextSetApplianceCheckAll() {
+  :
+
+  debug 'Not Implemented Yet'
+  return 1
+}
+
+### TODO NYI
+contextSetApplianceInfoAllProps() {
+  :
+
+  debug 'Not Implemented Yet'
+  return 1
+}
+
+### TODO NYI
+contextSetApplianceUpgradeAll() {
+  :
+
+  debug 'Not Implemented Yet'
+  return 1
 }
 
 contextSetApplianceUpgradeApplianceSequence() {
@@ -5430,9 +5515,61 @@ appliance_volumeGetSubcommandFunctionToExecute() {
   return 1
 }
 
+### check the execution context specific to the appliance volume clone
+### subcommand
+appliance_volumeCloneCheckExecutionContext() {
+  info 'checking execution context for appliance volume clone subcommand'
+
+  if [ -z "$DOMAIN_APPLIANCE_COMMAND_VOLUME_SUBCOMMAND_CLONE_VOLUME_MAP" ] \
+     || [ -z "$DOMAIN_APPLIANCE_COMMAND_VOLUME_OPTION_APPLIANCE" ]; then
+    error "$(
+      cat << EOI
+Cannot execute requested command. Cloning appliance volume(s) require to
+specify both an appliance name and a volume map
+EOI
+      )"
+
+    return 1
+  fi
+
+  return 0
+}
+
+### check the appliance name specified for the volume command of appliance
+### domain. The appliance name must exist in docker/share/appliance directory.
+appliance_volumeVerifyApplianceExists() {
+  info 'verifying appliance name for volume command'
+
+  local appliancePath="$CARRIER_SHARE_APPLIANCES_DIR"/\
+"$DOMAIN_APPLIANCE_COMMAND_VOLUME_OPTION_APPLIANCE"
+
+  if [ ! -d "$appliancePath" ]; then
+    error 'Cannot find an appliance project named '\
+"$DOMAIN_APPLIANCE_COMMAND_VOLUME_OPTION_APPLIANCE"
+    return 1
+  fi
+
+  return 0
+}
+
+### verify the volume map input before executing the appliance volume clone
+### subcommand
+appliance_volumeVerifyVolumeMapCorrectness() {
+  info 'verifying appliance volume clone volume map correctness'
+
+  error 'Not Implemented Yet'
+  return 1
+}
+
 ### execute the appliance volume clone subcommand
 appliance_volumeExecuteClone() {
   info 'attempting to clone appliance volume(s)'
+
+  appliance_volumeCloneCheckExecutionContext \
+  && appliance_volumeVerifyApplianceExists \
+  && appliance_volumeVerifyVolumeMapCorrectness
+
+  return $?
 }
 
 ### execute the appliance volume subcommand targeted by the execution context
