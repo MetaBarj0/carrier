@@ -5540,16 +5540,38 @@ EOI
 appliance_volumeVerifyApplianceExists() {
   info 'verifying appliance name for volume command'
 
-  local appliancePath="$CARRIER_SHARE_APPLIANCES_DIR"/\
-"$DOMAIN_APPLIANCE_COMMAND_VOLUME_OPTION_APPLIANCE"
+  local applianceManifestAbsolutePath="$(
+    appliance_getManifestFileFullPath \
+      "$DOMAIN_APPLIANCE_COMMAND_VOLUME_OPTION_APPLIANCE"
+    )" \
+    && local applianceDirectory="$(dirname "$applianceManifestAbsolutePath")" \
+    && [ -f "$applianceDirectory"/docker-compose.yml ] \
+    || ( returnCode=$? \
+        && error "$(
+        cat << EOI
+Cannot find a valid appliance project named
+$DOMAIN_APPLIANCE_COMMAND_VOLUME_OPTION_APPLIANCE
+EOI
+          )" \
+        && return $returnCode )
 
-  if [ ! -d "$appliancePath" ]; then
-    error 'Cannot find an appliance project named '\
-"$DOMAIN_APPLIANCE_COMMAND_VOLUME_OPTION_APPLIANCE"
-    return 1
-  fi
+  return $?
+}
 
-  return 0
+### attempts to clone from a source appliance volume to a new target volume
+### $1: source volume attached to the appliance project
+### $2: target volume name. must not already exist on the docker host
+appliance_volumeCloneFromSourceVolumeToTargetVolume() {
+  info 'cloning appliance volume from source to target'
+
+  local sourceVolume="$1"
+  local targetVolume="$2"
+
+  appliance_volumeCloneSeekSourceVolume "$sourceVolume" \
+  && appliance_volumeCloneVerifyTargetVolumeName "$targetVolume" \
+  && appliance_volumeCloneProceedForOneVolume "$sourceVolume" "$targetVolume"
+
+  return $?
 }
 
 ### verify the volume map input before executing the appliance volume clone
@@ -5557,8 +5579,16 @@ appliance_volumeVerifyApplianceExists() {
 appliance_volumeVerifyVolumeMapCorrectness() {
   info 'verifying appliance volume clone volume map correctness'
 
-  error 'Not Implemented Yet'
-  return 1
+  local pair=
+  for pair in $DOMAIN_APPLIANCE_COMMAND_VOLUME_SUBCOMMAND_CLONE_VOLUME_MAP; do
+    local sourceVolume="$(keyOf "$pair")" \
+    && local targetVolume="$(valueOf "$pair")" \
+    && appliance_volumeCloneFromSourceVolumeToTargetVolume \
+      "$sourceVolume" "$targetVolume" \
+    || return $?
+  done
+
+  return 0
 }
 
 ### execute the appliance volume clone subcommand
