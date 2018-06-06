@@ -2374,12 +2374,14 @@ $DOMAIN_APPLIANCE_COMMAND_STOP_OPTION_APPLIANCE_SEQUENCE"
   return 0
 }
 
-### execute the volumes command of the appliance domain
-executeApplianceVolumesCommand() {
-  :
+### execute the volume command of the appliance domain
+executeApplianceVolumeCommand() {
+  info 'executing appliance volume command'
 
-  debug 'Not Implemented Yet'
-  return 1
+  appliance_checkExecutionContextForVolumeCommand \
+  && appliance_volumeExecuteSubcommand
+
+  return $?
 }
 
 ### helper function executing the specified bootstrap command
@@ -2427,7 +2429,7 @@ executeApplianceCommand() {
   || executeApplianceUpgradeCommand \
   || executeApplianceStartCommand \
   || executeApplianceStopCommand \
-  || executeApplianceVolumesCommand
+  || executeApplianceVolumeCommand
 
   local returnCode=$?
 
@@ -5387,6 +5389,58 @@ appliance_manage() {
 
   appliance_checkArgument "$1" \
   && appliance_executeRequestedCommand
+
+  return $?
+}
+
+### check minimal execution context required to execute successfully the
+### appliance volume command
+appliance_checkExecutionContextForVolumeCommand() {
+  info 'checking minimal execution context required for appliance volume'
+
+  if [ ! "$DOMAIN" = 'appliance' ] \
+     || [ ! "$COMMAND" = 'volume' ]; then
+    info "$(
+      cat << EOI
+appliance_checkExecutionContextForVolumeCommand can only be called when domain
+is appliance and command is volume.
+Current domain is $DOMAIN
+Current command is $COMMAND
+EOI
+    )"
+
+    return 1
+  fi
+
+  return 0
+}
+
+### obtains the function name to execute regarding the selected volume
+### subcommand in the execution context
+appliance_volumeGetSubcommandFunctionToExecute() {
+  info 'obtaining the appliance volume subcommand function name'
+
+  local radix='appliance_volumeExecute'
+
+  [ ! -z "$DOMAIN_APPLIANCE_COMMAND_VOLUME_SUBCOMMAND_CLONE" ] \
+  && echo "$radix"'Clone' \
+  && return 0
+
+  info 'Not yet implemented appliance volume subcommand specified'
+  return 1
+}
+
+### execute the appliance volume clone subcommand
+appliance_volumeExecuteClone() {
+  info 'attempting to clone appliance volume(s)'
+}
+
+### execute the appliance volume subcommand targeted by the execution context
+appliance_volumeExecuteSubcommand() {
+  info 'Executing appliance volume subcommand'
+
+  local functionName="$(appliance_volumeGetSubcommandFunctionToExecute)" \
+  && "$functionName"
 
   return $?
 }
