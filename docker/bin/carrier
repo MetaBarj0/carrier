@@ -5658,6 +5658,51 @@ appliance_volumeCloneSeekSourceVolume() {
   return $?
 }
 
+### verify volume name specified is correct regarding a pattern
+### $1: volume name to verify
+appliance_volumeCloneVerifyTargetVolumeName() {
+  info 'verifying target volume name'
+
+  local volumeName="$1"
+
+  echo "$volumeName" \
+  | grep -Ex '^[A-Za-z0-9][A-Za-z0-9_.-]*$' 2>/dev/null 1>&2 \
+  || ( returnCode=$? \
+       && error 'Invalid target volume name specified' \
+       && return $returnCode )
+
+  return $?
+}
+
+### ensures the volume name specified is not already taken by an existing
+### volume on the docker host
+appliance_volumeCloneVerifyTargetVolumeAvailaibility ()
+{
+  info 'verifying target volume name'
+
+  local volumeName="$1"
+
+  isDockerVolumeExisting "$volumeName" \
+  && error 'Docker volume already exists' \
+  && return 1
+
+  return 0
+}
+
+### verifies that the volume name is well-formed and not already taken by an
+### existing volume on the docker host
+### $1: volume name to verify
+appliance_volumeCloneVerifyTargetVolumeNameAndAvailaibility() {
+  info 'verifying target volume name and availaibility'
+
+  local volumeName="$1"
+
+  appliance_volumeCloneVerifyTargetVolumeName "$volumeName" \
+  && appliance_volumeCloneVerifyTargetVolumeAvailaibility "$volumeName"
+
+  return $?
+}
+
 ### attempts to clone from a source appliance volume to a new target volume
 ### $1: source volume attached to the appliance project
 ### $2: target volume name. must not already exist on the docker host
@@ -5668,7 +5713,8 @@ appliance_volumeCloneFromSourceVolumeToTargetVolume() {
   local targetVolume="$2"
 
   appliance_volumeCloneSeekSourceVolume "$sourceVolume" \
-  && appliance_volumeCloneVerifyTargetVolumeName "$targetVolume" \
+  && appliance_volumeCloneVerifyTargetVolumeNameAndAvailaibility \
+    "$targetVolume" \
   && appliance_volumeCloneProceedForOneVolume "$sourceVolume" "$targetVolume"
 
   return $?
