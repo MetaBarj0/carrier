@@ -5624,7 +5624,7 @@ appliance_volumeEnsureApplianceVolumeExists() {
 ### Ensures that a specified volume exists on the docker host. If the volume
 ### is created by an appliance (not external volume) a project name and a '_'
 ### is prefixed to the volume name
-appliance_volumeEnsureDockerVolumeExists() {
+appliance_volumeEnsureDockerVolumeExistsAndGetIt() {
   info 'Ensuring docker volume exists for an appliance volume command'
 
   local volumeName="$1"
@@ -5635,25 +5635,32 @@ appliance_volumeEnsureDockerVolumeExists() {
   && local decoratedVolumeName="$composeProjectName"'_'"$volumeName" \
   || return $?
 
-  isDockerVolumeExisting "$volumeName" \
-  || isDockerVolumeExisting "$decoratedVolumeName" \
+  local realVolumeName=
+  realVolumeName="$(getDockerVolumeIfExists "$volumeName")" \
+  || realVolumeName="$(getDockerVolumeIfExists "$decoratedVolumeName")" \
   || ( returnCode=$? \
        && error 'cannot find appliance volume '"$volumeName"\
 ' on the docker host for the '\
 "$DOMAIN_APPLIANCE_COMMAND_VOLUME_OPTION_APPLIANCE"' appliance' \
        && return $returnCode )
 
+  echo "$realVolumeName"
+
   return $?
 }
 
-### looks for the appliance source volume to clone
-appliance_volumeCloneSeekSourceVolume() {
+### looks for the appliance source volume to clone. Echoes the real name of the
+### source volume if it exists
+### $1: volume name to check
+appliance_volumeCloneSeekSourceVolumeAndGetItsName() {
   info 'Searching for source volume to clone'
 
   local volumeName="$1"
 
   appliance_volumeEnsureApplianceVolumeExists "$volumeName" \
-  && appliance_volumeEnsureDockerVolumeExists "$volumeName"
+  && local realVolumeName="$(
+    appliance_volumeEnsureDockerVolumeExistsAndGetIt "$volumeName")" \
+  && echo "$realVolumeName"
 
   return $?
 }
@@ -5666,7 +5673,7 @@ appliance_volumeCloneVerifyTargetVolumeName() {
   local volumeName="$1"
 
   echo "$volumeName" \
-  | grep -Ex '^[A-Za-z0-9][A-Za-z0-9_.-]*$' 2>/dev/null 1>&2 \
+  | grep -Ex '^[A-Za-z0-9][A-Za-z0-9_.-]+$' 2>/dev/null 1>&2 \
   || ( returnCode=$? \
        && error 'Invalid target volume name specified' \
        && return $returnCode )
@@ -5682,7 +5689,7 @@ appliance_volumeCloneVerifyTargetVolumeAvailaibility ()
 
   local volumeName="$1"
 
-  isDockerVolumeExisting "$volumeName" \
+  getDockerVolumeIfExists "$volumeName" \
   && error 'Docker volume already exists' \
   && return 1
 
@@ -5703,6 +5710,19 @@ appliance_volumeCloneVerifyTargetVolumeNameAndAvailaibility() {
   return $?
 }
 
+### proceeds with volume cloning. Copy the entire source volume content into a
+### target volume, preserving all attributes of each copied file and directory
+### $1: source volume name
+### $2: target volume name
+appliance_volumeCloneProceedForOneVolume() {
+  info 'Cloning source volume to target volume'
+
+  local sourceVolume="$1"
+  local targetVolume="$2"
+
+  return $?
+}
+
 ### attempts to clone from a source appliance volume to a new target volume
 ### $1: source volume attached to the appliance project
 ### $2: target volume name. must not already exist on the docker host
@@ -5712,10 +5732,13 @@ appliance_volumeCloneFromSourceVolumeToTargetVolume() {
   local sourceVolume="$1"
   local targetVolume="$2"
 
-  appliance_volumeCloneSeekSourceVolume "$sourceVolume" \
+  local realSourceVolumeName="$(
+    appliance_volumeCloneSeekSourceVolumeAndGetItsName "$sourceVolume"
+  )" \
   && appliance_volumeCloneVerifyTargetVolumeNameAndAvailaibility \
     "$targetVolume" \
-  && appliance_volumeCloneProceedForOneVolume "$sourceVolume" "$targetVolume"
+  && appliance_volumeCloneProceedForOneVolume \
+    "$realSourceVolumeName" "$targetVolume"
 
   return $?
 }

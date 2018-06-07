@@ -744,13 +744,14 @@ getDockerImageIdFromName() {
 }
 
 # queries for a volume specified in argument. returns 0 if the volume exists, 1
-# otherwise
+# otherwise. If the volume exists, echo its name
 # $1: volume to find on the docker host
-isDockerVolumeExisting() {
+getDockerVolumeIfExists() {
   local volume="$1"
 
   docker volume ls -q \
-  | grep -Ex '^'"$1"'$' 2>/dev/null 1>&2
+  | grep -Ex '^'"$1"'$' 2>/dev/null 1>&2 \
+  && echo "$volume"
 
   return $?
 }
