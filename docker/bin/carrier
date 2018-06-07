@@ -5558,6 +5558,106 @@ EOI
   return $?
 }
 
+### get the compose default project name. carrier always use the default
+### project name aka the directory name somewhat modified
+### $1: carrier appliance name
+appliance_getComposeDefaultProjectName() {
+  info 'getting the compose default project name'
+
+  local applianceName="$1"
+
+  echo "$applianceName" | sed 's/[^A-Za-z0-9]//g'
+
+  return $?
+}
+
+### obtain the absolute path of the compose file of the specified appliance
+### $1: appliance name
+appliance_getComposeFilePath() {
+  info 'obtaining appliance compose file path'
+
+  local applianceName="$1"
+
+  local applianceManifestFile="$(
+    appliance_getManifestFileFullPath "$applianceName")" \
+  || return $?
+
+  local composeFile="$(
+    dirname "$applianceManifestFile")"'/docker-compose.yml' \
+  || ( returnCode=$? \
+       error 'cannot get the compose file with the specified appliance name' \
+       && return $returnCode ) \
+  || return $?
+
+  echo "$composeFile"
+
+  return $?
+}
+
+### ensures we can find a compose project volume specified as argument
+### $1: volume name to find using docker-compose
+appliance_volumeEnsureApplianceVolumeExists() {
+  info 'looking for compose volume'
+
+  local volumeName="$1"
+
+  local composeFile="$(
+    appliance_getComposeFilePath \
+    "$DOMAIN_APPLIANCE_COMMAND_VOLUME_OPTION_APPLIANCE")" \
+  || return $?
+
+  local composeVolume="$(
+    docker-compose \
+      -f "$composeFile" \
+      config --volumes \
+    | grep -x "$volumeName")"
+
+  [ ! -z "$composeVolume" ] \
+  || ( returnCode=$? \
+       && error 'Cannot find appliance volume '"$volumeName"' for appliance '\
+"$DOMAIN_APPLIANCE_COMMAND_VOLUME_OPTION_APPLIANCE" \
+       && return $returnCode )
+
+  return $?
+}
+
+### Ensures that a specified volume exists on the docker host. If the volume
+### is created by an appliance (not external volume) a project name and a '_'
+### is prefixed to the volume name
+appliance_volumeEnsureDockerVolumeExists() {
+  info 'Ensuring docker volume exists for an appliance volume command'
+
+  local volumeName="$1"
+
+  local composeProjectName="$(
+    appliance_getComposeDefaultProjectName \
+      "$DOMAIN_APPLIANCE_COMMAND_VOLUME_OPTION_APPLIANCE")" \
+  && local decoratedVolumeName="$composeProjectName"'_'"$volumeName" \
+  || return $?
+
+  isDockerVolumeExisting "$volumeName" \
+  || isDockerVolumeExisting "$decoratedVolumeName" \
+  || ( returnCode=$? \
+       && error 'cannot find appliance volume '"$volumeName"\
+' on the docker host for the '\
+"$DOMAIN_APPLIANCE_COMMAND_VOLUME_OPTION_APPLIANCE"' appliance' \
+       && return $returnCode )
+
+  return $?
+}
+
+### looks for the appliance source volume to clone
+appliance_volumeCloneSeekSourceVolume() {
+  info 'Searching for source volume to clone'
+
+  local volumeName="$1"
+
+  appliance_volumeEnsureApplianceVolumeExists "$volumeName" \
+  && appliance_volumeEnsureDockerVolumeExists "$volumeName"
+
+  return $?
+}
+
 ### attempts to clone from a source appliance volume to a new target volume
 ### $1: source volume attached to the appliance project
 ### $2: target volume name. must not already exist on the docker host
