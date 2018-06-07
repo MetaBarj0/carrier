@@ -1144,7 +1144,7 @@ contextSetApplianceVolumesDump
 # <volume to clone>=<new volume name to create> repeated n times and separated
 # by a comma
 clone
-[^=]+=[^,]+(,[^=]+=[^,]+)*
+[^= ]+=[^, ]+(,[^= ]+=[^, ]+)*
 contextSetApplianceVolumeClone
 
 # specify the dump file path (defaulted to current directory, using the volume
@@ -1588,7 +1588,7 @@ value="$value""
   local key_pattern= ; local value_pattern= ; local mutator=
 
   # iterating through the referential
-  for line in $referential; do
+  while read line; do
     # iterate to initialize locals, then do the processing
     [ -z "$key_pattern" ] && key_pattern="$line" && continue
     [ -z "$value_pattern" ] && value_pattern="$line" && continue
@@ -1644,7 +1644,6 @@ EOI
 
     # value matched the pattern, call the mutator with both key and value,
     # though value may be empty
-    # echo m="$mutator" k="$key" v="$value"
     "$mutator" "$key" "$value"
     local returnCode=$?
 
@@ -1656,7 +1655,9 @@ EOI
           )"
 
     return $returnCode
-  done
+  done << EOI
+$referential
+EOI
 
   # failed to modify the execution context for this referential. unless it is
   # the most specialized referential (command options) it is not fatal as more
@@ -5511,7 +5512,7 @@ appliance_volumeGetSubcommandFunctionToExecute() {
   && echo "$radix"'Clone' \
   && return 0
 
-  info 'Not yet implemented appliance volume subcommand specified'
+  error 'Not yet implemented appliance volume subcommand specified'
   return 1
 }
 
@@ -5689,7 +5690,7 @@ appliance_volumeCloneVerifyTargetVolumeAvailaibility ()
 
   local volumeName="$1"
 
-  getDockerVolumeIfExists "$volumeName" \
+  getDockerVolumeIfExists "$volumeName" 2>/dev/null 1>&2 \
   && error 'Docker volume already exists' \
   && return 1
 
@@ -5710,6 +5711,64 @@ appliance_volumeCloneVerifyTargetVolumeNameAndAvailaibility() {
   return $?
 }
 
+### Runs a transfert container in order to copy content of a source volume to a
+### target volume in a context of appliance volume cloning
+### $1: source volume to copy stuff from
+### $2: target volume to copy stuff to
+appliance_volumeCloneRunTransfertContainer() {
+  info 'Running a transfert container'
+
+  local sourceVolume="$1"
+  local targetVolume="$2"
+
+  local runningContainer="$(
+    docker run \
+      --rm -d --entrypoint='' \
+      -v "$sourceVolume":/tmp/src:ro \
+      -v "$targetVolume":/tmp/dst \
+      busybox \
+      sh -c 'while true; do sleep 10; done'
+  )" \
+  || ( returnCode=$? \
+       && fatal 'Cannot launch the transfer container' \
+       && return $returnCode ) \
+  || return $?
+
+  echo "$runningContainer"
+
+  return $?
+}
+
+### transferts the content of the source volume to the target volume
+appliance_volumeCloneTransfertSourceVolumeContentToTargetVolume() {
+  info 'transfert source volume content to the target volume'
+
+  docker exec \
+    "$runningContainer" \
+    cp -a /tmp/src/. /tmp/dst/ 2>/dev/null 1>&2 \
+  || ( returnCode=$? \
+       && fatal 'Cannot copy from source to target volume' \
+       && return $returnCode )
+
+  return $?
+}
+
+### kills the running transfert container once the source volume content has
+### been transfered successfully to the target volume
+### $1: container ID to kill
+appliance_volumeCloneKillRunningTransfertContainer() {
+  info 'killing the running transfert container'
+
+  local containerId="$1"
+
+  docker kill "$containerId" 2>/dev/null 1>&2 \
+  || ( returnCode=$? \
+       && fatal 'Cannot kill the transfer container' \
+       && return $returnCode )
+
+  return $?
+}
+
 ### proceeds with volume cloning. Copy the entire source volume content into a
 ### target volume, preserving all attributes of each copied file and directory
 ### $1: source volume name
@@ -5719,6 +5778,12 @@ appliance_volumeCloneProceedForOneVolume() {
 
   local sourceVolume="$1"
   local targetVolume="$2"
+
+  local runningContainer="$(
+    appliance_volumeCloneRunTransfertContainer \
+      "$sourceVolume" "$targetVolume")" \
+  && appliance_volumeCloneTransfertSourceVolumeContentToTargetVolume \
+  && appliance_volumeCloneKillRunningTransfertContainer "$runningContainer"
 
   return $?
 }

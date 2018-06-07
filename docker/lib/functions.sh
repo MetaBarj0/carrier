@@ -654,7 +654,6 @@ exactMatchWithPattern() {
     return 0
   fi
 
-  #fatal 'printf -- '"$string"' | grep -Ex -- '"$pattern"' 1> /dev/null'
   printf -- "$string" | grep -Ex -- "$pattern" 1> /dev/null
 
   return $?
