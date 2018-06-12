@@ -4731,7 +4731,8 @@ image_getManifestFileFullPath() {
 getManifestFileFullPath() {
   info 'resolving a manifest file full path'
 
-  echo "$("$1"_getManifestFileFullPath "$2")"
+  ( manifestFilePath="$("$1"_getManifestFileFullPath "$2")" \
+    && echo "$manifestFilePath" )
 
   return $?
 }
