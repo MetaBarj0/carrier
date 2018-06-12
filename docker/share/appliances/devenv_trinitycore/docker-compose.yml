@@ -80,6 +80,10 @@ services:
       - type: volume
         source: devenv_trinitycore_release
         target: /home/devenv_trinitycore/release
+      # deployed version of trinitycore binaries (may be release or debug)
+      - type: volume
+        source: devenv_trinitycore_deploy
+        target: /usr/local/trinitycore
       # same data volume shared amongst debug and release builds
       - type: volume
         source: devenv_trinitycore_data
@@ -129,6 +133,7 @@ volumes:
   devenv_trinitycore_build:
   devenv_trinitycore_debug:
   devenv_trinitycore_release:
+  devenv_trinitycore_deploy:
   devenv_trinitycore_data:
   devenv_trinitycore_debug_log:
   devenv_trinitycore_release_log:
