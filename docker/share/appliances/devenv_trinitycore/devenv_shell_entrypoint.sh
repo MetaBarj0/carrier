@@ -25,13 +25,7 @@ if [ $(whoami) != devenv_trinitycore ]; then
   # number of files, this command is only intended to be run once volumes are
   # first mounted because initially, root do the mount
   if [ ! -f .volume.configured  ]; then
-    mkdir -p /usr/local/trinitycore/share/data \
-             /usr/local/trinitycore/var/log
-
-    chown -R devenv_trinitycore:docker \
-      /home/devenv_trinitycore \
-      /usr/local/trinitycore
-
+    chown -R devenv_trinitycore:docker /home/devenv_trinitycore
     touch .volume.configured
   fi
 
