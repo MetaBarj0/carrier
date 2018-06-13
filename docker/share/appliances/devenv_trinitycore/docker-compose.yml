@@ -80,17 +80,20 @@ services:
       - type: volume
         source: devenv_trinitycore_release
         target: /home/devenv_trinitycore/release
-      # deployed version of trinitycore binaries (may be release or debug)
+      # deploy version of trinitycore binaries (may be release or debug)
       - type: volume
         source: devenv_trinitycore_deploy
         target: /usr/local/trinitycore
-      # same data volume shared amongst debug and release builds
+      # same data volume shared amongst debug, release and deploy builds
       - type: volume
         source: devenv_trinitycore_data
         target: /home/devenv_trinitycore/debug/share/data
       - type: volume
         source: devenv_trinitycore_data
         target: /home/devenv_trinitycore/release/share/data
+      - type: volume
+        source: devenv_trinitycore_data
+        target: /usr/local/trinitycore/share/data
       # debug log
       - type: volume
         source: devenv_trinitycore_debug_log
@@ -99,6 +102,10 @@ services:
       - type: volume
         source: devenv_trinitycore_release_log
         target: /home/devenv_trinitycore/release/var/log
+      # deploy log
+      - type: volume
+        source: devenv_trinitycore_deploy_log
+        target: /usr/local/trinitycore/var/log
 
     # login entrypoint, parse .bash_profile
     entrypoint :
@@ -137,6 +144,7 @@ volumes:
   devenv_trinitycore_data:
   devenv_trinitycore_debug_log:
   devenv_trinitycore_release_log:
+  devenv_trinitycore_deploy_log:
 
   # mysql related volumes
   mysql_data:
