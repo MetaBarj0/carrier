@@ -5561,14 +5561,27 @@ EOI
 }
 
 ### get the compose default project name. carrier always use the default
-### project name aka the directory name somewhat modified
+### project name aka the directory name somewhat modified in old versions
+### $1: carrier appliance name
+appliance_getComposeOldDefaultProjectName() {
+  info 'getting the compose old default project name'
+
+  local applianceName="$1"
+
+  echo "$applianceName" | sed 's/[^A-Za-z0-9]//g'
+
+  return $?
+}
+
+### get the compose default project name. carrier always use the default
+### project name aka the directory name .
 ### $1: carrier appliance name
 appliance_getComposeDefaultProjectName() {
   info 'getting the compose default project name'
 
   local applianceName="$1"
 
-  echo "$applianceName" | sed 's/[^A-Za-z0-9]//g'
+  echo "$applianceName"
 
   return $?
 }
@@ -5631,7 +5644,11 @@ appliance_volumeEnsureDockerVolumeExistsAndGetIt() {
 
   local volumeName="$1"
 
-  local composeProjectName="$(
+  local oldComposeProjectName="$(
+    appliance_getComposeOldDefaultProjectName \
+      "$DOMAIN_APPLIANCE_COMMAND_VOLUME_OPTION_APPLIANCE")" \
+  && local decoratedOldVolumeName="$oldComposeProjectName"'_'"$volumeName" \
+  && local composeProjectName="$(
     appliance_getComposeDefaultProjectName \
       "$DOMAIN_APPLIANCE_COMMAND_VOLUME_OPTION_APPLIANCE")" \
   && local decoratedVolumeName="$composeProjectName"'_'"$volumeName" \
@@ -5639,6 +5656,7 @@ appliance_volumeEnsureDockerVolumeExistsAndGetIt() {
 
   local realVolumeName=
   realVolumeName="$(getDockerVolumeIfExists "$volumeName")" \
+  || realVolumeName="$(getDockerVolumeIfExists "$decoratedOldVolumeName")" \
   || realVolumeName="$(getDockerVolumeIfExists "$decoratedVolumeName")" \
   || ( returnCode=$? \
        && error 'cannot find appliance volume '"$volumeName"\
