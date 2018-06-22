@@ -3791,12 +3791,20 @@ image_factorizeDestroyTemporaryVolume() {
 
   local volumeName="$1"
 
-  docker volume rm "$volumeName" 1>/dev/null 2>&1 \
-    || ( returnCode=$? \
-         && fatal 'Could not remove a temporary volume' \
-         && return $returnCode )
+  # volume removal can spuriously fail
+  local currentAttempt=0
+  local maxAttempt=3
 
-  return $?
+  while [ $currentAttempt -lt $maxAttempt ]; do
+    docker volume rm -f "$volumeName" 1>/dev/null 2>&1 \
+    && break
+  done
+
+  local returnCode=$?
+  [ $returnCode -ne 0 ] \
+  && fatal 'Could not remove a temporary volume'
+
+  return $returnCode
 }
 
 ### create a temporary volume for the factorization process. This volume will
