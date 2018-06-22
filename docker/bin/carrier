@@ -2688,6 +2688,30 @@ contextSetImageListOnlyBuilt() {
 }
 
 ### TODO NYI
+contextSetImageBuildRemoveExisting() {
+  :
+
+  debug 'Not Implemented Yet'
+  return 1
+}
+
+### TODO NYI
+contextSetImageListOnlyRemote() {
+  :
+
+  debug 'Not Implemented Yet'
+  return 1
+}
+
+### TODO NYI
+contextSetImageInfoOnlyRequires() {
+  :
+
+  debug 'Not Implemented Yet'
+  return 1
+}
+
+### TODO NYI
 contextSetImageListAll() {
   :
 
@@ -4193,6 +4217,23 @@ image_factorizeFillFactorizedImage() {
   return $?
 }
 
+### Finalize the factorization process for a specified image name.
+### $1: image name
+image_factorizeFinalizeFactorizationForImage() {
+  info "Finalizing factorization process"
+
+  local image="$1"
+  local removeImage=\
+$DOMAIN_IMAGE_COMMAND_FACTORIZE_OPTION_REMOVE_ORIGINAL_IMAGES
+
+  if [ $removeImage = 'yes' ]; then
+    docker rmi "$image" \
+    || ( returnCode=$? \
+        && fatal 'cannot remove the docker image '"$image" \
+        && return $returnCode )
+  fi
+}
+
 ### Creates all factorized images that have been specified, using dist file in
 ### the image factorize staging area
 image_factorizeCreateFactorizedImages() {
@@ -4207,6 +4248,7 @@ image_factorizeCreateFactorizedImages() {
     && image_factorizeInitializeMinimalisticImage \
       "$finalImageName" "$(image_factorizeBuildBaseImageName)" \
     && image_factorizeFillFactorizedImage "$finalImageName" "$image" \
+    && image_factorizeFinalizeFactorizationForImage "$image" \
     || return $?
   done
 
