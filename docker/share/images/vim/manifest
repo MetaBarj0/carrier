@@ -13,14 +13,19 @@ SOURCES_FETCH_COMMAND=\
 'https://github.com/vim/vim/archive/master.tar.gz'
 SOURCES_TARBALL_NAME='master.tar.gz'
 
-BUILD_EXTRA_DOCKERFILE_COMMANDS=\
-'COPY vim-entrypoint.sh /usr/local/bin/'
+BUILD_EXTRA_DOCKERFILE_COMMANDS=
 
 BASE_IMAGE=busybox
 
 FINAL_EXTRA_DOCKERFILE_COMMANDS="$(cat << EOI
+RUN adduser -H -D vim
+RUN mkdir -p /home/vim
+RUN chown -R vim:vim /home/vim
+
+USER vim:vim
+WORKDIR /home/vim
+
 ENV TERMINFO /usr/local/share/terminfo
 VOLUME [ "/home/vim/.vim" ]
-ENTRYPOINT [ "vim-entrypoint.sh" ]
 EOI
 )"
