@@ -754,3 +754,16 @@ getDockerVolumeIfExists() {
 
   return $?
 }
+
+# source the specified file and output the value of the specified variable
+# $1: file to source
+# $2: name of the variable to output the value
+sourceThenGet() {
+  local file="$1"
+  local varName="$2"
+
+  [ ! -f "$file" ] \
+  && error 'file '"$file"' does not exist...exiting...'
+
+  echo "$( . "$file" && eval 'echo "'"\$$varName"'"' )"
+}
