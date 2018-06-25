@@ -2,7 +2,7 @@
 # check arguments that are the command we want the container runs. if not set,
 # assumes that the user want a shell
 if [ -z "$1" ]; then
-  set -- sh;
+  set -- sh -l --;
 fi
 
 # checking necessary environment
@@ -11,7 +11,7 @@ if [ -z "$GIT_USER_NAME" ]; then
 Hello John Doe, you forgot to tell me your name. I need it to configure The
 Stupid Content Tracker properly!  The next time you will run this container,
 please, provide your name using the -e switch like :
-  docker run --rm -it metabarj0/git -e GIT_USER_NAME=Groot
+  docker run --rm -it -e GIT_USER_NAME=Groot metabarj0/git
 Bye!
 EOI
   exit 1
@@ -22,7 +22,7 @@ if [ -z "$GIT_USER_MAIL" ]; then
 Hello, you forgot to tell me your email. I need it to configure The Stupid
 Content Tracker properly!  The next time you will run this container, please,
 provide your email address using the -e switch like :
-  docker run --rm -it metabarj0/git -e GIT_USER_MAIL=groot@gog.com
+  docker run --rm -it -e GIT_USER_MAIL=groot@gog.com metabarj0/git
 Bye!
 EOI
   exit 1
@@ -34,7 +34,7 @@ Hello, you forgot to tell me your ssh public key. I need it to configure The
 Stupid Content Tracker properly!  The next time you will run this container,
 please, provide your ssh public using the -e switch like :
   docker run --rm -it \\
-    metabarj0/git -e GIT_SSH_PUBLIC_KEY="\$(cat ~/.ssh/id_rsa.pub)"
+    -e GIT_SSH_PUBLIC_KEY="\$(cat ~/.ssh/id_rsa.pub)" metabarj0/git
 for instance.
 Bye!
 EOI
@@ -46,8 +46,8 @@ if [ -z "$GIT_SSH_SECRET_KEY" ]; then
 Hello, you forgot to tell me your ssh secret key. I need it to configure The
 Stupid Content Tracker properly!  The next time you will run this container,
 please, provide your ssh public using the -e switch like :
-  docker run --rm -it metabarj0/git \\
-    -e GIT_SSH_SECRET_KEY="\$(cat ~/.ssh/id_rsa)"
+  docker run --rm -it \\
+    -e GIT_SSH_SECRET_KEY="\$(cat ~/.ssh/id_rsa)" metabarj0/git
 for instance.
 Bye!
 EOI
@@ -82,5 +82,10 @@ EOI
 chmod 400 id_rsa
 
 cd
+
+unset GIT_USER_NAME
+unset GIT_USER_MAIL
+unset GIT_SSH_PUBLIC_KEY
+unset GIT_SSH_SECRET_KEY
 
 exec $(echo "$@")
