@@ -4149,8 +4149,10 @@ image_factorizeCommitContainerToImage() {
   local targetImageName="$2"
 
   local onBuildCommand='ONBUILD RUN rm -rf $MOUNTPOINT && unset MOUNTPOINT' \
+  local cmdCommands='CMD []' \
   && docker commit \
     --change="$onBuildCommand" \
+    --change="$cmdCommands" \
     "$targetContainer" "$targetImageName" 1>/dev/null 2>&1 \
   || ( returnCode=$? \
        && fatal 'could not complete target image from package' \
