@@ -4149,7 +4149,7 @@ image_factorizeCommitContainerToImage() {
   local targetImageName="$2"
 
   local onBuildCommand='ONBUILD RUN rm -rf $MOUNTPOINT && unset MOUNTPOINT' \
-  local cmdCommands='CMD []' \
+  local cmdCommands='CMD [ "sh" ]' \
   && docker commit \
     --change="$onBuildCommand" \
     --change="$cmdCommands" \
