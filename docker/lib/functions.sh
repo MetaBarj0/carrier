@@ -333,18 +333,14 @@ pruneOrphanDockerImages() {
 # finalize the packaging process, fixing /image.dist file paths and commiting
 # changes of the container in the image
 finalizePackage() {
-  if [ -f /image.dist ]; then
-    # sorting and removing duplicates in image.dist
-    echo "$(sort /image.dist | uniq)" > /image.dist
+  # sorting and removing duplicates in image.dist
+  echo "$(sort /image.dist | uniq)" > /image.dist
 
-    # finally, touch each file in image.dist to register them for the commit
-    xargs -a /image.dist -P $(getThreadCount) touch
+  # finally, touch each file in image.dist to register them for the commit
+  xargs -a /image.dist -P $(getThreadCount) touch
 
-    # commit changes
-    docker commit $(hostname) $REPOSITORY
-  else
-    touch /image.dist
-  fi
+  # commit changes
+  docker commit $(hostname) $REPOSITORY
 
   # intermediate clean
   pruneOrphanDockerImages
