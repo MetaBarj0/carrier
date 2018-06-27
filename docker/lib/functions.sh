@@ -342,6 +342,8 @@ finalizePackage() {
 
     # commit changes
     docker commit $(hostname) $REPOSITORY
+  else
+    touch /image.dist
   fi
 
   # intermediate clean
