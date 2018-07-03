@@ -5715,13 +5715,18 @@ appliance_volumeGetSubcommandFunctionToExecute() {
   info 'obtaining the appliance volume subcommand function name'
 
   local radix='appliance_volumeExecute'
+  local subCommand=
 
-  [ ! -z "$DOMAIN_APPLIANCE_COMMAND_VOLUME_SUBCOMMAND_CLONE" ] \
-  && echo "$radix"'Clone' \
-  && return 0
+  if [ ! -z "$DOMAIN_APPLIANCE_COMMAND_VOLUME_SUBCOMMAND_CLONE" ]; then
+    subCommand='Clone'
+  elif [ ! -z "$DOMAIN_APPLIANCE_COMMAND_VOLUME_SUBCOMMAND_DUMP" ]; then
+    subCommand='Dump'
+  else
+    error 'Not yet implemented appliance volume subcommand specified'
+    return 1
+  fi
 
-  error 'Not yet implemented appliance volume subcommand specified'
-  return 1
+  echo "$radix""$subCommand"
 }
 
 ### check the execution context specific to the appliance volume clone
@@ -6049,6 +6054,12 @@ appliance_volumeVerifyVolumeMapCorrectness() {
   done
 
   return 0
+}
+
+appliance_volumeExecuteDump() {
+  info 'attempting to dump appliance volume(s)'
+
+  return $?
 }
 
 ### execute the appliance volume clone subcommand
