@@ -1138,7 +1138,7 @@ contextSetApplianceVolumesRemove
 # comma
 dump
 [^,]+(,[^,]+)*
-contextSetApplianceVolumesDump
+contextSetApplianceVolumeDump
 
 # clone specified volumes. Volumes to be cloned are specified like this :
 # <volume to clone>=<new volume name to create> repeated n times and separated
@@ -1147,11 +1147,11 @@ clone
 [^= ]+=[^, ]+(,[^= ]+=[^, ]+)*
 contextSetApplianceVolumeClone
 
-# specify the dump file path (defaulted to current directory, using the volume
-# name)
-(-p|--dump-file-path)=?
+# specify the dump output directory path (defaulted to current directory, using
+# the volume name)
+(-p|--dump-output-directory-path)=?
 .+
-contextSetApplianceVolumesDumpPath
+contextSetApplianceVolumeDumpDirectoryPath
 
 # targeted appliance
 (-a|--appliance)=?
@@ -3033,9 +3033,8 @@ EOI
   return 0
 }
 
-### TODO NYI
 contextSetApplianceVolumesAppliance() {
-  info 'setting appliance name to clone volume map'
+  info 'setting appliance name for appliance volume command execution'
 
   if [ ! "$DOMAIN" = 'appliance' ] \
      || [ ! "$COMMAND" = 'volume' ]; then
@@ -3052,6 +3051,14 @@ EOI
   DOMAIN_APPLIANCE_COMMAND_VOLUME_OPTION_APPLIANCE="$2"
 
   return 0
+}
+
+contextSetApplianceVolumeDump() {
+  :
+}
+
+contextSetApplianceVolumeDumpDirectoryPath() {
+  :
 }
 
 ### TODO NYI
