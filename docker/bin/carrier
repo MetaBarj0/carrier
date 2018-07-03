@@ -3069,14 +3069,28 @@ EOI
   fi
 
   DOMAIN_APPLIANCE_COMMAND_VOLUME_SUBCOMMAND_DUMP=0
-  DOMAIN_APPLIANCE_COMMAND_VOLUME_SUBCOMMAND_CLONE_VOLUME_MAP="$(
+  DOMAIN_APPLIANCE_COMMAND_VOLUME_SUBCOMMAND_DUMP_VOLUME_LIST="$(
     splitSequence "$2" ',')"
 
   return 0
 }
 
 contextSetApplianceVolumeDumpDirectoryPath() {
-  :
+  info 'setting appliance volume dump output directory path'
+
+  if [ ! "$DOMAIN" = 'appliance' ] \
+     || [ ! "$COMMAND" = 'volume' ]; then
+    info "$(cat << EOI
+contextSetApplianceVolumeDumpDirectoryPath() can only be called when domain is
+appliance and command is volume.
+  current DOMAIN=$DOMAIN
+  current COMMAND=$COMMAND
+EOI
+    )"
+    return 1
+  fi
+
+  DOMAIN_APPLIANCE_COMMAND_VOLUME_SUBCOMMAND_DUMP_DIRECTORY_PATH="$2"
 }
 
 ### TODO NYI
