@@ -6039,9 +6039,8 @@ appliance_volumeCloneFromSourceVolumeToTargetVolume() {
   return $?
 }
 
-### verify the volume map input before executing the appliance volume clone
-### subcommand
-appliance_volumeVerifyVolumeMapCorrectness() {
+### clone appliance volume map specified
+appliance_volumeCloneVolumeMap() {
   info 'verifying appliance volume clone volume map correctness'
 
   local pair=
@@ -6056,18 +6055,56 @@ appliance_volumeVerifyVolumeMapCorrectness() {
   return 0
 }
 
-appliance_volumeExecuteDump() {
-  info 'attempting to dump appliance volume(s)'
+### check the execution context specific to the appliance volume dump
+### subcommand
+appliance_volumeCloneCheckExecutionContext() {
+  info 'checking execution context for appliance volume dump subcommand'
+
+  if [ -z "$DOMAIN_APPLIANCE_COMMAND_VOLUME_SUBCOMMAND_DUMP_VOLUME_LIST" ] \
+     || [ -z "$DOMAIN_APPLIANCE_COMMAND_VOLUME_OPTION_APPLIANCE" ]; then
+    error "$(
+      cat << EOI
+Cannot execute requested command. Dumping appliance volume(s) require to
+specify both an appliance name and a volume list
+EOI
+      )"
+
+    return 1
+  fi
+
+  return 0
+}
+
+### attempt to dump one volume
+### $1: the volume name to dump
+appliance_volumeDumpOneVolume() {
+  info 'attempting to dump one volume'
+
+  local volumeName="$1"
+  local applianceName="$DOMAIN_APPLIANCE_COMMAND_VOLUME_OPTION_APPLIANCE"
+}
+
+### after suceesful pre conditions, dump specified volume list
+appliance_volumeDumpVolumes() {
+  info 'Attempting to dump appliance volume list'
 
   local volume=
   while read volume; do
-    appliance_volumeDumpOneVolume \
+    appliance_volumeDumpOneVolume "$volume" \
     || return $?
   done << EOI
 $DOMAIN_APPLIANCE_COMMAND_VOLUME_SUBCOMMAND_DUMP_VOLUME_LIST
 EOI
+}
 
-  return $?
+
+### executing the volume dump subcommand
+appliance_volumeExecuteDump() {
+  info 'executing appliance volume(s) dump'
+
+  appliance_volumeDumpCheckExecutionContext \
+  && appliance_volumeVerifyApplianceExists \
+  && appliance_volumeDumpVolumes
 }
 
 ### execute the appliance volume clone subcommand
@@ -6076,7 +6113,7 @@ appliance_volumeExecuteClone() {
 
   appliance_volumeCloneCheckExecutionContext \
   && appliance_volumeVerifyApplianceExists \
-  && appliance_volumeVerifyVolumeMapCorrectness
+  && appliance_volumeCloneVolumeMap
 
   return $?
 }
