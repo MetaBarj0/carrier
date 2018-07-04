@@ -6059,6 +6059,14 @@ appliance_volumeVerifyVolumeMapCorrectness() {
 appliance_volumeExecuteDump() {
   info 'attempting to dump appliance volume(s)'
 
+  local volume=
+  while read volume; do
+    appliance_volumeDumpOneVolume \
+    || return $?
+  done << EOI
+$DOMAIN_APPLIANCE_COMMAND_VOLUME_SUBCOMMAND_DUMP_VOLUME_LIST
+EOI
+
   return $?
 }
 
