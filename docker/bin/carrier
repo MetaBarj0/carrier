@@ -5881,10 +5881,10 @@ appliance_volumeEnsureDockerVolumeExistsAndGetIt() {
   return $?
 }
 
-### looks for the appliance source volume to clone. Echoes the real name of the
+### looks for an appliance source volume. Echoes the real name of the
 ### source volume if it exists
 ### $1: volume name to check
-appliance_volumeCloneSeekSourceVolumeAndGetItsName() {
+appliance_volumeSeekSourceVolumeAndGetItsName() {
   info 'Searching for source volume to clone'
 
   local volumeName="$1"
@@ -6029,7 +6029,7 @@ appliance_volumeCloneFromSourceVolumeToTargetVolume() {
   local targetVolume="$2"
 
   local realSourceVolumeName="$(
-    appliance_volumeCloneSeekSourceVolumeAndGetItsName "$sourceVolume"
+    appliance_volumeSeekSourceVolumeAndGetItsName "$sourceVolume"
   )" \
   && appliance_volumeCloneVerifyTargetVolumeNameAndAvailaibility \
     "$targetVolume" \
@@ -6082,6 +6082,8 @@ appliance_volumeDumpOneVolume() {
 
   local volumeName="$1"
   local applianceName="$DOMAIN_APPLIANCE_COMMAND_VOLUME_OPTION_APPLIANCE"
+
+  appliance_volumeSeekSourceVolumeAndGetItsName
 }
 
 ### after suceesful pre conditions, dump specified volume list
