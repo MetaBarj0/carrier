@@ -1,4 +1,4 @@
-FROM base/archlinux
+FROM archlinux/base
 
 WORKDIR /tmp
 COPY prepare.sh \
