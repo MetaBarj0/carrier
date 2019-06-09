@@ -92,8 +92,8 @@ updateEnvironment() {
 
   # saving state to accelerate future uses
   docker commit \
-    $(hostname) \
-    $(docker ps --filter id=$(hostname) --format='{{.Image}}')
+    $(cat /etc/hostname) \
+    $(docker ps --filter id=$(cat /etc/hostname) --format='{{.Image}}')
 }
 
 createManifestDockerImage() {
