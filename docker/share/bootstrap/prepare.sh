@@ -88,7 +88,7 @@ EOI
 updateEnvironment() {
   # update the system and install necessary packages
   pacman -Syu --noconfirm --needed \
-    gcc make wget file lzip docker unzip bison grep
+    gcc make wget file lzip docker unzip bison grep awk diffutils
 
   # saving state to accelerate future uses
   docker commit \
