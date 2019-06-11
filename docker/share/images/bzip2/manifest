@@ -4,8 +4,9 @@ PROVIDES=metabarj0/bzip2
 
 SOURCES_FETCH_IMAGE=metabarj0/wget
 SOURCES_FETCH_COMMAND=\
-'wget '\
-'http://www.bzip.org/1.0.6/bzip2-1.0.6.tar.gz'
+'wget --no-check-certificate '\
+'https://github.com/MetaBarj0/symmetrical-barnacle/raw/master/bzip2/1.0.6/'\
+'bzip2-1.0.6.tar.gz'
 SOURCES_TARBALL_NAME='bzip2-1.0.6.tar.gz'
 
 BUILD_EXTRA_DOCKERFILE_COMMANDS=
